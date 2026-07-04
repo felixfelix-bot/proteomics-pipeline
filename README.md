@@ -16,28 +16,24 @@ mapping, gene family highlighting, cross-experiment overlap, and GO enrichment.
 
 ## Quick Start
 
-### On Windows (researcher's laptop)
+### Windows — one command
 
-```powershell
-# 1. Install R from cran.r-project.org
-# 2. Clone the repo
-git clone https://github.com/c03rad0r/proteomics-pipeline.git
-cd proteomics-pipeline
+Open PowerShell and paste:
 
-# 3. Install R packages (15-30 min first time)
-Rscript.exe R\00_install_packages.R
-
-# 4. Place CSV files in data/ folder
-#    (files named like BK467_TRIP4_vs_BK467_WT.csv etc.)
-
-# 5. Run the pipeline
-Rscript.exe run_all.R
-
-# Or test with synthetic data first:
-Rscript.exe run_all.R --test
+```
+irm https://raw.githubusercontent.com/c03rad0r/proteomics-pipeline/main/ansible/bootstrap-windows-all.ps1 | iex
 ```
 
-### On Linux (with micromamba)
+This installs R, Rtools, Git, clones the repo, and installs all packages automatically (~30 min). When it says DONE, copy your CSV files to `C:\proteomics-pipeline\data\` and run:
+
+```powershell
+cd C:\proteomics-pipeline
+Rscript.exe run_all.R
+```
+
+For full instructions and troubleshooting see **[Windows Install Guide](docs/WINDOWS_INSTALL.md)**.
+
+### Linux (with micromamba)
 
 ```bash
 micromamba create -y -n r-env -c conda-forge r-base r-essentials
