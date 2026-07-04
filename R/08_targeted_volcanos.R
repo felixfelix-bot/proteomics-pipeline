@@ -53,17 +53,45 @@ ASCC_CORE <- c("TRIP4", "ASCC1", "ASCC2", "ASCC3")
 # so each gene only gets ONE color (dark purple wins for ASCC1-3/TRIP4).
 known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 
-# ---- Custom colors ----
-# The researcher specified these colors:
-#   Light gray:  not significant
-#   Light pink:  highly enriched
-#   Light purple: known interactors
-#   Dark purple: ASCC core
+# ---- Color-blind-safe and B&W-printable palette ----
+#
+# Based on the Okabe-Ito / Wong "Color Universal Design" palette.
+# Reference: Wong B (2011) Nature Methods 8:441. doi:10.1038/nmeth.1618
+#
+# These colors are distinguishable under ALL major color-vision deficiencies
+# (deuteranopia, protanopia, tritanopia) AND remain distinguishable when
+# printed in grayscale.
+#
+# We ALSO assign different point SHAPES to each category so the plot is
+# fully readable in black-and-white print. Color + shape = redundant
+# encoding, which is the gold standard for academic publication.
+#
+# Category        Color (hex)   Shape   Glyph   Rationale
+# ─────────────── ────────────  ─────   ─────   ──────────────────────
+# ascc_core       #0072B2        18      ◆      Blue + Diamond (most distinctive → highest priority)
+# known_ia        #009E73        15      ■      Bluish-green + Square (stable/known set)
+# enriched        #D55E00        17      ▲      Vermillion + Triangle (sharp → draws attention)
+# nonsig          #B0B0B0        16      ●      Gray + Circle (neutral background)
+#
+# WHY THIS REPLACES THE PREVIOUS PINK/PURPLE SCHEME:
+#   - Pink is light red → invisible to ~8% of men (protanopia/deuteranopia)
+#   - Light purple vs dark purple differ only in lightness, not hue
+#     → indistinguishable in B&W print
+#   - The new palette uses 3 maximally distinct hues + gray background
 TARGETED_COLORS <- c(
-  "ascc_core"    = "#4A148C",   # Dark purple — ASCC1-3 + TRIP4
-  "known_ia"     = "#CE93D8",   # Light purple — other known interactors
-  "enriched"     = "#FFCDD2",   # Light pink — highly enriched proteins
-  "nonsig"       = "#E0E0E0"    # Light gray — below threshold
+  "ascc_core"    = "#0072B2",   # Blue — ASCC1-3 + TRIP4
+  "known_ia"     = "#009E73",   # Bluish-green — known interactors
+  "enriched"     = "#D55E00",   # Vermillion — highly enriched
+  "nonsig"       = "#B0B0B0"    # Gray — below threshold
+)
+
+# Point shapes for B&W distinguishability (ggplot2 shape values)
+# 16=● circle, 17=▲ triangle, 15=■ square, 18=◆ diamond
+TARGETED_SHAPES <- c(
+  "ascc_core"    = 18,   # ◆ Diamond — most important, most distinctive
+  "known_ia"     = 15,   # ■ Square — curated/known set
+  "enriched"     = 17,   # ▲ Triangle — sharp shape for hits
+  "nonsig"       = 16    # ● Circle — neutral background
 )
 
 # ---- Helper function: build one targeted volcano plot ----
@@ -130,21 +158,42 @@ make_targeted_volcano <- function(df, title, fc_cutoff = 1.0, pval_line = 1.0) {
   #   x = log2FC → horizontal position
   #   y = neglog10p → vertical position
   #   color = category → dot color determined by the category we assigned
-  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+  #   shape = category → dot SHAPE also determined by category (for B&W printing)
+  #
+  # Using BOTH color AND shape = "redundant encoding", the gold standard
+  # for academic publication. The figure is readable in color, in grayscale,
+  # and by color-blind readers.
+  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
+                                            color = category, shape = category)) +
 
-    # geom_point() draws one circle per protein.
-    # alpha controls transparency (0=invisible, 1=fully opaque).
-    # We use higher alpha for highlighted points, lower for gray background.
+    # geom_point() draws one glyph per protein.
+    # We split into two geom_point layers:
+    #   1. Background (nonsig) — smaller, more transparent
+    #   2. Highlighted points — larger, more opaque
+    # This creates visual hierarchy: highlights stand out from the background.
     ggplot2::geom_point(data = toPlot[toPlot$category == "nonsig", ],
                         alpha = 0.4, size = 1.0) +
     ggplot2::geom_point(data = toPlot[toPlot$category != "nonsig", ],
-                        alpha = 0.8, size = 2.0) +
+                        alpha = 0.85, size = 2.5) +
 
-    # scale_color_manual() assigns our custom colors to each category.
-    # drop = FALSE ensures all categories appear in the legend even if
-    # some have zero proteins (e.g., if no known interactors are present).
+    # scale_color_manual() assigns our color-blind-safe colors to each category.
     ggplot2::scale_color_manual(
       values = TARGETED_COLORS,
+      labels = c(
+        "ascc_core" = "ASCC1-3 + TRIP4",
+        "known_ia"  = "Known interactors",
+        "enriched"  = "Highly enriched",
+        "nonsig"    = "Not significant"
+      ),
+      name = NULL,
+      drop = FALSE
+    ) +
+
+    # scale_shape_manual() assigns different point SHAPES for B&W printing.
+    # This is critical: if the figure is photocopied or printed in grayscale,
+    # color alone won't distinguish the categories. Shapes solve this.
+    ggplot2::scale_shape_manual(
+      values = TARGETED_SHAPES,
       labels = c(
         "ascc_core" = "ASCC1-3 + TRIP4",
         "known_ia"  = "Known interactors",
