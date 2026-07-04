@@ -22,7 +22,7 @@ main <- function() {
 
   valid_steps <- c("volcano", "venn", "go", "string", "families", "overlap",
                    "targeted_volcanos", "flagip_volcano", "targeted_venns",
-                   "targeted_go")
+                   "targeted_go", "go_network_volcano")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -39,7 +39,8 @@ main <- function() {
     targeted_volcanos = "R/08_targeted_volcanos.R",
     flagip_volcano    = "R/09_flagip_volcano.R",
     targeted_venns    = "R/10_targeted_venns.R",
-    targeted_go       = "R/11_targeted_go.R"
+    targeted_go       = "R/11_targeted_go.R",
+    go_network_volcano = "R/12_go_network_volcano.R"
   )
 
   # Set up logging (captures all output to file + console)

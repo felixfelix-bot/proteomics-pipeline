@@ -138,6 +138,9 @@ targeted-venn: check ## 2 Venn diagrams: RA effect + TurboID vs C/N-Flag
 targeted-go: check ## GO enrichment on 3 targeted gene sets
 	$(RSCRIPT) R/run_step.R targeted_go
 
+go-network-volcano: check ## Volcano highlighting GO network proteins (no labels)
+	$(RSCRIPT) R/run_step.R go_network_volcano
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""

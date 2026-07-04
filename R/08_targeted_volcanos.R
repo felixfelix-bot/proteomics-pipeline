@@ -2,246 +2,157 @@
 # 08_targeted_volcanos.R
 # Custom volcano plots per researcher's specific requirements.
 #
-# THREE PLOTS:
-#   1. BK467: TRIP4 TurboID vs Wild Type
-#   2. BK467: TRIP4 without RA vs TRIP4 with RA (hormone effect)
-#   3. BK504: TRIP4 without RA vs TRIP4 with RA (hormone effect, replicate)
+# THREE PLOTS with DIFFERENT rules per plot type:
 #
-# COLORING SCHEME (for each plot):
-#   - Light gray:  |log2FC| < 1 (did not reach 2-fold change threshold)
-#   - Light pink:  log2FC >= 1 AND -log10(padj) > 1 (highly enriched)
-#   - Light purple: Known interactors (the 27 genes in known_interactors.txt,
-#                   excluding ASCC1-3/TRIP4 which get their own color)
-#   - Dark purple: ASCC1, ASCC2, ASCC3, TRIP4 (the ASCC complex + bait protein)
+# PLOT 1: TRIP4 TurboID vs Wild Type (MAIN experiment)
+#   - All circles, same size
+#   - WT-enriched proteins (negative log2FC): gray
+#   - TRIP4-enriched proteins (positive log2FC, sig): dark orange
+#   - Known interactors: colored but NOT labeled
+#   - ASCC core: colored but NOT labeled
+#   - Label: none for this plot
 #
-# AXES:
-#   X-axis: log2 fold change (logFC from the mass spec pipeline)
-#   Y-axis: -log10(adjusted p-value)
+# PLOT 2: BK467 TRIP4 without RA vs with RA
+#   - All circles, same size
+#   - Enriched proteins: orange
+#   - Do NOT label known interactors or ASCC core
+#   - Label: top 20 proteins by combined significance (10 up + 10 down)
 #
-# LABELS:
-#   All highlighted proteins (pink, light purple, dark purple) are labeled
-#   with their gene name using ggrepel (non-overlapping text labels).
+# PLOT 3: BK504 TRIP4 without RA vs with RA
+#   - Same rules as Plot 2
 #
 # Usage:
-#   Rscript R/run_step.R targeted_volcanos
-#   or:
 #   make targeted-volcano
 ###############################################################################
 
 cat("\n=========================================\n")
-cat(" Targeted Volcano Plots (Researcher Spec)\n")
+cat(" Targeted Volcano Plots\n")
 cat("=========================================\n\n")
 
-# ---- Load data ----
-# Load all experiments, then pick the specific ones we need.
 experiments <- load_all_experiments()
-
-# Load known interactors list (27 genes from literature/previous experiments)
 interactors_file <- file.path(DATA_DIR, "known_interactors.txt")
 known_interactors <- load_known_interactors(interactors_file)
 
-# ---- Define the highlight groups ----
-
-# DARK PURPLE: The ASCC complex + TRIP4 itself.
-# These are the bait protein (TRIP4) and its known complex partners (ASCC1-3).
-# They get the highest visual priority because they are the core of the study.
 ASCC_CORE <- c("TRIP4", "ASCC1", "ASCC2", "ASCC3")
-
-# LIGHT PURPLE: Known interactors from the literature list,
-# EXCLUDING the ASCC core (those get dark purple).
-# setdiff() removes ASCC_CORE genes from the known interactors list
-# so each gene only gets ONE color (dark purple wins for ASCC1-3/TRIP4).
 known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 
-# ---- Color-blind-safe and B&W-printable palette ----
-#
-# Based on the Okabe-Ito / Wong "Color Universal Design" palette.
-# Reference: Wong B (2011) Nature Methods 8:441. doi:10.1038/nmeth.1618
-#
-# These colors are distinguishable under ALL major color-vision deficiencies
-# (deuteranopia, protanopia, tritanopia) AND remain distinguishable when
-# printed in grayscale.
-#
-# We ALSO assign different point SHAPES to each category so the plot is
-# fully readable in black-and-white print. Color + shape = redundant
-# encoding, which is the gold standard for academic publication.
-#
-# Category        Color (hex)   Shape   Glyph   Rationale
-# ─────────────── ────────────  ─────   ─────   ──────────────────────
-# ascc_core       #0072B2        18      ◆      Blue + Diamond (most distinctive → highest priority)
-# known_ia        #009E73        15      ■      Bluish-green + Square (stable/known set)
-# enriched        #D55E00        17      ▲      Vermillion + Triangle (sharp → draws attention)
-# nonsig          #B0B0B0        16      ●      Gray + Circle (neutral background)
-#
-# WHY THIS REPLACES THE PREVIOUS PINK/PURPLE SCHEME:
-#   - Pink is light red → invisible to ~8% of men (protanopia/deuteranopia)
-#   - Light purple vs dark purple differ only in lightness, not hue
-#     → indistinguishable in B&W print
-#   - The new palette uses 3 maximally distinct hues + gray background
+# Colors (all categories use circles now — researcher said no triangles)
 TARGETED_COLORS <- c(
-  "ascc_core"    = "#0072B2",   # Blue — ASCC1-3 + TRIP4
-  "known_ia"     = "#009E73",   # Bluish-green — known interactors
-  "enriched"     = "#D55E00",   # Vermillion — highly enriched
-  "nonsig"       = "#B0B0B0"    # Gray — below threshold
+  "ascc_core"    = "#0072B2",   # Blue
+  "known_ia"     = "#009E73",   # Green
+  "enriched_up"  = "#D55E00",   # Vermillion (orange) — enriched in TRIP4
+  "enriched_dn"  = "#B0B0B0",   # Gray — enriched in WT control
+  "nonsig"       = "#D0D0D0"    # Light gray — not significant
 )
 
-# Point shapes for B&W distinguishability (ggplot2 shape values)
-# 16=● circle, 17=▲ triangle, 15=■ square, 18=◆ diamond
-TARGETED_SHAPES <- c(
-  "ascc_core"    = 18,   # ◆ Diamond — most important, most distinctive
-  "known_ia"     = 15,   # ■ Square — curated/known set
-  "enriched"     = 17,   # ▲ Triangle — sharp shape for hits
-  "nonsig"       = 16    # ● Circle — neutral background
-)
-
-# ---- Helper function: build one targeted volcano plot ----
-# This function takes ONE experiment's data frame and creates a volcano
-# plot with the specific coloring scheme requested.
-#
-# Parameters:
-#   df:          Data frame with columns gene, log2FC, padj
-#   title:       Plot title
-#   fc_cutoff:   Fold change threshold (default 1.0 = 2-fold change)
-#   pval_line:   -log10(padj) threshold (default 1.0 = padj < 0.1)
-#
-# Returns: a ggplot2 plot object
-make_targeted_volcano <- function(df, title, fc_cutoff = 1.0, pval_line = 1.0) {
-
-  # Create a working copy of the data
+# ---- Helper: RA comparison volcano (Plots 2 and 3) ----
+# For RA comparison plots: label top 20 proteins by significance,
+# do NOT label known interactors or ASCC core specifically.
+make_ra_volcano <- function(df, title, n_top = 20) {
   toPlot <- df
-
-  # ---- Step 1: Calculate -log10(adjusted p-value) for the Y-axis ----
-  # This transforms very small p-values into readable numbers.
-  # Example: padj = 0.00001 → -log10(0.00001) = 5.0 (high on Y-axis)
-  #          padj = 0.5      → -log10(0.5)    = 0.3 (low on Y-axis)
   toPlot$neglog10p <- -log10(toPlot$padj)
 
-  # ---- Step 2: Assign each protein to a category ----
-  # We start with everyone as "nonsig" (light gray), then upgrade
-  # specific proteins to higher-priority categories.
-  #
-  # Priority (highest wins):
-  #   1. ascc_core (dark purple) — ASCC1-3 + TRIP4
-  #   2. known_ia  (light purple) — known interactors from literature
-  #   3. enriched  (light pink) — log2FC >= 1 AND -log10(padj) > 1
-  #   4. nonsig    (light gray) — everything else
-
-  # Start: everyone is light gray
+  # Categories: enriched or nonsig (no separate known_ia/ascc categories)
   toPlot$category <- "nonsig"
+  toPlot$category[abs(toPlot$log2FC) >= 1 & toPlot$neglog10p > 1] <- "enriched_up"
+  toPlot$category <- factor(toPlot$category, levels = c("enriched_up", "nonsig"))
 
-  # Layer 1: Highly enriched proteins (light pink)
-  # Condition: absolute fold change >= 1 (2-fold) AND -log10(padj) > 1
-  # abs() ensures we catch BOTH up-regulated (positive) and down-regulated (negative)
-  toPlot$category[abs(toPlot$log2FC) >= fc_cutoff & toPlot$neglog10p > pval_line] <- "enriched"
+  # Find top N proteins by combined significance on each side
+  # "Combined significance" = product of fold change magnitude and -log10(p)
+  sig_only <- toPlot[abs(toPlot$log2FC) >= 1 & toPlot$neglog10p > 1, ]
+  sig_only$combined_score <- abs(sig_only$log2FC) * sig_only$neglog10p
 
-  # Layer 2: Known interactors (light purple) — overrides "enriched"
-  # %in% checks if each gene name is in the known_ia_excl_core list
-  toPlot$category[toPlot$gene %in% known_ia_excl_core] <- "known_ia"
+  # Top 10 up-regulated (positive log2FC)
+  top_up <- sig_only[sig_only$log2FC > 0, ]
+  top_up <- top_up[order(-top_up$combined_score), ]
+  top_up <- head(top_up, n_top / 2)
 
-  # Layer 3: ASCC core (dark purple) — highest priority, overrides everything
-  toPlot$category[toPlot$gene %in% ASCC_CORE] <- "ascc_core"
+  # Top 10 down-regulated (negative log2FC)
+  top_dn <- sig_only[sig_only$log2FC < 0, ]
+  top_dn <- top_dn[order(-top_dn$combined_score), ]
+  top_dn <- head(top_dn, n_top / 2)
 
-  # Convert to factor with ordered levels (controls legend order)
-  # factor() creates a categorical variable. levels defines the allowed
-  # values and their order. This ensures the legend shows categories in
-  # priority order (ascc_core first, nonsig last).
-  toPlot$category <- factor(toPlot$category,
-                            levels = c("ascc_core", "known_ia", "enriched", "nonsig"))
+  label_data <- rbind(top_up, top_dn)
 
-  # ---- Step 3: Decide which points to label ----
-  # ONLY label known interactors and ASCC core — NOT the "enriched" category.
-  # The researcher specified: enriched proteins get a color but NO text label
-  # (there are too many of them and the plot becomes unreadable).
-  label_data <- toPlot[toPlot$category %in% c("ascc_core", "known_ia"), ]
+  RA_COLORS <- c(
+    "enriched_up" = "#D55E00",
+    "nonsig"      = "#D0D0D0"
+  )
 
-  # ---- Step 4: Build the plot ----
-  # ggplot() initializes the plot. aes() maps data columns to visual properties:
-  #   x = log2FC → horizontal position
-  #   y = neglog10p → vertical position
-  #   color = category → dot color determined by the category we assigned
-  #   shape = category → dot SHAPE also determined by category (for B&W printing)
-  #
-  # Using BOTH color AND shape = "redundant encoding", the gold standard
-  # for academic publication. The figure is readable in color, in grayscale,
-  # and by color-blind readers.
-  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
-                                            color = category, shape = category)) +
-
-    # geom_point() draws one glyph per protein.
-    # We split into two geom_point layers:
-    #   1. Background (nonsig) — smaller, more transparent
-    #   2. Highlighted points — slightly larger, more opaque
-    ggplot2::geom_point(data = toPlot[toPlot$category == "nonsig", ],
-                        alpha = 0.3, size = 0.6) +
-    ggplot2::geom_point(data = toPlot[toPlot$category != "nonsig", ],
-                        alpha = 0.8, size = 1.5) +
-
-    # scale_color_manual() assigns our color-blind-safe colors to each category.
+  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+    ggplot2::geom_point(alpha = 0.5, size = 0.8) +
     ggplot2::scale_color_manual(
-      values = TARGETED_COLORS,
-      labels = c(
-        "ascc_core" = "ASCC1-3 + TRIP4",
-        "known_ia"  = "Known interactors",
-        "enriched"  = "Highly enriched",
-        "nonsig"    = "Not significant"
-      ),
-      name = NULL,
-      drop = FALSE
+      values = RA_COLORS,
+      labels = c("enriched_up" = "Significant", "nonsig" = "Not significant"),
+      name = NULL
     ) +
-
-    # scale_shape_manual() assigns different point SHAPES for B&W printing.
-    # This is critical: if the figure is photocopied or printed in grayscale,
-    # color alone won't distinguish the categories. Shapes solve this.
-    ggplot2::scale_shape_manual(
-      values = TARGETED_SHAPES,
-      labels = c(
-        "ascc_core" = "ASCC1-3 + TRIP4",
-        "known_ia"  = "Known interactors",
-        "enriched"  = "Highly enriched",
-        "nonsig"    = "Not significant"
-      ),
-      name = NULL,
-      drop = FALSE
-    ) +
-
-    # Add text labels for all highlighted proteins using ggrepel.
-    # geom_text_repel() automatically pushes labels apart so they don't overlap.
-    #   max.overlaps: if more than 30 labels would overlap a single point,
-    #   skip the extra ones (prevents unreadable label clusters).
     ggrepel::geom_text_repel(
       data = label_data,
       ggplot2::aes(label = gene),
-      size = 2.8, fontface = "bold",
-      max.overlaps = 30,
-      show.legend = FALSE
+      size = 2.5, fontface = "bold",
+      max.overlaps = 25, show.legend = FALSE
     ) +
-
-    # Dashed threshold lines:
-    #   Horizontal line at y = pval_line (the -log10(padj) threshold)
-    #   Vertical lines at x = ±fc_cutoff (the fold change thresholds)
-    ggplot2::geom_hline(yintercept = pval_line, linetype = "dashed",
-                        color = "grey50", linewidth = 0.3) +
-    ggplot2::geom_vline(xintercept = c(-fc_cutoff, fc_cutoff), linetype = "dashed",
-                        color = "grey50", linewidth = 0.3) +
-
-    # Axis labels using mathematical notation
-    # expression() lets us use subscripts and italics in axis labels
+    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    ggplot2::geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "grey50", linewidth = 0.3) +
     ggplot2::labs(
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-
-    # theme_bw(): clean black-and-white theme with grid lines
-    # theme(): customize appearance
     ggplot2::theme_bw() +
     ggplot2::theme(
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
       axis.text = ggplot2::element_text(colour = "black", size = 8),
-      axis.title = ggplot2::element_text(size = 10),
       legend.position = "right",
-      legend.text = ggplot2::element_text(size = 8),
-      legend.title = ggplot2::element_text(size = 9),
+      panel.grid.minor = ggplot2::element_blank()
+    )
+
+  return(p)
+}
+
+# ---- Helper: Main TRIP4 vs WT volcano ----
+# WT-enriched proteins = gray, only TRIP4-enriched = orange
+# No labels on this plot
+make_main_volcano <- function(df, title) {
+  toPlot <- df
+  toPlot$neglog10p <- -log10(toPlot$padj)
+
+  # Three categories: enriched_up (TRIP4, orange), enriched_dn (WT, gray), nonsig
+  toPlot$category <- "nonsig"
+  toPlot$category[toPlot$log2FC >= 1 & toPlot$neglog10p > 1] <- "enriched_up"
+  toPlot$category[toPlot$log2FC <= -1 & toPlot$neglog10p > 1] <- "enriched_dn"
+  toPlot$category <- factor(toPlot$category,
+                            levels = c("enriched_up", "enriched_dn", "nonsig"))
+
+  MAIN_COLORS <- c(
+    "enriched_up" = "#D55E00",   # Orange — enriched in TRIP4
+    "enriched_dn" = "#B0B0B0",   # Gray — enriched in WT control
+    "nonsig"      = "#D0D0D0"    # Light gray
+  )
+
+  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+    ggplot2::geom_point(alpha = 0.5, size = 0.8) +
+    ggplot2::scale_color_manual(
+      values = MAIN_COLORS,
+      labels = c(
+        "enriched_up" = "Enriched in TRIP4",
+        "enriched_dn" = "Enriched in WT",
+        "nonsig"      = "Not significant"
+      ),
+      name = NULL
+    ) +
+    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    ggplot2::geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    ggplot2::labs(
+      x = expression(Log[2]~Fold~Change),
+      y = expression(-Log[10]~(adjusted~italic(p)~value)),
+      title = title
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+      axis.text = ggplot2::element_text(colour = "black", size = 8),
+      legend.position = "right",
       panel.grid.minor = ggplot2::element_blank()
     )
 
@@ -249,66 +160,56 @@ make_targeted_volcano <- function(df, title, fc_cutoff = 1.0, pval_line = 1.0) {
 }
 
 # =====================================================================
-# PLOT 1: BK467 — TRIP4 TurboID vs Wild Type
+# PLOT 1: TRIP4 TurboID vs Wild Type
 # =====================================================================
-# This is the MAIN experiment: TRIP4-TurboID (with biotin) vs Wild Type (biotin only).
-# Proteins enriched here are candidate TRIP4 interaction partners.
-#
-# The CSV file "BK467_TRIP4_vs_BK467_WT_diffEx_minProb.csv" contains
-# the differential expression results: log2FC and padj for ~3000 proteins.
-cat("[1/3] BK467: TRIP4 TurboID vs Wild Type...\n")
+cat("[1/3] TRIP4 TurboID vs Wild Type...\n")
 
 exp1 <- "BK467_TRIP4_vs_BK467_WT"
 if (exp1 %in% names(experiments)) {
-  p1 <- make_targeted_volcano(
+  p1 <- make_main_volcano(
     experiments[[exp1]],
-    title = "BK467: TRIP4 TurboID vs Wild Type"
+    title = "TRIP4 TurboID vs Wild Type"
   )
   save_figure(p1, "targeted_volcano_BK467_TRIP4_vs_WT",
               width = 8, height = 6)
 } else {
-  cat("  WARNING: Experiment not found: ", exp1, "\n")
-  cat("  Available experiments:\n")
-  for (n in names(experiments)) cat("    - ", n, "\n")
+  cat("  WARNING: Experiment not found:", exp1, "\n")
 }
 
 # =====================================================================
-# PLOT 2: BK467 — TRIP4 without RA vs TRIP4 with RA
+# PLOT 2: BK467 TRIP4 without RA vs with RA
 # =====================================================================
-# This compares TRIP4-TurboID cells WITHOUT retinoic acid vs WITH RA (0.2µM).
-# Proteins enriched here are those whose association with TRIP4 CHANGES
-# upon hormone treatment — these may be RA-dependent interactors.
-cat("\n[2/3] BK467: TRIP4 without RA vs TRIP4 with RA...\n")
+cat("\n[2/3] TRIP4 without RA vs with RA...\n")
 
 exp2 <- "BK467_TRIP4_RA02_vs_BK467_TRIP4"
 if (exp2 %in% names(experiments)) {
-  p2 <- make_targeted_volcano(
+  p2 <- make_ra_volcano(
     experiments[[exp2]],
-    title = "BK467: TRIP4 without RA vs TRIP4 with RA (0.2 µM)"
+    title = "TRIP4 without RA vs with RA (0.2 uM)",
+    n_top = 20
   )
   save_figure(p2, "targeted_volcano_BK467_RA_effect",
               width = 8, height = 6)
 } else {
-  cat("  WARNING: Experiment not found: ", exp2, "\n")
+  cat("  WARNING: Experiment not found:", exp2, "\n")
 }
 
 # =====================================================================
-# PLOT 3: BK504 — TRIP4 without RA vs TRIP4 with RA
+# PLOT 3: BK504 TRIP4 without RA vs with RA
 # =====================================================================
-# Same comparison as Plot 2, but in the BK504 batch (biological replicate).
-# Comparing BK467 and BK504 results shows which RA effects are reproducible.
-cat("\n[3/3] BK504: TRIP4 without RA vs TRIP4 with RA...\n")
+cat("\n[3/3] BK504 TRIP4 without RA vs with RA...\n")
 
 exp3 <- "BK504_TRIP4_RA04_vs_BK504_TRIP4"
 if (exp3 %in% names(experiments)) {
-  p3 <- make_targeted_volcano(
+  p3 <- make_ra_volcano(
     experiments[[exp3]],
-    title = "BK504: TRIP4 without RA vs TRIP4 with RA (0.4 µM)"
+    title = "TRIP4 without RA vs with RA (0.4 uM)",
+    n_top = 20
   )
   save_figure(p3, "targeted_volcano_BK504_RA_effect",
               width = 8, height = 6)
 } else {
-  cat("  WARNING: Experiment not found: ", exp3, "\n")
+  cat("  WARNING: Experiment not found:", exp3, "\n")
 }
 
 cat("\n=========================================\n")

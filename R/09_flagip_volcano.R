@@ -1,21 +1,17 @@
 ###############################################################################
 # 09_flagip_volcano.R
-# TurboID TRIP4 vs WT volcano with Flag IP common hits labeled.
+# TurboID TRIP4 vs WT volcano with Flag IP common hits highlighted.
 #
-# WHAT THIS PLOTS:
-#   A volcano plot of BK467_TRIP4_vs_BK467_WT (the main TurboID experiment).
-#   On this volcano, we highlight proteins that are significantly enriched
-#   in BOTH Flag IP experiments (C-flag vs Ctrl AND N-flag vs Ctrl).
-#   These overlapping proteins are high-confidence TRIP4 interactors
-#   validated by two independent methods.
+# CHANGES:
+#   - All circles, same size (no triangles/squares/diamonds)
+#   - Do NOT label known interactors
+#   - ONLY label proteins that are significant in TurboID AND C-Flag AND N-Flag
+#   - These triple-validated hits are the highest-confidence interactors
 #
-# COLORING (color-blind safe Okabe-Ito):
-#   - Gray circles:     Not significant
-#   - Orange triangles: Significant in TurboID but NOT in both Flag IP
-#   - Green squares:    Known interactors (from literature list)
-#   - Blue diamonds:    Common Flag IP hits (sig in BOTH C-flag AND N-flag)
-#
-# LABELS: Only green (known interactors) and blue (Flag IP common) are labeled.
+# COLORING:
+#   - Light gray:     Not significant
+#   - Orange circles: Significant in TurboID (or Flag IP but not all three)
+#   - Blue circles:   Significant in all three: TurboID + C-Flag + N-Flag
 #
 # Usage:
 #   make flagip-volcano
@@ -25,8 +21,6 @@ cat(" Flag IP Overlap Volcano\n")
 cat("=========================================\n\n")
 
 experiments <- load_all_experiments()
-interactors_file <- file.path(DATA_DIR, "known_interactors.txt")
-known_interactors <- load_known_interactors(interactors_file)
 
 # ---- Find proteins significant in BOTH Flag IP experiments ----
 cat("Finding common Flag IP hits...\n")
@@ -62,52 +56,30 @@ if (!turbo_main %in% names(experiments)) {
 df <- experiments[[turbo_main]]
 df$neglog10p <- -log10(df$padj)
 
-# Assign categories (priority: flag_common > known_ia > enriched > nonsig)
+# Categories: only flag_common (blue) and everything else (gray/orange)
+# Do NOT separately highlight known interactors
 df$category <- "nonsig"
 df$category[abs(df$log2FC) >= 1 & df$neglog10p > 1] <- "enriched"
-df$category[df$gene %in% known_interactors] <- "known_ia"
 df$category[df$gene %in% flag_common] <- "flag_common"
 df$category <- factor(df$category,
-                      levels = c("flag_common", "known_ia", "enriched", "nonsig"))
+                      levels = c("flag_common", "enriched", "nonsig"))
 
-# Colors (Okabe-Ito color-blind safe)
+# ONLY label the triple-validated hits (flag_common proteins)
+label_data <- df[df$category == "flag_common", ]
+
 FLAGIP_COLORS <- c(
-  "flag_common" = "#0072B2",   # Blue + Diamond
-  "known_ia"    = "#009E73",   # Green + Square
-  "enriched"    = "#D55E00",   # Vermillion + Triangle
-  "nonsig"      = "#B0B0B0"    # Gray + Circle
-)
-FLAGIP_SHAPES <- c(
-  "flag_common" = 18,          # Diamond
-  "known_ia"    = 15,          # Square
-  "enriched"    = 17,          # Triangle
-  "nonsig"      = 16           # Circle
+  "flag_common" = "#0072B2",   # Blue — common to TurboID + C-Flag + N-Flag
+  "enriched"    = "#D55E00",   # Orange — significant in TurboID only
+  "nonsig"      = "#D0D0D0"    # Gray
 )
 
-# Only label known interactors and flag IP common hits
-label_data <- df[df$category %in% c("flag_common", "known_ia"), ]
-
-p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
-                                      color = category, shape = category)) +
-  ggplot2::geom_point(data = df[df$category == "nonsig", ],
-                      alpha = 0.3, size = 0.6) +
-  ggplot2::geom_point(data = df[df$category != "nonsig", ],
-                      alpha = 0.8, size = 1.5) +
+# All circles now — researcher said no triangles
+p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+  ggplot2::geom_point(alpha = 0.5, size = 0.8) +
   ggplot2::scale_color_manual(
     values = FLAGIP_COLORS,
     labels = c(
-      "flag_common" = "Common Flag IP (C + N)",
-      "known_ia"    = "Known interactors",
-      "enriched"    = "Significant in TurboID",
-      "nonsig"      = "Not significant"
-    ),
-    name = NULL, drop = FALSE
-  ) +
-  ggplot2::scale_shape_manual(
-    values = FLAGIP_SHAPES,
-    labels = c(
-      "flag_common" = "Common Flag IP (C + N)",
-      "known_ia"    = "Known interactors",
+      "flag_common" = "Common: TurboID + C-Flag + N-Flag",
       "enriched"    = "Significant in TurboID",
       "nonsig"      = "Not significant"
     ),
@@ -116,7 +88,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
   ggrepel::geom_text_repel(
     data = label_data,
     ggplot2::aes(label = gene),
-    size = 2.8, fontface = "bold",
+    size = 2.5, fontface = "bold",
     max.overlaps = 30, show.legend = FALSE
   ) +
   ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey50", linewidth = 0.3) +
@@ -124,7 +96,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
   ggplot2::labs(
     x = expression(Log[2]~Fold~Change),
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
-    title = "TurboID TRIP4 vs WT with Common Flag IP Hits"
+    title = "TRIP4 TurboID vs WT with Common Flag IP Hits"
   ) +
   ggplot2::theme_bw() +
   ggplot2::theme(

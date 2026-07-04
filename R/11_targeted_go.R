@@ -1,14 +1,12 @@
 ###############################################################################
 # 11_targeted_go.R
-# GO enrichment analysis on specific gene sets from the targeted analysis.
+# GO enrichment analysis on specific gene sets.
 #
-# Runs GO enrichment (Biological Process, Molecular Function, Cellular Component)
-# on three key gene sets:
-#   1. TurboID TRIP4 vs WT significant proteins (main interactome)
-#   2. RA effect shared proteins (proteins that interact with TRIP4 both
-#      with and without retinoic acid — the "core" interactome)
-#   3. RA-gained proteins (proteins that only interact with TRIP4 when
-#      RA is present — RA-dependent interactors)
+# CHANGES:
+#   - Barplots sorted by count (high to low) via orderBy
+#   - Taller figures to prevent label overlap
+#   - Shorter labels via label wrap
+#   - Fewer categories in barplots (15 instead of 20) for readability
 #
 # Usage:
 #   make targeted-go
@@ -23,7 +21,6 @@ library(enrichplot)
 
 experiments <- load_all_experiments()
 
-# ---- Define background universe ----
 universe <- unique(unlist(lapply(experiments, function(df) df$gene)))
 cat(sprintf("Background universe: %d unique proteins\n\n", length(universe)))
 
@@ -65,20 +62,32 @@ run_targeted_go <- function(genes, set_name, universe) {
 
     prefix <- sanitize_filename(paste0("targeted_GO_", set_name, "_", ont))
 
-    # Save results table
     save_table(res_df, prefix)
 
-    # Dotplot
-    p_dot <- dotplot(result, showCategory = 20,
-                     title = paste(set_name, "-", ont)) +
-      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"))
-    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 9, height = 7)
+    # Dotplot (taller figure for readability)
+    n_show <- min(20, nrow(res_df))
+    fig_height <- max(7, n_show * 0.4)  # Scale height with number of terms
 
-    # Barplot
-    p_bar <- barplot(result, showCategory = 20,
+    p_dot <- dotplot(result, showCategory = n_show,
                      title = paste(set_name, "-", ont)) +
-      ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"))
-    save_figure(p_bar, paste0(prefix, "_barplot"), width = 9, height = 7)
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = fig_height)
+
+    # Barplot — sorted by count, taller figure
+    n_show_bar <- min(15, nrow(res_df))
+    fig_height_bar <- max(7, n_show_bar * 0.5)
+
+    p_bar <- barplot(result, showCategory = n_show_bar,
+                     orderBy = "count",
+                     title = paste(set_name, "-", ont)) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p_bar, paste0(prefix, "_barplot"), width = 10, height = fig_height_bar)
   }
 }
 
