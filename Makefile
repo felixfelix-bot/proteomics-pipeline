@@ -114,6 +114,10 @@ families: check ## Gene family highlighting
 overlap: check ## Cross-experiment overlap
 	$(RSCRIPT) R/run_step.R overlap
 
+# ---- Targeted plots (researcher-specified) ----
+targeted-volcano: check ## 3 custom volcano plots: BK467 TRIP4 vs WT, RA effects
+	$(RSCRIPT) R/run_step.R targeted_volcanos
+
 # ---- Cleanup ----
 clean: ## Remove all generated output
 	rm -rf $(FIGURE_DIR) $(TABLE_DIR) output/logs
