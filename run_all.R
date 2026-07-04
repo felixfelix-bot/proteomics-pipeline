@@ -12,8 +12,18 @@ test_mode <- "--test" %in% args
 project_root <- getwd()
 Sys.setenv(PROJECT_ROOT = project_root)
 
+# Set up logging (saves all output to output/logs/ with commit hash)
+source(file.path(project_root, "R", "setup_logging.R"))
+script_label <- ifelse(test_mode, "run_all_test", "run_all")
+setup_logging(script_name = script_label)
+
 source(file.path(project_root, "R", "01_config.R"))
 source(file.path(project_root, "R", "utils.R"))
+
+# Ensure logging is stopped even on error
+.on_pipeline_error <- function() {
+  try(stop_logging(success = FALSE), silent = TRUE)
+}
 
 cat("\n")
 cat("=========================================\n")
@@ -65,3 +75,6 @@ tab_files <- list.files(TABLE_DIR, pattern = "\\.csv$")
 cat(sprintf("\n  %d figures generated\n", length(fig_files)))
 cat(sprintf("  %d tables generated\n", length(tab_files)))
 cat("=========================================\n")
+
+# Stop logging and print summary
+stop_logging(success = TRUE)

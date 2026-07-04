@@ -95,29 +95,29 @@ test: ## Run pipeline on synthetic test data
 	$(RSCRIPT) run_all.R --test
 
 # ---- Individual analysis steps ----
-# Each runs that single module against real data
+# Each runs that single module with full logging
 volcano: check ## Generate volcano plots
-	$(RSCRIPT) -e 'source("R/01_config.R"); source("R/utils.R"); source("R/02_volcano_plots.R")'
+	$(RSCRIPT) R/run_step.R volcano
 
 venn: check ## Generate Venn diagrams
-	$(RSCRIPT) -e 'source("R/01_config.R"); source("R/utils.R"); source("R/03_venn_diagrams.R")'
+	$(RSCRIPT) R/run_step.R venn
 
 go: check ## GO enrichment analysis
-	$(RSCRIPT) -e 'source("R/01_config.R"); source("R/utils.R"); source("R/04_go_enrichment.R")'
+	$(RSCRIPT) R/run_step.R go
 
 string: check ## STRING network analysis
-	$(RSCRIPT) -e 'source("R/01_config.R"); source("R/utils.R"); source("R/05_string_network.R")'
+	$(RSCRIPT) R/run_step.R string
 
 families: check ## Gene family highlighting
-	$(RSCRIPT) -e 'source("R/01_config.R"); source("R/utils.R"); source("R/06_gene_families.R")'
+	$(RSCRIPT) R/run_step.R families
 
 overlap: check ## Cross-experiment overlap
-	$(RSCRIPT) -e 'source("R/01_config.R"); source("R/utils.R"); source("R/07_overlap_analysis.R")'
+	$(RSCRIPT) R/run_step.R overlap
 
 # ---- Cleanup ----
 clean: ## Remove all generated output
-	rm -rf $(FIGURE_DIR) $(TABLE_DIR)
-	@echo "Removed: $(FIGURE_DIR)/ and $(TABLE_DIR)/"
+	rm -rf $(FIGURE_DIR) $(TABLE_DIR) output/logs
+	@echo "Removed: output/ (figures, tables, logs)"
 
 # ---- Git operations ----
 pull: ## Pull latest from GitHub

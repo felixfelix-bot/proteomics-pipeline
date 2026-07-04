@@ -1,0 +1,68 @@
+###############################################################################
+# run_step.R
+# Runs a single analysis step with full logging.
+#
+# Usage:
+#   Rscript R/run_step.R <step_name>
+#
+# Where step_name is one of:
+#   volcano, venn, go, string, families, overlap
+###############################################################################
+
+main <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+
+  if (length(args) < 1) {
+    cat("Usage: Rscript R/run_step.R <step_name>\n")
+    cat("  Steps: volcano, venn, go, string, families, overlap\n")
+    quit(status = 1)
+  }
+
+  step <- args[1]
+
+  valid_steps <- c("volcano", "venn", "go", "string", "families", "overlap")
+  if (!(step %in% valid_steps)) {
+    cat(sprintf("Error: Unknown step '%s'\n", step))
+    cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
+    quit(status = 1)
+  }
+
+  step_scripts <- list(
+    volcano  = "R/02_volcano_plots.R",
+    venn     = "R/03_venn_diagrams.R",
+    go       = "R/04_go_enrichment.R",
+    string   = "R/05_string_network.R",
+    families = "R/06_gene_families.R",
+    overlap  = "R/07_overlap_analysis.R"
+  )
+
+  # Set up logging (captures all output to file + console)
+  source("R/setup_logging.R")
+  setup_logging(script_name = step)
+
+  # Load config and utils
+  project_root <- getwd()
+  Sys.setenv(PROJECT_ROOT = project_root)
+  source(file.path(project_root, "R", "01_config.R"))
+  source(file.path(project_root, "R", "utils.R"))
+
+  cat("\n=========================================\n")
+  cat(sprintf(" Running step: %s\n", step))
+  cat("=========================================\n\n")
+
+  # Run the step
+  success <- TRUE
+  tryCatch({
+    source(file.path(project_root, step_scripts[[step]]))
+  }, error = function(e) {
+    success <<- FALSE
+    cat("\n\nFATAL ERROR in step '", step, "':\n", sep = "")
+    cat("  ", conditionMessage(e), "\n", sep = "")
+  })
+
+  stop_logging(success = success)
+
+  if (!success) quit(status = 1)
+}
+
+main()
