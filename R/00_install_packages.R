@@ -12,6 +12,11 @@ cat("=========================================\n")
 cat(" Proteomics Pipeline — Package Installer\n")
 cat("=========================================\n\n")
 
+# ---- Set CRAN mirror ----
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+options(BioC_mirror = "https://bioconductor.org")
+options(timeout = 600)  # 10 minute timeout for large downloads
+
 # ---- Helper function ----
 is_installed <- function(pkg) {
   requireNamespace(pkg, quietly = TRUE)

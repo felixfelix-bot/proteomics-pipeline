@@ -59,10 +59,14 @@ generate_experiment <- function(name, n_sig, up_regulated_frac = 0.5) {
   padj[known_sig]   <- runif(length(known_sig), min = 0.00001, max = 0.04)
 
   df <- data.frame(
-    gene = RANDOM_GENES,
-    log2FC = round(log2fc, 4),
-    padj = round(padj, 6),
-    pvalue = round(pmin(padj * runif(n, 1, 5), 1), 6)  # raw p-value < padj
+    Gene = RANDOM_GENES,
+    Entry.Name = paste0(RANDOM_GENES, "_HUMAN"),
+    UniProt.ID = paste0("P", sprintf("%05d", sample(1:99999, n, replace = TRUE))),
+    Description = paste0("Uncharacterized protein ", RANDOM_GENES),
+    logFC = round(log2fc, 4),
+    P.Value = round(pmin(padj * runif(n, 1, 5), 1), 6),
+    adj.P.Val = round(padj, 6),
+    is_significant = (padj < 0.05 & abs(log2fc) > 1)
   )
 
   # Shuffle rows
@@ -90,7 +94,7 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 for (name in names(experiments)) {
   filepath <- file.path(output_dir, paste0(name, ".csv"))
   write.csv(experiments[[name]], filepath, row.names = FALSE)
-  n_sig <- sum(experiments[[name]]$padj < 0.05 & abs(experiments[[name]]$log2FC) > 1)
+  n_sig <- sum(experiments[[name]]$adj.P.Val < 0.05 & abs(experiments[[name]]$logFC) > 1)
   cat(sprintf("  %s.csv: %d proteins (%d significant)\n", name, nrow(experiments[[name]]), n_sig))
 }
 

@@ -24,11 +24,16 @@ ORGDB <- "org.Hs.eg.db"   # Human annotation database
 KEYTYPE <- "SYMBOL"        # Input gene IDs are gene symbols (e.g., TP53, BRCA1)
 
 # ---- Column name mapping ----
-# Edit these if your CSV columns have different names
-COL_GENE   <- "gene"      # Column with gene symbols
-COL_LOG2FC <- "log2FC"    # Column with log2 fold change
-COL_PADJ   <- "padj"      # Column with adjusted p-value
-COL_PVAL   <- "pvalue"    # Column with raw p-value (if available)
+# These match the mass spectrometry output CSV format
+COL_GENE   <- "Gene"       # Column with gene symbols (e.g., TBXA2R)
+COL_LOG2FC <- "logFC"      # Column with log fold change
+COL_PADJ   <- "adj.P.Val"  # Column with adjusted p-value (FDR)
+COL_PVAL   <- "P.Value"    # Column with raw p-value
+# Additional columns available in the data:
+# Entry.Name     - UniProt entry name (e.g., TA2R_HUMAN)
+# UniProt.ID     - UniProt accession (e.g., P21731)
+# Description    - Protein description
+# is_significant - Pre-computed significance flag (TRUE/FALSE)
 
 # ---- Plot aesthetics ----
 # Colors for different experiments on overlay plots
@@ -73,9 +78,13 @@ load_proteomics_csv <- function(filepath,
     ))
   }
 
-  # Select and rename for consistency
-  df <- df[, c(gene_col, log2fc_col, padj_col)]
-  colnames(df) <- c("gene", "log2FC", "padj")
+  # Select and rename for consistency (keep extra columns if present)
+  keep_cols <- c(gene_col, log2fc_col, padj_col)
+  rename_map <- c("gene", "log2FC", "padj")
+  names(rename_map) <- keep_cols
+
+  df <- df[, keep_cols, drop = FALSE]
+  colnames(df) <- rename_map[keep_cols]
 
   # Clean: remove NAs in essential columns
   df <- df[!is.na(df$gene) & df$gene != "", ]
