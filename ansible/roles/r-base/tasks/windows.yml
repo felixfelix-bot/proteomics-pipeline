@@ -1,0 +1,55 @@
+---
+# R installation on Windows via winget + chocolatey
+
+- name: Check if R is already installed
+  ansible.windows.win_stat:
+    path: "C:\\Program Files\\R"
+  register: r_install_dir
+
+- name: Get latest R version from CRAN redirect
+  ansible.windows.win_uri:
+    url: "https://cran.r-project.org/bin/windows/base/release.html"
+    method: GET
+    return_content: yes
+  register: cran_page
+  when: not r_install_dir.stat.exists
+
+- name: Extract R installer URL
+  set_fact:
+    r_installer_url: "https://cran.r-project.org{{ (cran_page.content | regex_search('href=\"([^\"]*R-[0-9.]+-win.exe)\"', '\\1') | first) }}"
+  when: not r_install_dir.stat.exists
+
+- name: Download R installer
+  ansible.windows.win_get_url:
+    url: "{{ r_installer_url }}"
+    dest: "C:\\Windows\\Temp\\R-installer.exe"
+  when: not r_install_dir.stat.exists
+
+- name: Install R silently
+  ansible.windows.win_package:
+    path: "C:\\Windows\\Temp\\R-installer.exe"
+    arguments: /VERYSILENT /NORESTART
+    state: present
+  when: not r_install_dir.stat.exists
+
+- name: Add R to system PATH
+  ansible.windows.win_path:
+    elements:
+      - "C:\\Program Files\\R\\R-4.4.2\\bin\\x64"
+    scope: machine
+  when: not r_install_dir.stat.exists
+
+- name: Install Rtools (needed for compiling R packages from source)
+  ansible.windows.win_chocolatey:
+    name: rtools
+    state: present
+  when: not r_install_dir.stat.exists
+
+- name: Verify R installation
+  ansible.windows.win_command: "Rscript.exe --version"
+  register: r_version
+  changed_when: false
+
+- name: Show R version
+  debug:
+    var: r_version.stdout_lines[0]

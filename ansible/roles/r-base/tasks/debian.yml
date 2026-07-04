@@ -1,0 +1,47 @@
+---
+# R installation on Debian/Ubuntu
+
+- name: Ensure CRAN signing key is present
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: E298A3A825C0D65DFD57CBB651716619E084DAB9
+  become: yes
+
+- name: Add CRAN R repository
+  apt_repository:
+    repo: "deb https://cloud.r-project.org/bin/linux/ubuntu {{ ansible_distribution_release }}-cran40/"
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Install R and build dependencies
+  apt:
+    name:
+      - r-base
+      - r-base-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libxml2-dev
+      - libfontconfig1-dev
+      - libharfbuzz-dev
+      - libfribidi-dev
+      - libfreetype6-dev
+      - libpng-dev
+      - libtiff5-dev
+      - libjpeg-dev
+      - make
+      - gcc
+      - g++
+      - build-essential
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Verify R installation
+  command: R --version
+  register: r_version
+  changed_when: false
+
+- name: Show R version
+  debug:
+    var: r_version.stdout_lines[0]

@@ -1,0 +1,18 @@
+---
+# Main Ansible playbook: provisions R environment for proteomics analysis
+# Works on both Windows (via WinRM) and Linux (local/SSH)
+
+- name: Install R base language
+  hosts: all_targets
+  roles:
+    - r-base
+
+- name: Install R packages (Bioconductor + CRAN)
+  hosts: all_targets
+  roles:
+    - r-packages
+
+- name: Install VS Code with R extensions
+  hosts: all_targets
+  roles:
+    - vscode

@@ -1,0 +1,31 @@
+---
+# Ansible inventory for proteomics pipeline
+# Edit the ansible_host and ansible_user for your Windows machine
+
+all:
+  children:
+    # Windows research workstation (target machine)
+    windows_targets:
+      hosts:
+        research-laptop:
+          ansible_host: 192.168.1.XXX      # <-- Replace with Windows IP
+          ansible_user: researcher           # <-- Replace with Windows username
+          ansible_password: CHANGE_ME         # <-- Replace or use vault
+          ansible_connection: winrm
+          ansible_winrm_transport: ntlm
+          ansible_winrm_server_cert_validation: ignore
+          ansible_port: 5986
+
+    # Linux machines (AI laptop, CI, etc.)
+    linux_targets:
+      hosts:
+        ai-laptop:
+          ansible_host: localhost
+          ansible_connection: local
+          ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+    # Group both for concurrent provisioning
+    all_targets:
+      children:
+        windows_targets: {}
+        linux_targets: {}

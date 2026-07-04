@@ -1,0 +1,9 @@
+---
+# r-base role: installs R on both Windows and Linux
+- name: Install R on Debian/Ubuntu
+  include_tasks: debian.yml
+  when: ansible_os_family == "Debian"
+
+- name: Install R on Windows
+  include_tasks: windows.yml
+  when: ansible_os_family == "Windows"

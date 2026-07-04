@@ -1,0 +1,35 @@
+---
+# vscode role: installs VS Code + R extensions
+
+- name: Install VS Code (Linux)
+  snap:
+    name: code
+    classic: yes
+  become: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install VS Code (Windows)
+  ansible.windows.win_chocolatey:
+    name: vscode
+    state: present
+  when: ansible_os_family == "Windows"
+
+- name: Install R extension for VS Code
+  command: "code --install-extension REditor.r"
+  when: ansible_os_family == "Debian"
+  changed_when: false
+
+- name: Install R extension for VS Code (Windows)
+  ansible.windows.win_command: "code --install-extension REditor.r"
+  when: ansible_os_family == "Windows"
+  changed_when: false
+
+- name: Install R Debugger extension
+  command: "code --install-extension RDebugger.r-debugger"
+  when: ansible_os_family == "Debian"
+  changed_when: false
+
+- name: Install R Debugger extension (Windows)
+  ansible.windows.win_command: "code --install-extension RDebugger.r-debugger"
+  when: ansible_os_family == "Windows"
+  changed_when: false

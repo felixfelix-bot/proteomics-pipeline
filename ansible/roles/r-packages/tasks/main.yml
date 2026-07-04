@@ -1,0 +1,40 @@
+---
+# r-packages role: installs all required R packages
+# Runs the same R/00_install_packages.R script on both platforms
+
+- name: Copy R package install script to target
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../R/00_install_packages.R"
+    dest: "{{ r_scripts_dir }}/00_install_packages.R"
+    mode: '0755'
+  when: ansible_os_family == "Debian"
+
+- name: Copy R package install script to target (Windows)
+  ansible.windows.win_copy:
+    src: "{{ playbook_dir }}/../R/00_install_packages.R"
+    dest: "C:\\proteomics-pipeline\\R\\00_install_packages.R"
+  when: ansible_os_family == "Windows"
+
+- name: Install R packages (Linux)
+  command: "Rscript {{ r_scripts_dir | default('/usr/local/lib/R/site-scripts') }}/00_install_packages.R"
+  environment:
+    R_LIBS_USER: "{{ r_lib_path | default(omit) }}"
+  register: r_package_install
+  changed_when: "'INSTALLING' in r_package_install.stdout or 'New packages' in r_package_install.stdout"
+  when: ansible_os_family == "Debian"
+
+- name: Install R packages (Windows)
+  ansible.windows.win_command: "Rscript.exe C:\\proteomics-pipeline\\R\\00_install_packages.R"
+  register: r_package_install_win
+  changed_when: "'INSTALLING' in r_package_install_win.stdout or 'New packages' in r_package_install_win.stdout"
+  when: ansible_os_family == "Windows"
+
+- name: Report install result (Linux)
+  debug:
+    msg: "{{ r_package_install.stdout_lines[-5:] }}"
+  when: ansible_os_family == "Debian" and r_package_install is defined
+
+- name: Report install result (Windows)
+  debug:
+    msg: "{{ r_package_install_win.stdout_lines[-5:] }}"
+  when: ansible_os_family == "Windows" and r_package_install_win is defined
