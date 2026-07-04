@@ -35,8 +35,14 @@ install_if_missing <- function(pkg, type = "cran") {
     } else {
       install.packages(pkg, dependencies = TRUE)
     }
-    cat(sprintf("           -> %s installed successfully\n", pkg))
-    invisible(TRUE)
+    # Verify it actually installed (install.packages can warn without erroring)
+    if (is_installed(pkg)) {
+      cat(sprintf("           -> %s installed successfully\n", pkg))
+      invisible(TRUE)
+    } else {
+      cat(sprintf("           -> FAILED: %s did not install (check warnings above)\n", pkg))
+      invisible(FALSE)
+    }
   }, error = function(e) {
     cat(sprintf("           -> FAILED: %s\n", conditionMessage(e)))
     invisible(FALSE)
@@ -59,9 +65,6 @@ cran_packages <- c(
   "ggrepel",         # Non-overlapping text labels for plots
   "scales",          # Axis formatting
   "RColorBrewer",    # Color palettes
-
-  # Volcano plots
-  "EnhancedVolcano", # Publication-ready volcano plots (also on Bioconductor)
 
   # Venn diagrams
   "ggVennDiagram",   # 2-7 set Venn diagrams
@@ -90,6 +93,7 @@ for (pkg in cran_packages) {
 cat("\n[3] Installing Bioconductor packages...\n\n")
 
 bioc_packages <- c(
+  "EnhancedVolcano",  # Publication-ready volcano plots (Bioconductor, NOT CRAN)
   "clusterProfiler",  # GO/KEGG enrichment — the gold standard
   "org.Hs.eg.db",     # Human annotation database
   "enrichplot",       # Visualization for enrichment results
