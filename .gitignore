@@ -1,0 +1,25 @@
+# Data files - NEVER commit actual data
+data/*.csv
+data/*.txt
+data/*.tsv
+data/*.xlsx
+!data/README.md
+
+# R environment
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+Rplots.pdf
+
+# Output
+output/
+figures/
+
+# Ansible
+*.retry
+ansible/vault_pass*
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,2 +1,0 @@
-"ID","Description","GeneRatio","BgRatio","RichFactor","FoldEnrichment","zScore","pvalue","p.adjust","qvalue","geneID","Count"
-"GO:0140096","catalytic activity, acting on a protein","12/24","14/53",0.857142857142857,1.89285714285714,3.50931203171798,0.000487623364052247,0.0238935448385601,0.0225846610718935,"ZNF598/NCOA1/EP300/STK3/MED1/NEK6/WNK1/UFSP2/UFL1/PKN3/PKN1/NCOA3",12
