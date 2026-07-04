@@ -1,184 +1,79 @@
 ###############################################################################
-# bootstrap-windows-all.ps1
-# ALL-IN-ONE setup for the researcher's Windows laptop.
-# Installs everything needed to run the proteomics pipeline:
-#   1. R + Rtools (via winget/chocolatey)
-#   2. Git (if not present)
-#   3. Clones the repo
-#   4. Installs all R packages
+# ONE-COMMAND WINDOWS SETUP FOR PROTEOMICS PIPELINE
 #
-# Usage:
-#   Open PowerShell as Administrator
-#   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-#   .\bootstrap-windows-all.ps1
+# Run from any PowerShell window (no admin needed — it self-elevates):
 #
-# Total time: ~30-45 minutes (mostly R package compilation)
+#   irm https://raw.githubusercontent.com/c03rad0r/proteomics-pipeline/main/ansible/bootstrap-windows-all.ps1 | iex
+#
+# That's it. It installs R, Rtools, Git, clones the repo, installs all packages.
+# Takes ~30-45 min. Go get coffee.
 ###############################################################################
 
+# --- Self-elevate to Administrator if not already ---
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Requesting Administrator privileges..." -ForegroundColor Yellow
+    Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm https://raw.githubusercontent.com/c03rad0r/proteomics-pipeline/main/ansible/bootstrap-windows-all.ps1 | iex`""
+    exit
+}
+
 $ErrorActionPreference = "Stop"
+$ProjectDir = "C:\proteomics-pipeline"
 
-function Write-Step($msg) {
-    Write-Host "`n[STEP] $msg" -ForegroundColor Cyan
-}
-function Write-OK($msg) {
-    Write-Host "  [OK] $msg" -ForegroundColor Green
-}
-function Write-Info($msg) {
-    Write-Host "  $msg" -ForegroundColor Gray
-}
-function Write-Warn($msg) {
-    Write-Host "  [WARNING] $msg" -ForegroundColor Yellow
-}
+function Step($n, $msg) { Write-Host "`n[$n] $msg" -ForegroundColor Cyan }
+function OK($msg)       { Write-Host "  [OK] $msg" -ForegroundColor Green }
+function Info($msg)     { Write-Host "  $msg" -ForegroundColor Gray }
+function Fail($msg)     { Write-Host "  [FAIL] $msg" -ForegroundColor Red; exit 1 }
 
-Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Proteomics Pipeline - Full Windows Setup" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host " Proteomics Pipeline - Auto Setup" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
 
-# Check Administrator
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Warn "Not running as Administrator. Some installs may fail."
-    Write-Host "  Right-click PowerShell -> 'Run as Administrator'" -ForegroundColor Yellow
-    $continue = Read-Host "Continue anyway? (y/N)"
-    if ($continue -ne "y") { exit 1 }
-}
-
-# ---- STEP 1: Install Chocolatey (if not present) ----
-Write-Step "1/6: Checking Chocolatey..."
+# 1. Chocolatey
+Step "1/5" "Installing Chocolatey..."
 if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-    Write-Info "Installing Chocolatey..."
     Set-ExecutionPolicy Bypass -Scope Process -Force
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-    Write-OK "Chocolatey installed"
-} else {
-    Write-OK "Chocolatey already installed"
+    try { Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) }
+    catch { Fail "Chocolatey install failed: $_" }
 }
+OK "Chocolatey ready"
 
-# ---- STEP 2: Install Git ----
-Write-Step "2/6: Installing Git..."
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    choco install git -y --no-progress
-    Write-OK "Git installed"
-    # Refresh PATH
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-} else {
-    Write-OK "Git already installed"
-}
+# 2. Git + R + Rtools
+Step "2/5" "Installing Git, R, and Rtools..."
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { choco install git -y --no-progress }
+choco install r.project -y --no-progress
+choco install rtools -y --no-progress
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+OK "Git, R, Rtools installed"
 
-# ---- STEP 3: Install R ----
-Write-Step "3/6: Installing R..."
-$rInstalled = $false
-$rscriptPath = $null
+# 3. Clone repo
+Step "3/5" "Cloning repository..."
+if (Test-Path $ProjectDir) { Push-Location $ProjectDir; git pull; Pop-Location }
+else { git clone https://github.com/c03rad0r/proteomics-pipeline.git $ProjectDir }
+OK "Repository at $ProjectDir"
 
-# Check common locations
-$rPaths = @(
-    "C:\Program Files\R",
-    "${env:LOCALAPPDATA}\Programs\R"
-)
+# 4. Find Rscript
+$Rscript = Get-ChildItem "C:\Program Files\R" -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { Join-Path $_.FullName "bin\Rscript.exe" }
+if (-not (Test-Path $Rscript)) { Fail "Rscript.exe not found. Check R installation." }
+Info "Using: $Rscript"
 
-foreach ($basePath in $rPaths) {
-    if (Test-Path $basePath) {
-        $rVersion = Get-ChildItem $basePath -Directory | Sort-Object Name -Descending | Select-Object -First 1
-        if ($rVersion) {
-            $rscriptPath = Join-Path $rVersion.FullName "bin\Rscript.exe"
-            if (Test-Path $rscriptPath) {
-                $rInstalled = $true
-                Write-OK "R found: $($rVersion.Name)"
-                break
-            }
-        }
-    }
-}
-
-if (-not $rInstalled) {
-    Write-Info "Installing R via Chocolatey..."
-    choco install r.project -y --no-progress
-    # Find the installed R
-    $rDir = Get-ChildItem "C:\Program Files\R" -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
-    if ($rDir) {
-        $rscriptPath = Join-Path $rDir.FullName "bin\Rscript.exe"
-        Write-OK "R installed: $($rDir.Name)"
-    } else {
-        Write-Host "  [ERROR] R installation failed. Install manually from cran.r-project.org" -ForegroundColor Red
-        exit 1
-    }
-}
-
-Write-Info "Rscript path: $rscriptPath"
-
-# ---- STEP 4: Install Rtools ----
-Write-Step "4/6: Installing Rtools..."
-$rtoolsPath = "C:\rtools43"
-if (-not (Test-Path $rtoolsPath)) {
-    Write-Info "Installing Rtools (needed for compiling R packages)..."
-    choco install rtools -y --no-progress
-    if (Test-Path "C:\rtools43") {
-        Write-OK "Rtools installed"
-    } else {
-        # Try rtools44
-        if (Test-Path "C:\rtools44") {
-            $rtoolsPath = "C:\rtools44"
-            Write-OK "Rtools44 installed"
-        } else {
-            Write-Warn "Rtools may not have installed correctly."
-            Write-Host "  Download manually from https://cran.r-project.org/bin/windows/Rtools/" -ForegroundColor Yellow
-        }
-    }
-} else {
-    Write-OK "Rtools already installed"
-}
-
-# ---- STEP 5: Clone the repo ----
-Write-Step "5/6: Cloning proteomics-pipeline..."
-$projectDir = "C:\proteomics-pipeline"
-if (Test-Path $projectDir) {
-    Write-Info "Directory exists. Pulling latest..."
-    Push-Location $projectDir
-    git pull
-    Pop-Location
-} else {
-    git clone https://github.com/c03rad0r/proteomics-pipeline.git $projectDir
-    Write-OK "Repository cloned to $projectDir"
-}
-
-# ---- STEP 6: Install R packages ----
-Write-Step "6/6: Installing R packages (this takes 20-40 minutes)..."
-Write-Info "Running: Rscript R\00_install_packages.R"
-Write-Info "This downloads and compiles Bioconductor packages."
-Write-Info "Go get coffee. Seriously."
-
-Push-Location $projectDir
-& $rscriptPath "R\00_install_packages.R"
-$installExit = $LASTEXITCODE
+# 5. Install R packages (the long step)
+Step "4/5" "Installing R packages (20-40 minutes)..."
+Info "Compiling Bioconductor packages from source. This is normal."
+Push-Location $ProjectDir
+& $Rscript "R\00_install_packages.R"
 Pop-Location
+OK "R packages installed"
 
-if ($installExit -eq 0) {
-    Write-OK "R packages installed successfully!"
-} else {
-    Write-Warn "Package installer exited with code $installExit"
-    Write-Info "Some packages may have failed. Check the output above."
-    Write-Info "You can re-run: Rscript R\00_install_packages.R"
-}
+# 6. Quick test
+Step "5/5" "Quick verification..."
+& $Rscript -e "cat('R:', R.version.string, '\n'); for (p in c('ggplot2','clusterProfiler','EnhancedVolcano','org.Hs.eg.db','igraph')) cat(p, ':', ifelse(requireNamespace(p,quietly=TRUE),'OK','MISSING'), '\n')"
 
-# ---- DONE ----
+Write-Host "`n========================================" -ForegroundColor Green
+Write-Host " DONE! Next steps:" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "  1. Copy CSV files to: $ProjectDir\data\" -ForegroundColor White
+Write-Host "  2. Test:  cd $ProjectDir" -ForegroundColor White
+Write-Host "            Rscript.exe run_all.R --test" -ForegroundColor White
+Write-Host "  3. Real:  Rscript.exe run_all.R" -ForegroundColor White
 Write-Host ""
-Write-Host "==========================================" -ForegroundColor Green
-Write-Host " Setup Complete!" -ForegroundColor Green
-Write-Host "==========================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "Project directory: $projectDir" -ForegroundColor White
-Write-Host ""
-Write-Host "Next steps:" -ForegroundColor White
-Write-Host "  1. Copy your CSV files to: $projectDir\data\" -ForegroundColor Gray
-Write-Host "  2. Test with synthetic data:" -ForegroundColor Gray
-Write-Host "     cd $projectDir" -ForegroundColor Gray
-Write-Host "     Rscript.exe run_all.R --test" -ForegroundColor Gray
-Write-Host "  3. Run on real data:" -ForegroundColor Gray
-Write-Host "     Rscript.exe run_all.R" -ForegroundColor Gray
-Write-Host ""
-
-# Verify R works
-Write-Info "Verifying R installation..."
-& $rscriptPath -e "cat('R version:', R.version.string, '\n')"
