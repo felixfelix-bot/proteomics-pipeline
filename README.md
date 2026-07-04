@@ -18,16 +18,15 @@ mapping, gene family highlighting, cross-experiment overlap, and GO enrichment.
 
 ### Windows — one command
 
-Open PowerShell and paste:
-
-```
-irm https://raw.githubusercontent.com/c03rad0r/proteomics-pipeline/main/ansible/bootstrap-windows-all.ps1 | iex
-```
-
-This installs R, Rtools, Git, clones the repo, and installs all packages automatically (~30 min). When it says DONE, copy your CSV files to `C:\proteomics-pipeline\data\` and run:
+After cloning this repo, open PowerShell and run:
 
 ```powershell
-cd C:\proteomics-pipeline
+.\ansible\bootstrap-windows-all.ps1
+```
+
+This installs R, Rtools, Git, and all R packages automatically (~30 min). When it says DONE, copy your CSV files to `data\` and run:
+
+```powershell
 Rscript.exe run_all.R
 ```
 

@@ -2,19 +2,19 @@
 
 ## One command
 
-Open PowerShell and paste this:
+Clone the repo, then run the bootstrap script:
 
-```
-irm https://raw.githubusercontent.com/c03rad0r/proteomics-pipeline/main/ansible/bootstrap-windows-all.ps1 | iex
+```powershell
+git clone https://github.com/c03rad0r/proteomics-pipeline.git
+cd proteomics-pipeline
+.\ansible\bootstrap-windows-all.ps1
 ```
 
-It auto-elevates to Admin, installs R + Rtools + Git, clones the repo to `C:\proteomics-pipeline`, and installs all packages. Takes ~30 min. When it says DONE, you're ready.
+The script auto-elevates to Admin, installs R + Rtools + Git, and installs all R packages. Takes ~30 min. When it says DONE, you're ready.
 
 ## Then run the pipeline
 
 ```powershell
-cd C:\proteomics-pipeline
-
 # Copy your CSV files into the data\ folder first, then:
 Rscript.exe run_all.R
 ```
@@ -23,7 +23,7 @@ To test with fake data first: `Rscript.exe run_all.R --test`
 
 ## Data files
 
-Copy your `_diffEx_minProb.csv` files into `C:\proteomics-pipeline\data\`:
+Copy your `_diffEx_minProb.csv` files into `data\`:
 
 - `BK467_TRIP4_vs_BK467_WT.csv`
 - `BK516_Cflag_vs_BK516_Ctrl.csv`
