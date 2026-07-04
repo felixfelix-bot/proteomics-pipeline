@@ -119,23 +119,29 @@ discover_diffex_csvs <- function(data_dir = DATA_DIR) {
   exp_names <- basename(all_csvs)
   exp_names <- gsub("_diffEx_minProb\\.csv$", "", exp_names, ignore.case = TRUE)
 
-  # Check for duplicates (same experiment name in different folders)
+  # Handle duplicates (same experiment name in different folders)
+  # Instead of skipping, load BOTH with disambiguated names
+  # e.g. BK516_Cflag_vs_BK516_Ctrl and BK516_Cflag_vs_BK516_Ctrl__2
   dup <- duplicated(exp_names)
   if (any(dup)) {
     dup_names <- unique(exp_names[dup])
-    cat("  [WARNING] Duplicate experiment names found:\n")
+    cat("  [INFO] Duplicate experiment names found - loading ALL copies:\n")
     for (d in dup_names) {
       paths <- all_csvs[exp_names == d]
-      cat(sprintf("    '%s' appears %d times - using first:\n", d, length(paths)))
+      cat(sprintf("    '%s' appears %d times:\n", d, length(paths)))
       for (i in seq_along(paths)) {
-        tag <- ifelse(i == 1, "KEEP", "SKIP")
-        cat(sprintf("      [%s] %s\n", tag, paths[i]))
+        cat(sprintf("      [%d] %s\n", i, paths[i]))
       }
     }
-    cat("\n")
-    keep <- !duplicated(exp_names)
-    all_csvs <- all_csvs[keep]
-    exp_names <- exp_names[keep]
+    cat("  (Each will get a unique name: _1, _2, etc.)\n\n")
+
+    # Disambiguate: append _1, _2, _3 to ALL copies of duplicated names
+    for (d in dup_names) {
+      idx <- which(exp_names == d)
+      for (i in seq_along(idx)) {
+        exp_names[idx[i]] <- paste0(exp_names[idx[i]], "__", i)
+      }
+    }
   }
 
   names(all_csvs) <- exp_names

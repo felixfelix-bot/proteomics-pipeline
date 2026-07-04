@@ -1,8 +1,14 @@
 # Data files - NEVER commit actual data
+# Ignore ALL data subdirectories (mass spec output folders)
+data/*/
+# Ignore data files in data/ root
 data/*.csv
 data/*.txt
 data/*.tsv
 data/*.xlsx
+data/*.fasta
+# Explicitly keep known interactors list (no sensitive data)
+!data/known_interactors.txt
 !data/README.md
 
 # R environment
