@@ -14,13 +14,7 @@ cat(" Gene Family Highlighting\n")
 cat("=========================================\n\n")
 
 # ---- Load data ----
-experiments <- list()
-csv_files <- list.files(DATA_DIR, pattern = "\\.csv$", full.names = TRUE)
-for (f in csv_files) {
-  name <- tools::file_path_sans_ext(basename(f))
-  if (name == "known_interactors") next
-  experiments[[name]] <- load_proteomics_csv(f)
-}
+experiments <- load_all_experiments()
 
 # ---- Helper: classify a gene into its family ----
 get_gene_family <- function(gene) {

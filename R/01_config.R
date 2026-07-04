@@ -37,6 +37,8 @@ EXPERIMENTS <- list(
   turbo_trip4_vs_wt      = "BK467_TRIP4_vs_BK467_WT",
   turbo_RA_vs_trip4      = "BK467_TRIP4_RA02_vs_BK467_TRIP4",
   turbo_RA_vs_wt         = "BK467_TRIP4_RA02_vs_BK467_WT",
+  turbo_cross_467_504    = "BK467_TRIP4_vs_BK504_TRIP4",
+  turbo_RA_cross         = "BK467_TRIP4_RA02_vs_BK504_TRIP4_RA04",
   # TurboID (HeLa, BK504)
   turbo_RA04_vs_trip4    = "BK504_TRIP4_RA04_vs_BK504_TRIP4",
   turbo_RA04_vs_wt       = "BK504_TRIP4_RA04_vs_BK467_WT",
@@ -46,7 +48,10 @@ EXPERIMENTS <- list(
   flag_cflag_vs_nflag    = "BK516_Cflag_vs_BK516_Nflag",
   # Flag IP + RA (HEK293, BK523)
   flag_RA_cflag_vs_cflag = "BK523_Cflag_RA04_vs_BK516_Cflag",
-  flag_RA_cflag_vs_ctrl  = "BK523_Cflag_RA04_vs_BK523_Ctrl_RA04"
+  flag_RA_cflag_vs_ctrl  = "BK523_Cflag_RA04_vs_BK523_Ctrl_RA04",
+  flag_RA_cflag_vs_nflag = "BK523_Cflag_RA04_vs_BK523_Nflag_RA04",
+  flag_RA_nflag_vs_nflag = "BK523_Nflag_RA04_vs_BK516_Nflag",
+  flag_RA_nflag_vs_ctrl  = "BK523_Nflag_RA04_vs_BK523_Ctrl_RA04"
 )
 
 # ---- Key comparisons (used for Venn, overlay, GO) ----
@@ -107,7 +112,25 @@ GO_ONTOLOGIES <- c("BP", "MF", "CC")
 STRING_VERSION <- "12.0"
 STRING_SCORE_THRESHOLD <- 400  # medium confidence
 
+# ---- Fuzzy column name matching ----
+# Tries a list of candidate names, returns first match (case-insensitive)
+find_column <- function(available_cols, candidates) {
+  for (cand in candidates) {
+    if (cand %in% available_cols) return(cand)
+  }
+  for (cand in candidates) {
+    match_idx <- which(tolower(available_cols) == tolower(cand))
+    if (length(match_idx) > 0) return(available_cols[match_idx[1]])
+  }
+  return(NULL)
+}
+
+# Null-coalescing operator
+`%||%` <- function(a, b) if (is.null(a)) b else a
+
 # ---- Helper: load and validate a CSV file ----
+# Tries fuzzy matching on column names so minor variations still work.
+# Prints a detailed error showing available columns if required names not found.
 load_proteomics_csv <- function(filepath,
                                 gene_col = COL_GENE,
                                 log2fc_col = COL_LOG2FC,
@@ -117,18 +140,45 @@ load_proteomics_csv <- function(filepath,
   }
 
   df <- readr::read_csv(filepath, show_col_types = FALSE)
+  cols <- colnames(df)
 
-  missing <- setdiff(c(gene_col, log2fc_col, padj_col), colnames(df))
+  # Try exact match first, then fuzzy (case-insensitive, common alternatives)
+  actual_gene <- find_column(cols, c(gene_col, "Gene", "gene", "Gene.name",
+                                      "Gene.symbol", "Gene.names", "SYMBOL",
+                                      "Gene.Symbol"))
+  actual_log2fc <- find_column(cols, c(log2fc_col, "logFC", "log2FC",
+                                        "Log2FC", "log2.fold.change",
+                                        "log2FoldChange"))
+  actual_padj <- find_column(cols, c(padj_col, "adj.P.Val", "adj.P.value",
+                                      "FDR", "padj", "q.value", "adj.PVal"))
+
+  # Report what was matched
+  cat(sprintf("  Columns: gene='%s', logFC='%s', padj='%s'\n",
+              actual_gene %||% "NOT FOUND",
+              actual_log2fc %||% "NOT FOUND",
+              actual_padj %||% "NOT FOUND"))
+
+  # Check for missing columns
+  missing <- c()
+  if (is.null(actual_gene))   missing <- c(missing, sprintf("gene column (expected '%s')", gene_col))
+  if (is.null(actual_log2fc)) missing <- c(missing, sprintf("logFC column (expected '%s')", log2fc_col))
+  if (is.null(actual_padj))   missing <- c(missing, sprintf("padj column (expected '%s')", padj_col))
+
   if (length(missing) > 0) {
-    stop(sprintf(
-      "Missing required columns in %s: %s\nAvailable columns: %s",
-      basename(filepath),
-      paste(missing, collapse = ", "),
-      paste(colnames(df), collapse = ", ")
-    ))
+    cat("\n  ========================================\n")
+    cat("  COLUMN ERROR in file:\n")
+    cat(sprintf("    %s\n", basename(filepath)))
+    cat("  ========================================\n")
+    cat("\n  Missing required columns:\n")
+    for (m in missing) cat("    - ", m, "\n", sep = "")
+    cat("\n  Available columns in this file:\n")
+    for (c in cols) cat("    - ", c, "\n", sep = "")
+    cat("\n  Tip: If your column names differ, edit R/01_config.R\n")
+    cat("       and update COL_GENE, COL_LOG2FC, COL_PADJ.\n\n")
+    stop("Required columns not found in ", basename(filepath))
   }
 
-  keep_cols <- c(gene_col, log2fc_col, padj_col)
+  keep_cols <- c(actual_gene, actual_log2fc, actual_padj)
   rename_map <- c("gene", "log2FC", "padj")
   names(rename_map) <- keep_cols
 

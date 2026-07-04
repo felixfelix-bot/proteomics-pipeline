@@ -14,14 +14,7 @@ cat(" Venn Diagram Analysis\n")
 cat("=========================================\n\n")
 
 # ---- Load all experiment data ----
-experiments <- list()
-csv_files <- list.files(DATA_DIR, pattern = "\\.csv$", full.names = TRUE)
-
-for (f in csv_files) {
-  name <- tools::file_path_sans_ext(basename(f))
-  if (name == "known_interactors") next
-  experiments[[name]] <- load_proteomics_csv(f)
-}
+experiments <- load_all_experiments()
 
 # ---- Extract significant gene sets ----
 cat("Extracting significant gene sets...\n")

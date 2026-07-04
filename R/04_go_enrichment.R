@@ -21,14 +21,7 @@ library(clusterProfiler)
 library(enrichplot)
 
 # ---- Load all experiment data ----
-experiments <- list()
-csv_files <- list.files(DATA_DIR, pattern = "\\.csv$", full.names = TRUE)
-
-for (f in csv_files) {
-  name <- tools::file_path_sans_ext(basename(f))
-  if (name == "known_interactors") next
-  experiments[[name]] <- load_proteomics_csv(f)
-}
+experiments <- load_all_experiments()
 
 # ---- Define universe (all detected proteins across experiments) ----
 universe <- unique(unlist(lapply(experiments, function(df) df$gene)))

@@ -25,13 +25,7 @@ known_interactors <- load_known_interactors(interactors_file)
 
 # ---- Load all experiment data ----
 cat("Loading experiment data...\n")
-experiments <- list()
-csv_files <- list.files(DATA_DIR, pattern = "\\.csv$", full.names = TRUE)
-for (f in csv_files) {
-  name <- tools::file_path_sans_ext(basename(f))
-  if (name == "known_interactors") next
-  experiments[[name]] <- load_proteomics_csv(f)
-}
+experiments <- load_all_experiments()
 
 # ---- Build Flag IP hit lists for overlay ----
 # Proteins significant in 2+ Flag conditions = flagMulti

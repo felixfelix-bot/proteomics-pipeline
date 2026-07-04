@@ -89,4 +89,78 @@ make_volcano_ggplot <- function(df, title = "", label_genes = NULL,
   return(p)
 }
 
+# ---- Discover all diffEx_minProb.csv files recursively ----
+# Scans data/ subdirectories for *_diffEx_minProb.csv files.
+# Strips the _diffEx_minProb suffix to get clean experiment names.
+# Deduplicates (keeps first occurrence, warns about duplicates).
+# Only picks up *_diffEx_minProb.csv — ignores imputatedMatrix, originalMatrix, etc.
+discover_diffex_csvs <- function(data_dir = DATA_DIR) {
+  all_csvs <- list.files(data_dir, pattern = "_diffEx_minProb\\.csv$",
+                         full.names = TRUE, recursive = TRUE,
+                         ignore.case = TRUE)
+
+  if (length(all_csvs) == 0) {
+    cat("\n  ========================================\n")
+    cat("  DATA ERROR\n")
+    cat("  ========================================\n")
+    cat("\n  No *_diffEx_minProb.csv files found in:\n")
+    cat(sprintf("    %s\n", data_dir))
+    cat("\n  The pipeline expects mass spectrometry output files\n")
+    cat("  ending in '_diffEx_minProb.csv'.\n")
+    cat("\n  Expected directory structure:\n")
+    cat("    data/\n")
+    cat("      <experiment_folder>/\n")
+    cat("        <subfolder>/\n")
+    cat("          *_diffEx_minProb.csv   <-- these are loaded\n\n")
+    stop("No diffEx_minProb.csv files found in data/")
+  }
+
+  # Strip the _diffEx_minProb suffix to get experiment names
+  exp_names <- basename(all_csvs)
+  exp_names <- gsub("_diffEx_minProb\\.csv$", "", exp_names, ignore.case = TRUE)
+
+  # Check for duplicates (same experiment name in different folders)
+  dup <- duplicated(exp_names)
+  if (any(dup)) {
+    dup_names <- unique(exp_names[dup])
+    cat("  [WARNING] Duplicate experiment names found:\n")
+    for (d in dup_names) {
+      paths <- all_csvs[exp_names == d]
+      cat(sprintf("    '%s' appears %d times - using first:\n", d, length(paths)))
+      for (i in seq_along(paths)) {
+        tag <- ifelse(i == 1, "KEEP", "SKIP")
+        cat(sprintf("      [%s] %s\n", tag, paths[i]))
+      }
+    }
+    cat("\n")
+    keep <- !duplicated(exp_names)
+    all_csvs <- all_csvs[keep]
+    exp_names <- exp_names[keep]
+  }
+
+  names(all_csvs) <- exp_names
+
+  cat(sprintf("  Found %d experiment files:\n", length(all_csvs)))
+  for (n in exp_names) {
+    cat(sprintf("    - %s\n", n))
+  }
+  cat("\n")
+
+  return(all_csvs)
+}
+
+# ---- Load all experiments from data directory ----
+# Convenience function: discovers CSVs + loads each one.
+load_all_experiments <- function(data_dir = DATA_DIR) {
+  csv_paths <- discover_diffex_csvs(data_dir)
+
+  experiments <- list()
+  for (name in names(csv_paths)) {
+    experiments[[name]] <- load_proteomics_csv(csv_paths[[name]])
+  }
+
+  cat(sprintf("  Loaded %d experiments successfully.\n\n", length(experiments)))
+  return(experiments)
+}
+
 cat("[utils] Utility functions loaded.\n")

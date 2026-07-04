@@ -109,7 +109,7 @@ output_dir <- here::here("data")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 for (name in names(experiments)) {
-  filepath <- file.path(output_dir, paste0(name, ".csv"))
+  filepath <- file.path(output_dir, paste0(name, "_diffEx_minProb.csv"))
   write.csv(experiments[[name]], filepath, row.names = FALSE)
   n_sig <- sum(experiments[[name]]$adj.P.Val < 0.05 & abs(experiments[[name]]$logFC) > 0.5)
   cat(sprintf("  %s.csv: %d proteins (%d significant)\n", name,
