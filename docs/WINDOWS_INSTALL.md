@@ -7,6 +7,7 @@ Clone the repo, then run the bootstrap script:
 ```powershell
 git clone https://github.com/c03rad0r/proteomics-pipeline.git
 cd proteomics-pipeline
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\ansible\bootstrap-windows-all.ps1
 ```
 

@@ -21,6 +21,7 @@ mapping, gene family highlighting, cross-experiment overlap, and GO enrichment.
 After cloning this repo, open PowerShell and run:
 
 ```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\ansible\bootstrap-windows-all.ps1
 ```
 

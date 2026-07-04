@@ -1,0 +1,6 @@
+"go","cluster","parent","score","size","term","parentTerm","termUniqueness","termUniquenessWithinCluster","termDispensability"
+"GO:0019538",1,"GO:0019538",1.84645834847525,4335,"protein metabolic process","protein metabolic process",0.762,0.603333333333333,0
+"GO:0043412",1,"GO:0019538",1.84645834847525,2328,"macromolecule modification","protein metabolic process",0.7272,0.545333333333333,0.403
+"GO:0036211",1,"GO:0019538",1.84645834847525,2142,"protein modification process","protein metabolic process",0.6504,0.417333333333333,0.787
+"GO:0051179",2,"GO:0051179",1.52925341391946,5478,"localization","localization",1,1,0
+"GO:0007275",3,"GO:0007275",1.402842491217,4929,"multicellular organism development","multicellular organism development",1,1,0
