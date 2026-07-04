@@ -2,51 +2,103 @@
 # 01_config.R
 # Central configuration — thresholds, paths, parameters, experiment definitions.
 # Customized for TRIP4/ASCC proteomics study.
+#
+# This file is loaded FIRST by every analysis script. It defines:
+#   - Statistical thresholds (what counts as "significant")
+#   - File paths (where to find data, where to save output)
+#   - Experiment definitions (maps short names to real mass spec filenames)
+#   - Color schemes for plots
+#   - Two key helper functions: load_proteomics_csv() and get_significant_genes()
+#
+# All variables defined here become GLOBAL — they're available to every
+# script that sources this file.
 ###############################################################################
 
 # ---- Significance thresholds ----
-P_VALUE_CUTOFF    <- 0.05   # adjusted p-value (FDR) threshold
-LOG2FC_CUTOFF     <- 0.5    # |log2 fold change| threshold (Lydia uses 0.5, not 1.0)
+# These define what we consider a "significant" protein.
+#
+# P_VALUE_CUTOFF: The adjusted p-value (False Discovery Rate) threshold.
+#   A protein is "significant" if its adj.P.Val is below this number.
+#   0.05 means "we accept a 5% chance that this protein is a false positive."
+#   The "adjusted" part means it's already been corrected for multiple testing
+#   (we tested ~3000 proteins, so without correction, many would look
+#   significant just by chance).
+#
+# LOG2FC_CUTOFF: The minimum fold change (magnitude) for significance.
+#   log2FC of 1.0 = 2-fold change, 2.0 = 4-fold change, 0.5 = ~1.4-fold change.
+#   Lydia used 0.5 (more permissive) rather than 1.0 (more strict).
+#   We use abs() so both up-regulated (positive) and down-regulated (negative)
+#   proteins count.
+P_VALUE_CUTOFF    <- 0.05
+LOG2FC_CUTOFF     <- 0.5
 
 # ---- File paths ----
+# here::here() builds paths relative to the project root.
+# The "here" package automatically finds the project root by looking for
+# files like .git, .Rproj, or the directory structure.
+# This makes the code work regardless of what folder R is running from.
+#
+# DATA_DIR:   Where the input CSV files live (mass spec output)
+# OUTPUT_DIR: Where all generated results go
+# FIGURE_DIR: PNG and PDF plots go here
+# TABLE_DIR:  CSV result tables go here
 DATA_DIR   <- here::here("data")
 OUTPUT_DIR <- here::here("output")
 FIGURE_DIR <- here::here("output", "figures")
 TABLE_DIR  <- here::here("output", "tables")
 
+# dir.create() makes a folder if it doesn't exist.
+# recursive = TRUE: also creates parent folders (output/ → output/figures/)
+# showWarnings = FALSE: don't warn if the folder already exists
 dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
 dir.create(TABLE_DIR,  recursive = TRUE, showWarnings = FALSE)
 
 # ---- Organism annotation ----
-ORGDB <- "org.Hs.eg.db"
-KEYTYPE <- "SYMBOL"
-STRING_TAXON <- 9606   # Human NCBI taxon ID for STRINGdb
+# ORGDB: The annotation database package. org.Hs.eg.db contains mappings
+#   between gene symbols, Entrez IDs, GO terms, etc. for HUMAN genes.
+#   "Hs" = Homo sapiens. Other options: org.Mm.eg.db (mouse), org.Dm.eg.db (fly).
+KEYTYPE <- "SYMBOL"     # Our gene identifiers are gene symbols (e.g., "TRIP4")
+STRING_TAXON <- 9606    # Human NCBI taxon ID (used by STRING database)
 
 # ---- Column name mapping (from mass spec output CSV) ----
-COL_GENE   <- "Gene"
-COL_LOG2FC <- "logFC"
-COL_PADJ   <- "adj.P.Val"
-COL_PVAL   <- "P.Val"
+# These tell the pipeline which columns to use from the CSV files.
+# The mass spectrometry pipeline outputs CSVs with specific column names.
+# If your column names differ, change them here.
+COL_GENE   <- "Gene"       # Column containing gene symbols (e.g., "TRIP4")
+COL_LOG2FC <- "logFC"      # Column with log2 fold change values
+COL_PADJ   <- "adj.P.Val"  # Column with adjusted p-values (FDR)
+COL_PVAL   <- "P.Val"      # Column with raw p-values (less commonly used)
 
 # ---- Experiment definitions ----
-# Maps a short name to the CSV filename prefix
-# The pipeline loads any *.csv in data/ but these names are used for
-# Venn diagrams, overlay plots, and output file naming.
+# This list maps SHORT names (left side) to the ACTUAL filenames from
+# the mass spectrometry output (right side, without the _diffEx_minProb suffix).
+#
+# In R, list() creates a named list. You access elements by name:
+#   EXPERIMENTS$turbo_trip4_vs_wt  →  "BK467_TRIP4_vs_BK467_WT"
+#
+# The pipeline uses the SHORT names (left) in its logic to identify
+# which experiment is which. The ACTUAL names (right) are matched
+# against the discovered CSV filenames.
+#
+# Naming convention:
+#   turbo_ = TurboID experiments (proximity labeling in HeLa cells)
+#   flag_  = Flag IP experiments (co-immunoprecipitation in HEK293 cells)
+#   RA     = Retinoic Acid treated samples
 EXPERIMENTS <- list(
-  # TurboID (HeLa, BK467)
+  # TurboID (HeLa, BK467) — proximity labeling experiment
   turbo_trip4_vs_wt      = "BK467_TRIP4_vs_BK467_WT",
   turbo_RA_vs_trip4      = "BK467_TRIP4_RA02_vs_BK467_TRIP4",
   turbo_RA_vs_wt         = "BK467_TRIP4_RA02_vs_BK467_WT",
   turbo_cross_467_504    = "BK467_TRIP4_vs_BK504_TRIP4",
   turbo_RA_cross         = "BK467_TRIP4_RA02_vs_BK504_TRIP4_RA04",
-  # TurboID (HeLa, BK504)
+  # TurboID (HeLa, BK504) — biological replicate batch
   turbo_RA04_vs_trip4    = "BK504_TRIP4_RA04_vs_BK504_TRIP4",
   turbo_RA04_vs_wt       = "BK504_TRIP4_RA04_vs_BK467_WT",
-  # Flag IP (HEK293, BK516)
+  # Flag IP (HEK293, BK516) — co-immunoprecipitation experiment
   flag_cflag_vs_ctrl     = "BK516_Cflag_vs_BK516_Ctrl",
   flag_nflag_vs_ctrl     = "BK516_Nflag_vs_BK516_Ctrl",
   flag_cflag_vs_nflag    = "BK516_Cflag_vs_BK516_Nflag",
-  # Flag IP + RA (HEK293, BK523)
+  # Flag IP + RA (HEK293, BK523) — retinoic acid treatment
   flag_RA_cflag_vs_cflag = "BK523_Cflag_RA04_vs_BK516_Cflag",
   flag_RA_cflag_vs_ctrl  = "BK523_Cflag_RA04_vs_BK523_Ctrl_RA04",
   flag_RA_cflag_vs_nflag = "BK523_Cflag_RA04_vs_BK523_Nflag_RA04",
@@ -54,18 +106,23 @@ EXPERIMENTS <- list(
   flag_RA_nflag_vs_ctrl  = "BK523_Nflag_RA04_vs_BK523_Ctrl_RA04"
 )
 
-# ---- Key comparisons (used for Venn, overlay, GO) ----
+# ---- Key comparisons (used for Venn diagrams, overlay plots, GO) ----
+# Not all experiments get the full treatment — these are the 4 "main"
+# comparisons that drive the key figures.
 MAIN_COMPARISONS <- list(
-  turbotrip4  = "turbo_trip4_vs_wt",
-  flagC       = "flag_cflag_vs_ctrl",
-  turbotrip4RA = "turbo_RA_vs_wt",
-  flagRA      = "flag_RA_cflag_vs_cflag"
+  turbotrip4  = "turbo_trip4_vs_wt",      # Main TurboID experiment
+  flagC       = "flag_cflag_vs_ctrl",     # Main Flag IP experiment
+  turbotrip4RA = "turbo_RA_vs_wt",        # TurboID with retinoic acid
+  flagRA      = "flag_RA_cflag_vs_cflag"  # Flag IP with retinoic acid
 )
 
 # ---- Plot aesthetics ----
-# Lydia-style color scheme for volcano plot categories
+# Color scheme for volcano plot categories (Lydia's style).
+# In R, c() creates a "vector" (a list of values). When you assign names
+# to the elements, you create a named vector that works like a dictionary:
+#   CATEGORY_COLORS["ia"]  →  "#d95f02" (orange hex color)
 CATEGORY_COLORS <- c(
-  "ia"           = "#d95f02",   # known interactors — orange
+  "ia"           = "#d95f02",   # Known interactors — orange
   "flagMulti"    = "#7570b3",   # Flag IP hit in 2+ conditions — purple
   "flagOnce"     = "#1f78b4",   # Flag IP hit in 1 condition — blue
   "CRAC"         = "#e7298a",   # CRAC RNA hit — pink
@@ -75,74 +132,113 @@ CATEGORY_COLORS <- c(
   "ddx"          = "#1f78b4",   # DDX helicases — blue
   "high"         = "red",       # High-confidence hits — red
   "inNetwork"    = "#1b9e77",   # STRING network hit — teal
-  "TRUE"         = "#1b9e77",   # Significant (unlabeled) — teal
+  "TRUE"         = "#1b9e77",   # Significant but uncategorized — teal
   "FALSE"        = "grey60"     # Not significant — grey
 )
 
+# Colors for multi-experiment overlay plots
 EXPERIMENT_COLORS <- c(
-  "TurboID_TRIP4"     = "#E64B35",
-  "TurboID_TRIP4_RA"  = "#E69F00",
-  "FlagIP_C"          = "#4DBBD5",
-  "FlagIP_C_RA"       = "#3C5488"
+  "TurboID_TRIP4"     = "#E64B35",   # Red
+  "TurboID_TRIP4_RA"  = "#E69F00",   # Orange
+  "FlagIP_C"          = "#4DBBD5",   # Blue
+  "FlagIP_C_RA"       = "#3C5488"    # Dark blue
 )
 
-# Figure dimensions
+# Default figure dimensions (in inches) and resolution (dots per inch)
 FIG_WIDTH  <- 8
 FIG_HEIGHT <- 6
-FIG_DPI    <- 300
+FIG_DPI    <- 300   # 300 DPI = publication quality
 
 # ---- Gene families (from Lydia's scripts) ----
+# These gene families are highlighted specially in volcano plots.
+# They are RNA-binding proteins, relevant to TRIP4's role.
+#
+# GPATCH: A specific list of genes (hardcoded because there's no simple
+#   naming pattern to match them automatically).
+# DHX, DDX, LARP: Matched by PREFIX. NULL means "match by regular expression
+#   ^DHX, ^DDX, ^LARP later in the code" rather than listing every member.
 GENE_FAMILIES <- list(
   GPATCH = c("AGGF1", "CMTR1", "GPATCH1", "GPATCH2", "GPATCH3", "GPATCH4",
              "GPATCH8", "GPATCH11", "PINX1", "SUGP2", "SUGP1", "NKRF",
              "GPKOW", "GPANK1", "RBM17", "RBM10", "RBM5", "RBM6",
              "SON", "ZGPAT", "CHERP", "TFIP11"),
-  DHX = NULL,  # Matched by prefix "^DHX"
-  DDX = NULL,  # Matched by prefix "^DDX"
-  LARP = NULL  # Matched by prefix "^LARP"
+  DHX = NULL,  # Matched by prefix "^DHX" (e.g., DHX9, DHX15, DHX29...)
+  DDX = NULL,  # Matched by prefix "^DDX" (e.g., DDX3, DDX5, DDX17...)
+  LARP = NULL  # Matched by prefix "^LARP" (e.g., LARP1, LARP4, LARP7...)
 )
 
 # ---- GO enrichment parameters ----
+# BP = Biological Process (what does the protein DO)
+# MF = Molecular Function (what does the protein BIND/CATALYZE)
+# CC = Cellular Component (WHERE in the cell is the protein)
 GO_PVALUE_CUTOFF <- 0.05
 GO_QVALUE_CUTOFF <- 0.05
-GO_PADJUST_METHOD <- "BH"
-GO_ONTOLOGIES <- c("BP", "MF", "CC")
+GO_PADJUST_METHOD <- "BH"             # Benjamini-Hochberg FDR correction
+GO_ONTOLOGIES <- c("BP", "MF", "CC")  # Run all three domains
 
 # ---- STRING network parameters ----
 STRING_VERSION <- "12.0"
-STRING_SCORE_THRESHOLD <- 400  # medium confidence
+STRING_SCORE_THRESHOLD <- 400  # Medium confidence (0-1000 scale)
 
-# ---- Fuzzy column name matching ----
-# Tries a list of candidate names, returns first match (case-insensitive)
+# ---- Helper function: fuzzy column name matching ----
+# Tries a list of candidate column names against what's actually in the CSV.
+# Returns the first match found (case-insensitive).
+# This handles minor naming variations between different software versions.
+#
+# function() defines a new function in R.
+# The syntax is: function(parameters) { body }
 find_column <- function(available_cols, candidates) {
+  # First pass: try exact match (case-sensitive)
   for (cand in candidates) {
+    # %in% checks if cand exists in the available_cols vector
     if (cand %in% available_cols) return(cand)
   }
+  # Second pass: try case-insensitive match
+  # tolower() converts text to lowercase for comparison
   for (cand in candidates) {
+    # which() returns the INDEX (position) where the condition is TRUE
     match_idx <- which(tolower(available_cols) == tolower(cand))
     if (length(match_idx) > 0) return(available_cols[match_idx[1]])
   }
+  # If nothing matched, return NULL (R's version of "nothing")
   return(NULL)
 }
 
-# Null-coalescing operator
+# Custom operator: "null coalescing" — if the left side is NULL, use the right.
+# This is like the ?? operator in C# or the || operator in JavaScript.
+# We use it for readable default values: actual_gene %||% "NOT FOUND"
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
-# ---- Helper: load and validate a CSV file ----
-# Tries fuzzy matching on column names so minor variations still work.
-# Prints a detailed error showing available columns if required names not found.
+# ---- Helper function: load and validate a CSV file ----
+# This function:
+#   1. Reads the CSV file
+#   2. Finds the gene, logFC, and padj columns (with fuzzy matching)
+#   3. Reports what it found
+#   4. If columns are missing, prints a detailed error
+#   5. Returns a clean data frame with exactly 3 columns: gene, log2FC, padj
+#
+# Parameters with = signs are DEFAULT values — if you don't specify them
+# when calling the function, these defaults are used.
 load_proteomics_csv <- function(filepath,
                                 gene_col = COL_GENE,
                                 log2fc_col = COL_LOG2FC,
                                 padj_col = COL_PADJ) {
+  # Check if the file exists before trying to read it
   if (!file.exists(filepath)) {
+    # stop() is R's "throw an error" — it stops execution with a message.
     stop(sprintf("File not found: %s", filepath))
   }
 
+  # readr::read_csv() reads a CSV file into a "data frame" (a table, like
+  # an Excel sheet). Each column is a variable, each row is a protein.
+  # The :: syntax means "use the read_csv function FROM the readr package."
+  # show_col_types = FALSE suppresses a harmless message about column types.
   df <- readr::read_csv(filepath, show_col_types = FALSE)
-  cols <- colnames(df)
+  cols <- colnames(df)   # Get the column names as a character vector
 
-  # Try exact match first, then fuzzy (case-insensitive, common alternatives)
+  # Try to find the actual column names using fuzzy matching.
+  # c() combines multiple values into a vector — these are all the
+  # candidate names to try, in order of preference.
   actual_gene <- find_column(cols, c(gene_col, "Gene", "gene", "Gene.name",
                                       "Gene.symbol", "Gene.names", "SYMBOL",
                                       "Gene.Symbol"))
@@ -152,24 +248,27 @@ load_proteomics_csv <- function(filepath,
   actual_padj <- find_column(cols, c(padj_col, "adj.P.Val", "adj.P.value",
                                       "FDR", "padj", "q.value", "adj.PVal"))
 
-  # Report what was matched
+  # Print what was matched (so the user can verify correctness)
   cat(sprintf("  Columns: gene='%s', logFC='%s', padj='%s'\n",
               actual_gene %||% "NOT FOUND",
               actual_log2fc %||% "NOT FOUND",
               actual_padj %||% "NOT FOUND"))
 
-  # Check for missing columns
+  # Build a list of what's missing (if anything)
+  # c() with no arguments creates an empty vector that we append to
   missing <- c()
   if (is.null(actual_gene))   missing <- c(missing, sprintf("gene column (expected '%s')", gene_col))
   if (is.null(actual_log2fc)) missing <- c(missing, sprintf("logFC column (expected '%s')", log2fc_col))
   if (is.null(actual_padj))   missing <- c(missing, sprintf("padj column (expected '%s')", padj_col))
 
+  # If any required columns are missing, print a detailed error and stop
   if (length(missing) > 0) {
     cat("\n  ========================================\n")
     cat("  COLUMN ERROR in file:\n")
     cat(sprintf("    %s\n", basename(filepath)))
     cat("  ========================================\n")
     cat("\n  Missing required columns:\n")
+    # for loops in R: for (item in collection) { do something with item }
     for (m in missing) cat("    - ", m, "\n", sep = "")
     cat("\n  Available columns in this file:\n")
     for (c in cols) cat("    - ", c, "\n", sep = "")
@@ -178,27 +277,45 @@ load_proteomics_csv <- function(filepath,
     stop("Required columns not found in ", basename(filepath))
   }
 
+  # Extract only the 3 columns we need and rename them to standard names
   keep_cols <- c(actual_gene, actual_log2fc, actual_padj)
-  rename_map <- c("gene", "log2FC", "padj")
-  names(rename_map) <- keep_cols
+  rename_map <- c("gene", "log2FC", "padj")    # Standardized names
+  names(rename_map) <- keep_cols                # Map old → new
 
+  # df[, keep_cols] selects only the specified columns from the data frame
+  # drop = FALSE keeps it as a data frame even if only 1 column is selected
   df <- df[, keep_cols, drop = FALSE]
   colnames(df) <- rename_map[keep_cols]
 
+  # Remove rows where the gene name is missing (NA) or empty string
+  # is.na() returns TRUE for missing values
+  # & is the logical AND operator
+  # != is "not equal to"
   df <- df[!is.na(df$gene) & df$gene != "", ]
   cat(sprintf("  Loaded %s: %d proteins\n", basename(filepath), nrow(df)))
   return(df)
 }
 
-# ---- Helper: extract significant genes ----
+# ---- Helper function: extract significant genes ----
+# Given a data frame with gene/log2FC/padj columns, returns just the names
+# of genes that pass BOTH the p-value AND fold-change thresholds.
+#
+# This is used everywhere — volcano plots, Venn diagrams, GO enrichment,
+# STRING network all need to know "which proteins are significant?"
 get_significant_genes <- function(df,
                                   padj_cutoff = P_VALUE_CUTOFF,
                                   log2fc_cutoff = LOG2FC_CUTOFF) {
+  # df$gene[condition] selects gene names where the condition is TRUE.
+  # The condition: padj < cutoff AND absolute value of log2FC > cutoff.
+  # abs() = absolute value (handles both up- and down-regulation).
   sig <- df$gene[df$padj < padj_cutoff & abs(df$log2FC) > log2fc_cutoff]
+  # Remove duplicates and missing values
   sig <- unique(sig[!is.na(sig)])
   return(sig)
 }
 
+# ---- Print configuration summary ----
+# This runs automatically when the file is sourced.
 cat("[Config] TRIP4/ASCC proteomics study configuration loaded.\n")
 cat(sprintf("  Organism: Human (org.Hs.eg.db, STRING taxon %d)\n", STRING_TAXON))
 cat(sprintf("  Significance: adj.P.Val < %.2f AND |logFC| > %.1f\n", P_VALUE_CUTOFF, LOG2FC_CUTOFF))
