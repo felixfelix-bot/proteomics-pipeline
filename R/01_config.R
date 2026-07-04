@@ -24,16 +24,24 @@ ORGDB <- "org.Hs.eg.db"   # Human annotation database
 KEYTYPE <- "SYMBOL"        # Input gene IDs are gene symbols (e.g., TP53, BRCA1)
 
 # ---- Column name mapping ----
-# These match the mass spectrometry output CSV format
-COL_GENE   <- "Gene"       # Column with gene symbols (e.g., TBXA2R)
-COL_LOG2FC <- "logFC"      # Column with log fold change
-COL_PADJ   <- "adj.P.Val"  # Column with adjusted p-value (FDR)
-COL_PVAL   <- "P.Value"    # Column with raw p-value
-# Additional columns available in the data:
-# Entry.Name     - UniProt entry name (e.g., TA2R_HUMAN)
-# UniProt.ID     - UniProt accession (e.g., P21731)
-# Description    - Protein description
-# is_significant - Pre-computed significance flag (TRUE/FALSE)
+# These match the exact mass spectrometry output CSV headers:
+#   "Gene","Entry.Name","UniProt.ID","Description","logFC",
+#   "P.Val","adj.P.Val","log.P.Val","log.adj.P.Val",
+#   "n_data_points_BK516_Ctrl","n_data_points_BK516_Cflag",
+#   "imputed_BK516_Cflag","imputed_BK516_Ctrl","is_significant"
+COL_GENE   <- "Gene"       # Gene symbols (e.g., TBXA2R)
+COL_LOG2FC <- "logFC"      # Log fold change
+COL_PADJ   <- "adj.P.Val"  # Adjusted p-value (FDR)
+COL_PVAL   <- "P.Val"      # Raw p-value
+# Additional columns in the data (not used by core pipeline but available):
+# Entry.Name            - UniProt entry name (e.g., TA2R_HUMAN)
+# UniProt.ID            - UniProt accession (e.g., P21731)
+# Description           - Protein description
+# log.P.Val             - Pre-computed log of raw p-value
+# log.adj.P.Val         - Pre-computed log of adjusted p-value
+# n_data_points_*       - Number of data points per condition
+# imputed_*             - Whether values were imputed (TRUE/FALSE)
+# is_significant        - Pre-computed significance flag (TRUE/FALSE)
 
 # ---- Plot aesthetics ----
 # Colors for different experiments on overlay plots

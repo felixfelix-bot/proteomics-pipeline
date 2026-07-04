@@ -64,8 +64,14 @@ generate_experiment <- function(name, n_sig, up_regulated_frac = 0.5) {
     UniProt.ID = paste0("P", sprintf("%05d", sample(1:99999, n, replace = TRUE))),
     Description = paste0("Uncharacterized protein ", RANDOM_GENES),
     logFC = round(log2fc, 4),
-    P.Value = round(pmin(padj * runif(n, 1, 5), 1), 6),
+    P.Val = round(pmin(padj * runif(n, 1, 5), 1), 6),
     adj.P.Val = round(padj, 6),
+    log.P.Val = round(-log10(pmin(padj * runif(n, 1, 5), 1)), 4),
+    log.adj.P.Val = round(-log10(padj), 4),
+    n_data_points_BK516_Ctrl = sample(2:6, n, replace = TRUE),
+    n_data_points_BK516_Cflag = sample(2:6, n, replace = TRUE),
+    imputed_BK516_Cflag = sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.1, 0.9)),
+    imputed_BK516_Ctrl = sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.1, 0.9)),
     is_significant = (padj < 0.05 & abs(log2fc) > 1)
   )
 
