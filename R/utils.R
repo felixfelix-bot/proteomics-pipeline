@@ -11,6 +11,28 @@
 #   - make_volcano_ggplot():    Create a basic volcano plot (used by some scripts)
 ###############################################################################
 
+# ---- Sanitize a string for use as a Windows filename ----
+# Windows forbids these characters in filenames: < > : " / \ | ? *
+# Also avoid Unicode symbols (∩, ±, µ, etc.) that cause OneDrive errors.
+# This function replaces them with safe alternatives.
+sanitize_filename <- function(name) {
+  # Replace forbidden characters with underscores or safe equivalents
+  name <- gsub("[<>:\"/\\\\|?*]", "_", name)
+  # Replace common Unicode symbols that cause OneDrive/filesystem errors
+  name <- gsub("∩", "and", name)        # intersection symbol
+  name <- gsub("±", "plusminus", name)  # plus-minus
+  name <- gsub("µ", "u", name)          # micro sign
+  name <- gsub("→", "to", name)         # arrow
+  name <- gsub("°", "deg", name)        # degree
+  # Remove any remaining non-ASCII characters
+  name <- iconv(name, to = "ASCII//TRANSLIT")
+  # Collapse multiple underscores
+  name <- gsub("_+", "_", name)
+  # Trim trailing underscores
+  name <- gsub("_$", "", name)
+  return(name)
+}
+
 # ---- Save a ggplot object to PNG and PDF ----
 # ggplot is R's main plotting system. You build a plot by adding layers
 # with the + operator, then save it with ggsave().
@@ -23,10 +45,10 @@
 #   dpi:      Resolution (300 = publication quality)
 save_figure <- function(plot, filename, width = FIG_WIDTH, height = FIG_HEIGHT,
                         dpi = FIG_DPI) {
-  # file.path() joins path segments correctly for the current OS
-  # paste0() concatenates strings without spaces
-  filepath_png <- file.path(FIGURE_DIR, paste0(filename, ".png"))
-  filepath_pdf <- file.path(FIGURE_DIR, paste0(filename, ".pdf"))
+  # Sanitize filename for Windows compatibility (removes ?, :, etc.)
+  safe_name <- sanitize_filename(filename)
+  filepath_png <- file.path(FIGURE_DIR, paste0(safe_name, ".png"))
+  filepath_pdf <- file.path(FIGURE_DIR, paste0(safe_name, ".pdf"))
 
   # ggsave() writes the plot to a file. It auto-detects format from extension.
   # The :: syntax means "use ggsave from the ggplot2 package."
@@ -40,7 +62,8 @@ save_figure <- function(plot, filename, width = FIG_WIDTH, height = FIG_HEIGHT,
 # ---- Save a data frame to CSV ----
 # Used to save extracted gene lists, GO enrichment results, etc.
 save_table <- function(df, filename) {
-  filepath <- file.path(TABLE_DIR, paste0(filename, ".csv"))
+  safe_name <- sanitize_filename(filename)
+  filepath <- file.path(TABLE_DIR, paste0(safe_name, ".csv"))
   # write.csv() exports a data frame to CSV format.
   # row.names = FALSE: don't add an extra column with row numbers.
   write.csv(df, filepath, row.names = FALSE)

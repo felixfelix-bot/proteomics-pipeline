@@ -149,9 +149,10 @@ make_targeted_volcano <- function(df, title, fc_cutoff = 1.0, pval_line = 1.0) {
                             levels = c("ascc_core", "known_ia", "enriched", "nonsig"))
 
   # ---- Step 3: Decide which points to label ----
-  # Label everything EXCEPT nonsig (gray points).
-  # These are the proteins we want to identify by gene name.
-  label_data <- toPlot[toPlot$category != "nonsig", ]
+  # ONLY label known interactors and ASCC core — NOT the "enriched" category.
+  # The researcher specified: enriched proteins get a color but NO text label
+  # (there are too many of them and the plot becomes unreadable).
+  label_data <- toPlot[toPlot$category %in% c("ascc_core", "known_ia"), ]
 
   # ---- Step 4: Build the plot ----
   # ggplot() initializes the plot. aes() maps data columns to visual properties:
@@ -169,12 +170,11 @@ make_targeted_volcano <- function(df, title, fc_cutoff = 1.0, pval_line = 1.0) {
     # geom_point() draws one glyph per protein.
     # We split into two geom_point layers:
     #   1. Background (nonsig) — smaller, more transparent
-    #   2. Highlighted points — larger, more opaque
-    # This creates visual hierarchy: highlights stand out from the background.
+    #   2. Highlighted points — slightly larger, more opaque
     ggplot2::geom_point(data = toPlot[toPlot$category == "nonsig", ],
-                        alpha = 0.4, size = 1.0) +
+                        alpha = 0.3, size = 0.6) +
     ggplot2::geom_point(data = toPlot[toPlot$category != "nonsig", ],
-                        alpha = 0.85, size = 2.5) +
+                        alpha = 0.8, size = 1.5) +
 
     # scale_color_manual() assigns our color-blind-safe colors to each category.
     ggplot2::scale_color_manual(

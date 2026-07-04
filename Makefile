@@ -72,6 +72,17 @@ help:
 	@echo "  make families    Gene family highlighting (GPATCH/DHX/DDX/LARP)"
 	@echo "  make overlap     Cross-experiment overlap analysis"
 	@echo ""
+	@echo "Targeted plots (researcher-specified):"
+	@echo "  make targeted-volcano  3 custom volcanos: TRIP4 vs WT, RA effects"
+	@echo "  make flagip-volcano    TurboID volcano with common C/N-Flag hits"
+	@echo "  make targeted-venn     RA effect Venn + TurboID vs C/N-Flag Venn"
+	@echo "  make targeted-go       GO enrichment on 3 targeted gene sets"
+	@echo ""
+	@echo "Group targets:"
+	@echo "  make all-volcano       All volcano plots"
+	@echo "  make all-venn          All Venn diagrams"
+	@echo "  make all-targeted      All targeted analysis"
+	@echo ""
 	@echo "Git operations:"
 	@echo "  make pull        Pull latest changes from GitHub"
 	@echo "  make push m=msg  Stage, commit with message, and push"
@@ -117,6 +128,28 @@ overlap: check ## Cross-experiment overlap
 # ---- Targeted plots (researcher-specified) ----
 targeted-volcano: check ## 3 custom volcano plots: BK467 TRIP4 vs WT, RA effects
 	$(RSCRIPT) R/run_step.R targeted_volcanos
+
+flagip-volcano: check ## TurboID volcano with common C-Flag/N-Flag hits labeled
+	$(RSCRIPT) R/run_step.R flagip_volcano
+
+targeted-venn: check ## 2 Venn diagrams: RA effect + TurboID vs C/N-Flag
+	$(RSCRIPT) R/run_step.R targeted_venns
+
+targeted-go: check ## GO enrichment on 3 targeted gene sets
+	$(RSCRIPT) R/run_step.R targeted_go
+
+# ---- Group targets (run multiple steps at once) ----
+all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
+	@echo ""
+	@echo "All volcano plots complete."
+
+all-venn: venn targeted-venn ## All Venn diagram targets
+	@echo ""
+	@echo "All Venn diagrams complete."
+
+all-targeted: targeted-volcano flagip-volcano targeted-venn targeted-go ## All targeted plots
+	@echo ""
+	@echo "All targeted analysis complete."
 
 # ---- Cleanup ----
 clean: ## Remove all generated output
