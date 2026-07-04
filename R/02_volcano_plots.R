@@ -1,7 +1,13 @@
 ###############################################################################
 # 02_volcano_plots.R
-# Generates publication-quality volcano plots for each experiment.
-# Also creates overlay plots comparing TurboID vs Flag co-IP.
+# Lydia-style volcano plots with multi-category highlighting.
+#
+# Categories overlaid on each volcano:
+#   - ia: Known interactors (from known_interactors.txt)
+#   - flagMulti / flagOnce: Flag IP hits (from Flag IP data)
+#   - CRAC: RNA interactome hits (if CRAC data available)
+#   - gp / dhx / ddx / LARPs: Gene families
+#   - high: High-confidence hits (top combined significance)
 #
 # Usage:
 #   source("R/01_config.R")
@@ -10,170 +16,240 @@
 ###############################################################################
 
 cat("\n=========================================\n")
-cat(" Volcano Plot Generation\n")
+cat(" Volcano Plot Generation (Lydia-style)\n")
 cat("=========================================\n\n")
 
 # ---- Load known interactors ----
 interactors_file <- file.path(DATA_DIR, "known_interactors.txt")
 known_interactors <- load_known_interactors(interactors_file)
 
-# ---- Helper: EnhancedVolcano for a single experiment ----
-plot_enhanced_volcano <- function(df, experiment_name, label_genes = NULL) {
-  cat(sprintf("\n  [%s] Generating EnhancedVolcano...\n", experiment_name))
-
-  # Handle NAs
-  df$padj[is.na(df$padj)] <- 1
-  df$log2FC[is.na(df$log2FC)] <- 0
-
-  select_genes <- intersect(label_genes, df$gene)
-
-  p <- EnhancedVolcano::EnhancedVolcano(
-    toptable    = df,
-    lab         = df$gene,
-    x           = "log2FC",
-    y           = "padj",
-    pCutoff     = P_VALUE_CUTOFF,
-    FCcutoff    = LOG2FC_CUTOFF,
-    selectLab   = if (length(select_genes) > 0) select_genes else NULL,
-    labSize     = 3.0,
-    labCol      = "black",
-    labFace     = "bold",
-    drawConnectors = TRUE,
-    widthConnectors = 0.3,
-    colConnectors = "grey50",
-    col = c("grey70", "grey50", "#4DBBD5", "#E64B35"),
-    colAlpha    = 0.6,
-    pointSize   = 1.5,
-    cutoffLineType = "dashed",
-    cutoffLineCol  = "grey60",
-    cutoffLineWidth = 0.5,
-    legendPosition = "right",
-    title       = experiment_name,
-    subtitle    = NULL,
-    caption     = NULL
-  )
-
-  return(p)
+# ---- Load all experiment data ----
+cat("Loading experiment data...\n")
+experiments <- list()
+csv_files <- list.files(DATA_DIR, pattern = "\\.csv$", full.names = TRUE)
+for (f in csv_files) {
+  name <- tools::file_path_sans_ext(basename(f))
+  if (name == "known_interactors") next
+  experiments[[name]] <- load_proteomics_csv(f)
 }
 
-# ---- Helper: Overlay two experiments on the same volcano ----
-plot_volcano_overlay <- function(df1, name1, df2, name2, label_genes, title) {
-  cat(sprintf("\n  [OVERLAY] %s vs %s...\n", name1, name2))
+# ---- Build Flag IP hit lists for overlay ----
+# Proteins significant in 2+ Flag conditions = flagMulti
+# Proteins significant in exactly 1 Flag condition = flagOnce
+flag_exp_names <- grep("^flag_", names(experiments), value = TRUE)
+if (length(flag_exp_names) >= 2) {
+  cat("\nBuilding Flag IP hit categories...\n")
+  flag_sig_lists <- lapply(experiments[flag_exp_names], get_significant_genes)
 
-  # Prepare data
-  df1$neglog10p <- -log10(df1$padj)
-  df2$neglog10p <- -log10(df2$padj)
-  df1$experiment <- name1
-  df2$experiment <- name2
+  flag_all_genes <- unlist(flag_sig_lists)
+  flag_counts <- table(flag_all_genes)
+  flag_multi <- names(flag_counts)[flag_counts >= 2]
+  flag_once <- names(flag_counts)[flag_counts == 1]
+  cat(sprintf("  Flag IP hits: %d multi-condition, %d single-condition\n",
+              length(flag_multi), length(flag_once)))
+} else {
+  flag_multi <- character(0)
+  flag_once <- character(0)
+}
 
-  combined <- rbind(
-    df1[, c("gene", "log2FC", "neglog10p", "experiment")],
-    df2[, c("gene", "log2FC", "neglog10p", "experiment")]
+# ---- Assign gene family categories ----
+assign_gene_family <- function(genes) {
+  fam <- rep(NA_character_, length(genes))
+  fam[grepl("^DHX", genes)] <- "dhx"
+  fam[grepl("^DDX", genes)] <- "ddx"
+  fam[grepl("^LARP", genes)] <- "LARPs"
+  fam[genes %in% GENE_FAMILIES$GPATCH] <- "gp"
+  return(fam)
+}
+
+# =====================================================================
+# Helper: Lydia-style volcano with category highlighting
+# =====================================================================
+plot_lydia_volcano <- function(df, title, known_ia = NULL,
+                               flag_m = NULL, flag_o = NULL,
+                               show_gene_families = TRUE,
+                               highlight_high = TRUE) {
+
+  toPlot <- df
+  # Start with significance as category
+  toPlot$category <- ifelse(
+    toPlot$padj < P_VALUE_CUTOFF & abs(toPlot$log2FC) > LOG2FC_CUTOFF,
+    "TRUE", "FALSE"
   )
 
-  # Label data — deduplicate: show one label per gene
-  label_data <- combined[combined$gene %in% label_genes, ]
-  if (nrow(label_data) > 0) {
-    # Prefer the row with higher significance for labeling
-    label_data <- label_data[order(label_data$neglog10p, decreasing = TRUE), ]
-    label_data <- label_data[!duplicated(label_data$gene), ]
+  # Layer 1: Gene families (only for significant proteins)
+  if (show_gene_families) {
+    fam <- assign_gene_family(toPlot$gene)
+    fam_mask <- !is.na(fam) & toPlot$category == "TRUE"
+    toPlot$category[fam_mask] <- fam[fam_mask]
   }
 
-  p <- ggplot2::ggplot(combined,
-    ggplot2::aes(x = log2FC, y = neglog10p, color = experiment)) +
-    ggplot2::geom_point(alpha = 0.4, size = 1.2) +
-    # Emphasize labeled points
-    ggplot2::geom_point(
-      data = combined[combined$gene %in% label_genes, ],
-      ggplot2::aes(fill = experiment),
-      shape = 21, size = 3, alpha = 0.8, stroke = 0.5
+  # Layer 2: Flag IP hits
+  if (!is.null(flag_m) && length(flag_m) > 0) {
+    toPlot$category[toPlot$gene %in% flag_m] <- "flagMulti"
+  }
+  if (!is.null(flag_o) && length(flag_o) > 0) {
+    toPlot$category[toPlot$gene %in% flag_o] <- "flagOnce"
+  }
+
+  # Layer 3: Known interactors (highest priority)
+  if (!is.null(known_ia) && length(known_ia) > 0) {
+    toPlot$category[toPlot$gene %in% known_ia] <- "ia"
+  }
+
+  # Layer 4: High-confidence hits
+  if (highlight_high) {
+    toPlot$category[!is.na(toPlot$padj) &
+                    ((toPlot$log2FC > 2 & -log10(toPlot$padj) > 6) |
+                     (toPlot$log2FC > 7 & -log10(toPlot$padj) > 2))] <- "high"
+  }
+
+  toPlot$category <- factor(toPlot$category, levels = names(CATEGORY_COLORS))
+
+  # Determine which points to label
+  label_cats <- c("ia", "gp", "dhx", "ddx", "LARPs", "flagMulti", "flagOnce", "high")
+  label_data <- toPlot[toPlot$category %in% label_cats, ]
+
+  # Build plot
+  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = -log10(padj), color = category)) +
+    ggplot2::geom_point(alpha = 0.3, size = 1.2) +
+    ggplot2::scale_color_manual(
+      values = CATEGORY_COLORS,
+      drop = FALSE
     ) +
-    ggrepel::geom_text_repel(
-      data = label_data,
-      ggplot2::aes(label = gene),
-      size = 3, fontface = "bold",
-      max.overlaps = 25,
-      show.legend = FALSE,
-      color = "black"
-    ) +
-    ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50") +
-    ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed", color = "grey50") +
-    ggplot2::scale_color_manual(values = EXPERIMENT_COLORS[c(name1, name2)]) +
-    ggplot2::scale_fill_manual(values = EXPERIMENT_COLORS[c(name1, name2)]) +
     ggplot2::labs(
       x = expression(Log[2]~Fold~Change),
-      y = expression(-Log[10]~(adjusted~italic(p)~value)),
+      y = expression(-Log[10]~(adj.~italic(p)~value)),
       title = title,
-      color = "Experiment",
-      fill = "Experiment"
-    ) +
-    ggplot2::theme_classic() +
+      color = "Category"
+    )
+
+  # Add labels for highlighted points
+  if (nrow(label_data) > 0) {
+    p <- p + ggrepel::geom_text_repel(
+      data = label_data,
+      ggplot2::aes(label = gene),
+      size = 2.5, fontface = "bold",
+      max.overlaps = 30,
+      show.legend = FALSE
+    )
+  }
+
+  # Threshold lines
+  p <- p +
+    ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50") +
+    ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed", color = "grey50")
+
+  # Theme (Lydia's compact style)
+  p <- p + ggplot2::theme_bw() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 14),
-      legend.position = "right"
+      axis.text.x = ggplot2::element_text(colour = "black", size = 8, angle = 90, vjust = 0.5, hjust = 1),
+      axis.text.y = ggplot2::element_text(colour = "black", size = 8),
+      axis.title.x = ggplot2::element_text(size = 10),
+      axis.title.y = ggplot2::element_text(size = 10),
+      legend.title = ggplot2::element_text(size = 8),
+      legend.text = ggplot2::element_text(size = 8),
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 10)
     )
 
   return(p)
 }
 
 # =====================================================================
-# MAIN: Run all volcano plots
+# Helper: Overlay two experiments on one volcano
+# =====================================================================
+plot_volcano_overlay <- function(df1, name1, df2, name2, label_genes, title) {
+  df1$experiment <- name1
+  df2$experiment <- name2
+  df1$sig <- df1$padj < P_VALUE_CUTOFF & abs(df1$log2FC) > LOG2FC_CUTOFF
+  df2$sig <- df2$padj < P_VALUE_CUTOFF & abs(df1$log2FC) > LOG2FC_CUTOFF
+
+  combined <- rbind(
+    df1[, c("gene", "log2FC", "padj", "experiment", "sig")],
+    df2[, c("gene", "log2FC", "padj", "experiment", "sig")]
+  )
+  combined$neglog10p <- -log10(combined$padj)
+
+  # Label only from one dataset (deduplicate)
+  label_data <- combined[combined$gene %in% label_genes & combined$experiment == name1, ]
+
+  p <- ggplot2::ggplot(combined, ggplot2::aes(x = log2FC, y = neglog10p, color = experiment)) +
+    ggplot2::geom_point(alpha = 0.3, size = 1) +
+    ggrepel::geom_text_repel(
+      data = label_data,
+      ggplot2::aes(label = gene),
+      size = 2.5, fontface = "bold",
+      max.overlaps = 25, show.legend = FALSE
+    ) +
+    ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50") +
+    ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed", color = "grey50") +
+    ggplot2::scale_color_manual(values = EXPERIMENT_COLORS) +
+    ggplot2::labs(
+      x = expression(Log[2]~Fold~Change),
+      y = expression(-Log[10]~(adj.~italic(p)~value)),
+      title = title, color = "Experiment"
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"))
+
+  return(p)
+}
+
+# =====================================================================
+# MAIN: Generate all volcano plots
 # =====================================================================
 
-# ---- Load all experiment data ----
-cat("Loading experiment data...\n")
-
-experiments <- list()
-csv_files <- list.files(DATA_DIR, pattern = "\\.csv$", full.names = TRUE)
-
-for (f in csv_files) {
-  name <- tools::file_path_sans_ext(basename(f))
-  # Skip non-data files
-  if (name == "known_interactors") next
-  experiments[[name]] <- load_proteomics_csv(f)
-}
-
-if (length(experiments) == 0) {
-  stop("No CSV files found in ", DATA_DIR)
-}
-
-# ---- 1. Individual EnhancedVolcano for each experiment ----
-cat("\n[1/3] Generating individual volcano plots...\n")
-
-for (name in names(experiments)) {
-  df <- experiments[[name]]
-  p <- plot_enhanced_volcano(df, name, label_genes = known_interactors)
-  save_figure(p, paste0("volcano_", name), width = 8, height = 6)
-}
-
-# ---- 2. Overlay: TurboID vs Flag IP ----
-cat("\n[2/3] Generating TurboID vs Flag IP overlay...\n")
-
-if ("turboid" %in% names(experiments) && "flag_ip" %in% names(experiments)) {
-  p_overlay <- plot_volcano_overlay(
-    experiments$turboid, "TurboID",
-    experiments$flag_ip, "Flag_IP",
-    label_genes = known_interactors,
-    title = "TurboID vs Flag Co-IP Comparison"
+# ---- 1. Lydia-style volcano for each TurboID experiment ----
+cat("\n[1/4] TurboID volcano plots (Lydia-style)...\n")
+turbo_names <- grep("^turbo_", names(experiments), value = TRUE)
+for (name in turbo_names) {
+  p <- plot_lydia_volcano(
+    experiments[[name]], name,
+    known_ia = known_interactors,
+    flag_m = flag_multi, flag_o = flag_once,
+    show_gene_families = TRUE
   )
-  save_figure(p_overlay, "volcano_overlay_turboid_flag", width = 10, height = 8)
-} else {
-  cat("  (skipped: turboid or flag_ip data not found)\n")
+  save_figure(p, paste0("volcano_", name), width = 7, height = 5)
 }
 
-# ---- 3. Overlay: WT vs POI vs POI+Hormone ----
-cat("\n[3/3] Generating condition comparison overlays...\n")
-
-if ("wt_vs_poi" %in% names(experiments) && "poi_vs_poi_hormone" %in% names(experiments)) {
-  p_cond <- plot_volcano_overlay(
-    experiments$wt_vs_poi, "WT_vs_POI",
-    experiments$poi_vs_poi_hormone, "POI_vs_POIHormone",
-    label_genes = known_interactors,
-    title = "Wild Type vs POI vs POI + Hormone"
+# ---- 2. Lydia-style volcano for each Flag IP experiment ----
+cat("\n[2/4] Flag IP volcano plots (Lydia-style)...\n")
+flag_names <- grep("^flag_", names(experiments), value = TRUE)
+for (name in flag_names) {
+  p <- plot_lydia_volcano(
+    experiments[[name]], name,
+    known_ia = known_interactors,
+    show_gene_families = TRUE
   )
-  save_figure(p_cond, "volcano_overlay_conditions", width = 10, height = 8)
-} else {
-  cat("  (skipped: condition data not found)\n")
+  save_figure(p, paste0("volcano_", name), width = 7, height = 5)
+}
+
+# ---- 3. Overlay: TurboID TRIP4 vs Flag IP C-Flag ----
+cat("\n[3/4] TurboID vs Flag IP overlay...\n")
+turbo_main <- "turbo_trip4_vs_wt"
+flag_main <- "flag_cflag_vs_ctrl"
+if (turbo_main %in% names(experiments) && flag_main %in% names(experiments)) {
+  p <- plot_volcano_overlay(
+    experiments[[turbo_main]], "TurboID_TRIP4",
+    experiments[[flag_main]], "FlagIP_C",
+    label_genes = known_interactors,
+    title = "TurboID (TRIP4 vs WT) vs Flag IP (C-Flag vs Ctrl)"
+  )
+  save_figure(p, "volcano_overlay_turboid_flag", width = 10, height = 7)
+}
+
+# ---- 4. Overlay: TRIP4 vs TRIP4+RA (hormone effect) ----
+cat("\n[4/4] RA treatment comparison overlay...\n")
+turbo_base <- "turbo_trip4_vs_wt"
+turbo_ra <- "turbo_RA_vs_wt"
+if (turbo_base %in% names(experiments) && turbo_ra %in% names(experiments)) {
+  p <- plot_volcano_overlay(
+    experiments[[turbo_base]], "TurboID_TRIP4",
+    experiments[[turbo_ra]], "TurboID_TRIP4_RA",
+    label_genes = known_interactors,
+    title = "TurboID: TRIP4 vs TRIP4 + Retinoic Acid"
+  )
+  save_figure(p, "volcano_overlay_RA_effect", width = 10, height = 7)
 }
 
 cat("\n=========================================\n")
