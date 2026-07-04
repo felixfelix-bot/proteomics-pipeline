@@ -52,6 +52,9 @@ micromamba run -n r-env Rscript run_all.R
 | `06_gene_families.R` | GPATCH/DHX/DDX/LARP family highlighting on volcanos |
 | `07_overlap_analysis.R` | Cross-experiment overlap (Flag IP on TurboID, CRAC, RA effects) |
 
+**Full architecture with flowcharts, timing diagrams, and verification checklist:**
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ## Data Format
 
 CSV files with these columns (from DIA-NN / LFQ pipeline output):
