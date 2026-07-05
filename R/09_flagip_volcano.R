@@ -168,7 +168,8 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     data = label_data,
     ggplot2::aes(label = gene),
     size = 2.5, fontface = "bold",
-    max.overlaps = 30, show.legend = FALSE
+    max.overlaps = 30, show.legend = FALSE,
+    bg.color = "white", bg.r = 0.15
   ) +
   ggplot2::geom_hline(
     yintercept = -log10(P_VALUE_CUTOFF),

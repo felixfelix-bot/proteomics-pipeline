@@ -11,6 +11,24 @@
 #   - make_volcano_ggplot():    Create a basic volcano plot (used by some scripts)
 ###############################################################################
 
+# ---- Get current git commit hash ----
+# Returns the first 7 characters of the current git commit hash.
+# This is appended to output filenames so you can trace which version
+# of the code produced each file.
+# If git is unavailable or we're not in a repo, returns "nogit".
+get_git_hash <- function() {
+  hash <- tryCatch({
+    # system() with intern=TRUE captures command output as a character vector
+    h <- system("git rev-parse --short HEAD", intern = TRUE)
+    # trimws() removes any trailing whitespace/newlines
+    trimws(h)
+  }, error = function(e) {
+    # If git fails (not in a repo, git not installed), return a timestamp
+    "nogit"
+  })
+  return(hash)
+}
+
 # ---- Sanitize a string for use as a Windows filename ----
 # Windows forbids these characters in filenames: < > : " / \ | ? *
 # Also avoid Unicode symbols (∩, ±, µ, etc.) that cause OneDrive errors.
@@ -43,12 +61,21 @@ sanitize_filename <- function(name) {
 #   filename: Name WITHOUT extension (we add .png and .pdf)
 #   width/height: Figure size in inches (default from config)
 #   dpi:      Resolution (300 = publication quality)
+#
+# The filename is automatically appended with the current git commit hash
+# (first 7 characters) so you can trace which version of the code produced
+# each output file.
 save_figure <- function(plot, filename, width = FIG_WIDTH, height = FIG_HEIGHT,
                         dpi = FIG_DPI) {
+  # Get the current git commit hash (short, first 7 chars)
+  commit_hash <- get_git_hash()
+
   # Sanitize filename for Windows compatibility (removes ?, :, etc.)
   safe_name <- sanitize_filename(filename)
-  filepath_png <- file.path(FIGURE_DIR, paste0(safe_name, ".png"))
-  filepath_pdf <- file.path(FIGURE_DIR, paste0(safe_name, ".pdf"))
+  # Append commit hash so output files are traceable to the code version
+  versioned_name <- paste0(safe_name, "_", commit_hash)
+  filepath_png <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
+  filepath_pdf <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
 
   # ggsave() writes the plot to a file. It auto-detects format from extension.
   # The :: syntax means "use ggsave from the ggplot2 package."
@@ -62,8 +89,10 @@ save_figure <- function(plot, filename, width = FIG_WIDTH, height = FIG_HEIGHT,
 # ---- Save a data frame to CSV ----
 # Used to save extracted gene lists, GO enrichment results, etc.
 save_table <- function(df, filename) {
+  commit_hash <- get_git_hash()
   safe_name <- sanitize_filename(filename)
-  filepath <- file.path(TABLE_DIR, paste0(safe_name, ".csv"))
+  versioned_name <- paste0(safe_name, "_", commit_hash)
+  filepath <- file.path(TABLE_DIR, paste0(versioned_name, ".csv"))
   # write.csv() exports a data frame to CSV format.
   # row.names = FALSE: don't add an extra column with row numbers.
   write.csv(df, filepath, row.names = FALSE)

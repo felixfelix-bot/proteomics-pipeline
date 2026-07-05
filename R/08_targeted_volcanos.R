@@ -35,8 +35,9 @@ ASCC_CORE <- c("TRIP4", "ASCC1", "ASCC2", "ASCC3")
 known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 
 # ---- Helper: RA comparison volcano (Plots 2 and 3) ----
-# Label ALL significant genes (researcher preference: few genes are sig in RA)
-make_ra_volcano <- function(df, title) {
+# Label top 20 significant genes (10 up + 10 down by combined score).
+# Uses a white background behind labels for readability on any background color.
+make_ra_volcano <- function(df, title, n_top = 20) {
   toPlot <- df
   toPlot$neglog10p <- -log10(toPlot$padj)
 
@@ -46,8 +47,23 @@ make_ra_volcano <- function(df, title) {
                   toPlot$padj < P_VALUE_CUTOFF] <- "enriched_up"
   toPlot$category <- factor(toPlot$category, levels = c("enriched_up", "nonsig"))
 
-  # Label ALL significant genes (few in RA experiments)
-  label_data <- toPlot[toPlot$category == "enriched_up", ]
+  # Find top N proteins by combined significance on each side
+  # "Combined significance" = product of fold change magnitude and -log10(p)
+  sig_only <- toPlot[toPlot$category == "enriched_up", ]
+  sig_only <- sig_only[!is.na(sig_only$log2FC) & !is.na(sig_only$neglog10p), ]
+  sig_only$combined_score <- abs(sig_only$log2FC) * sig_only$neglog10p
+
+  # Top N/2 up-regulated (positive log2FC)
+  top_up <- sig_only[sig_only$log2FC > 0, ]
+  top_up <- top_up[order(-top_up$combined_score), ]
+  top_up <- head(top_up, n_top / 2)
+
+  # Top N/2 down-regulated (negative log2FC)
+  top_dn <- sig_only[sig_only$log2FC < 0, ]
+  top_dn <- top_dn[order(-top_dn$combined_score), ]
+  top_dn <- head(top_dn, n_top / 2)
+
+  label_data <- rbind(top_up, top_dn)
 
   RA_COLORS <- c(
     "enriched_up" = "#D55E00",
@@ -66,7 +82,8 @@ make_ra_volcano <- function(df, title) {
       data = label_data,
       ggplot2::aes(label = gene),
       size = 2.5, fontface = "bold",
-      max.overlaps = 50, show.legend = FALSE
+      max.overlaps = 50, show.legend = FALSE,
+      bg.color = "white", bg.r = 0.15  # White background for readability
     ) +
     ggplot2::geom_hline(
       yintercept = -log10(P_VALUE_CUTOFF),
@@ -153,7 +170,8 @@ make_main_volcano <- function(df, title) {
       data = label_data,
       ggplot2::aes(label = gene),
       size = 2.5, fontface = "bold",
-      max.overlaps = 30, show.legend = FALSE
+      max.overlaps = 30, show.legend = FALSE,
+      bg.color = "white", bg.r = 0.15
     ) +
     ggplot2::geom_hline(
       yintercept = -log10(P_VALUE_CUTOFF),
