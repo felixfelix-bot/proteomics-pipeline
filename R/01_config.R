@@ -116,11 +116,32 @@ MAIN_COMPARISONS <- list(
   flagRA      = "flag_RA_cflag_vs_cflag"  # Flag IP with retinoic acid
 )
 
-# ---- Plot aesthetics ----
-# Color scheme for volcano plot categories (Lydia's style).
-# In R, c() creates a "vector" (a list of values). When you assign names
-# to the elements, you create a named vector that works like a dictionary:
-#   CATEGORY_COLORS["ia"]  →  "#d95f02" (orange hex color)
+# ---- Global color scheme (consistent across ALL plots) ----
+# Each category gets the SAME color wherever it appears — this is a
+# critical scientific best practice. Okabe-Ito / Wong Color Universal
+# Design palette for colorblind safety (Wong B, Nature Methods 2011).
+#
+# Usage: GLOBAL_COLORS["enriched_up"]  →  "#D55E00"
+GLOBAL_COLORS <- c(
+  # Main volcano categories
+  "ascc_core"     = "#0072B2",   # Blue — ASCC complex
+  "known_ia"      = "#009E73",   # Bluish-green — known interactors
+  "enriched_up"   = "#D55E00",   # Vermillion/orange — enriched in TRIP4
+  "enriched_dn"   = "#B0B0B0",   # Gray — enriched in WT
+  "nonsig"        = "#D0D0D0",   # Light gray — not significant
+
+  # Flag IP validation categories (DISTINCT hues, not shades of orange)
+  "flag_both"     = "#F0E442",   # Yellow — validated by C-Flag + N-Flag
+  "flag_c_only"   = "#56B4E9",   # Sky blue — validated by C-Flag only
+  "flag_n_only"   = "#CC79A7",   # Pink — validated by N-Flag only
+
+  # Venn diagram fill colors (solid, not count-based)
+  "venn_overlap"  = "#08519C",   # Dark blue — common to both sets
+  "venn_a_only"   = "#6BAED6",   # Light blue — set A unique region
+  "venn_b_only"   = "#FDAE6B"    # Light salmon — set B unique region
+)
+
+# Legacy color scheme (Lydia's style, retained for 02_volcano_plots.R)
 CATEGORY_COLORS <- c(
   "ia"           = "#d95f02",   # Known interactors — orange
   "flagMulti"    = "#7570b3",   # Flag IP hit in 2+ conditions — purple

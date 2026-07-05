@@ -3,15 +3,11 @@
 # Two specific Venn diagrams per researcher request.
 #
 # VENN 1: TRIP4 without RA vs TRIP4 with RA
-#   - Labels: "- RA" and "+ RA" (since title already says TRIP4)
-#   - Labels positioned further left to avoid overlapping circles
-#   - Extra margin to prevent PDF clipping
+# VENN 2: TurboID vs Flag IP (2-way — C-Flag and N-Flag combined)
 #
-# VENN 2: TurboID vs Flag IP (2-way, not 3-way)
-#   - Combines C-Flag + N-Flag into one "Flag IP" set (union)
-#   - No count legend — manual fill colors
-#   - Overlap = dark blue, non-overlap = same lighter color
-#   - Title: "TurboID vs Flag IP Overlap"
+# Uses VennDiagram::draw.pairwise.venn for clean, publication-quality
+# 2-set Venns with manual fill colors and alpha-blended overlap.
+# Colors from GLOBAL_COLORS for consistency across all plots.
 #
 # Usage:
 #   make targeted-venn
@@ -20,12 +16,77 @@ cat("\n=========================================\n")
 cat(" Targeted Venn Diagrams\n")
 cat("=========================================\n\n")
 
+library(VennDiagram)
+library(grid)
+
 experiments <- load_all_experiments()
 
 cat("Extracting significant gene sets...\n")
 gene_sets <- lapply(experiments, function(df) {
   get_significant_genes(df)
 })
+
+# ---- Helper: draw a 2-set Venn with solid colors ----
+# Uses VennDiagram::draw.pairwise.venn for clean, standard Venns.
+# Two circles get distinct fill colors; the overlap is alpha-blended.
+# Colors come from GLOBAL_COLORS for cross-plot consistency.
+make_two_set_venn <- function(set_a, set_b, label_a, label_b, title, file_prefix) {
+  cat(sprintf("  %s: %d significant proteins\n", label_a, length(set_a)))
+  cat(sprintf("  %s: %d significant proteins\n", label_b, length(set_b)))
+  overlap_count <- length(intersect(set_a, set_b))
+  cat(sprintf("  Overlap: %d proteins\n", overlap_count))
+
+  # Build the Venn using VennDiagram (base R grid graphics)
+  # fill: two colors for the circles; alpha = 0.5 blends them in overlap
+  # col = "transparent": no circle borders (clean modern look)
+  vp <- draw.pairwise.venn(
+    area1     = length(set_a),
+    area2     = length(set_b),
+    cross.area = overlap_count,
+    category  = c(label_a, label_b),
+    fill      = c(GLOBAL_COLORS["venn_a_only"], GLOBAL_COLORS["venn_b_only"]),
+    alpha     = rep(0.5, 2),
+    cat.cex   = 1.6,
+    cex       = 2.0,
+    fontfamily = "sans",
+    cat.fontfamily = "sans",
+    col       = "transparent",
+    margin    = 0.08,      # Extra margin to prevent label clipping
+    ind       = FALSE
+  )
+
+  # Add title using grid.text
+  pushViewport(viewport())
+  grid.text(title, 0.5, 0.95, gp = gpar(fontsize = 14, fontface = "bold"))
+  popViewport()
+
+  # Save as PNG and PDF using grid utilities
+  commit_hash <- get_git_hash()
+  safe_name <- sanitize_filename(file_prefix)
+  versioned_name <- paste0(safe_name, "_", commit_hash)
+
+  png_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
+  pdf_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
+
+  # Re-draw to file
+  grDevices::png(png_path, width = 7, height = 6, units = "in", res = 300)
+  grid.draw(vp)
+  pushViewport(viewport())
+  grid.text(title, 0.5, 0.95, gp = gpar(fontsize = 14, fontface = "bold"))
+  popViewport()
+  grDevices::dev.off()
+
+  grDevices::pdf(pdf_path, width = 7, height = 6)
+  grid.draw(vp)
+  pushViewport(viewport())
+  grid.text(title, 0.5, 0.95, gp = gpar(fontsize = 14, fontface = "bold"))
+  popViewport()
+  grDevices::dev.off()
+
+  cat(sprintf("  Saved: %s\n  Saved: %s\n", basename(png_path), basename(pdf_path)))
+
+  return(overlap_count)
+}
 
 # =====================================================================
 # VENN 1: TRIP4 without RA vs TRIP4 with RA
@@ -39,48 +100,22 @@ if (exp_base %in% names(gene_sets) && exp_ra %in% names(gene_sets)) {
   set_a <- gene_sets[[exp_base]]
   set_b <- gene_sets[[exp_ra]]
 
-  cat(sprintf("  -RA: %d significant proteins\n", length(set_a)))
-  cat(sprintf("  +RA: %d significant proteins\n", length(set_b)))
-
-  # Create Venn with shortened labels
-  # "TRIP4" is in the title, so just "- RA" and "+ RA"
-  venn1 <- list(
-    "- RA" = set_a,
-    "+ RA" = set_b
+  overlap <- make_two_set_venn(
+    set_a, set_b,
+    label_a = "- RA",
+    label_b = "+ RA",
+    title = "TRIP4 without vs with Retinoic Acid",
+    file_prefix = "targeted_venn_RA_effect_BK467"
   )
 
-  # Build Venn diagram with manual positioning of set labels
-  # set_label_x/y: position labels away from the circles
-  p1 <- ggVennDiagram::ggVennDiagram(
-    venn1,
-    label = "count",
-    set_size = 5,
-    label_size = 5,
-    label_alpha = 0,
-    # Move set labels to the left, away from circles
-    set_label_x = c(-0.35, -0.35),  # Both labels shifted left
-    set_label_y = c(0.25, -0.25)    # One above, one below center
-  ) +
-    ggplot2::scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
-    ggplot2::ggtitle("TRIP4 without vs with Retinoic Acid") +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
-      # Ensure the plot has enough space around it to prevent label clipping
-      plot.margin = ggplot2::margin(10, 10, 10, 20, "pt")
-    )
-
-  save_figure(p1, "targeted_venn_RA_effect_BK467",
-              width = 7, height = 6)  # Wider to prevent clipping
-
-  shared <- intersect(set_a, set_b)
   ra_gained <- setdiff(set_b, set_a)
   ra_lost <- setdiff(set_a, set_b)
 
-  cat(sprintf("  Shared (both): %d proteins\n", length(shared)))
+  cat(sprintf("  Shared (both): %d proteins\n", overlap))
   cat(sprintf("  RA-gained: %d proteins\n", length(ra_gained)))
   cat(sprintf("  RA-lost: %d proteins\n", length(ra_lost)))
 
-  save_table(data.frame(gene = shared, category = "RA_shared"),
+  save_table(data.frame(gene = intersect(set_a, set_b), category = "RA_shared"),
              "RA_effect_shared")
   save_table(data.frame(gene = ra_gained, category = "RA_gained"),
              "RA_effect_gained")
@@ -101,7 +136,6 @@ exp_nflag <- "BK516_Nflag_vs_BK516_Ctrl"
 
 if (exp_turbo %in% names(gene_sets)) {
   turbo_sig <- gene_sets[[exp_turbo]]
-  cat(sprintf("  TurboID: %d significant proteins\n", length(turbo_sig)))
 
   # Combine C-Flag and N-Flag into one Flag IP set (union)
   flag_sig <- character(0)
@@ -113,49 +147,18 @@ if (exp_turbo %in% names(gene_sets)) {
   }
 
   if (length(flag_sig) > 0) {
-    cat(sprintf("  Flag IP (C-Flag + N-Flag combined): %d significant proteins\n",
-                length(flag_sig)))
-
-    venn2 <- list(
-      "TurboID" = turbo_sig,
-      "Flag IP" = flag_sig
+    overlap <- make_two_set_venn(
+      turbo_sig, flag_sig,
+      label_a = "TurboID",
+      label_b = "Flag IP",
+      title = "TurboID vs Flag IP Overlap",
+      file_prefix = "targeted_venn_turboid_flagip"
     )
 
-    # 2-way Venn with manual colors:
-    #   - Overlap (intersection) = dark blue #0072B2
-    #   - Non-overlapping parts = same lighter blue #B3CDE3
-    #   - No count legend (no gradient fill)
-    p2 <- ggVennDiagram::ggVennDiagram(
-      venn2,
-      label = "count",
-      set_size = 5,
-      label_size = 5,
-      label_alpha = 0,
-      # Position labels left of circles to avoid clipping
-      set_label_x = c(-0.30, -0.30),
-      set_label_y = c(0.20, -0.20)
-    ) +
-      # Manual 2-color scheme: non-overlap = light blue, overlap = dark blue
-      ggplot2::scale_fill_gradientn(
-        colors = c("#B3CDE3", "#0072B2"),
-        guide = "none"  # Remove the gradient legend entirely
-      ) +
-      ggplot2::ggtitle("TurboID vs Flag IP Overlap") +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
-        plot.margin = ggplot2::margin(10, 10, 10, 20, "pt")
-      )
-
-    save_figure(p2, "targeted_venn_turboid_flagip",
-                width = 6, height = 6)
-
-    # Also save the overlap gene list
-    turbo_flag_common <- intersect(turbo_sig, flag_sig)
-    cat(sprintf("  Common to both: %d proteins\n", length(turbo_flag_common)))
-    save_table(data.frame(gene = turbo_flag_common,
+    cat(sprintf("  Common to both: %d proteins\n", overlap))
+    save_table(data.frame(gene = intersect(turbo_sig, flag_sig),
                           category = "TurboID_and_FlagIP"),
                "overlap_turboid_flagip")
-
   } else {
     cat("  WARNING: No Flag IP data found.\n")
   }

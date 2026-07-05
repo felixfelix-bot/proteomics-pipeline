@@ -140,11 +140,11 @@ make_main_volcano <- function(df, title) {
     levels = c("ascc_core", "known_ia", "enriched_up", "enriched_dn", "nonsig"))
 
   MAIN_COLORS <- c(
-    "ascc_core"   = "#0072B2",   # Blue — ASCC complex
-    "known_ia"    = "#009E73",   # Green — known interactors
-    "enriched_up" = "#D55E00",   # Vermillion — enriched in TRIP4
-    "enriched_dn" = "#B0B0B0",   # Gray — enriched in WT control
-    "nonsig"      = "#D0D0D0"    # Light gray
+    "ascc_core"   = GLOBAL_COLORS["ascc_core"],     # Blue — ASCC complex
+    "known_ia"    = GLOBAL_COLORS["known_ia"],       # Green — known interactors
+    "enriched_up" = GLOBAL_COLORS["enriched_up"],    # Vermillion — enriched in TRIP4
+    "enriched_dn" = GLOBAL_COLORS["enriched_dn"],    # Gray — enriched in WT
+    "nonsig"      = GLOBAL_COLORS["nonsig"]          # Light gray
   )
 
   MAIN_LABELS <- c(

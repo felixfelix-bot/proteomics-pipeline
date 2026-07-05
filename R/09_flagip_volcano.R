@@ -137,13 +137,14 @@ if (sum(in_nflag) > 0) {
 }
 
 # ---- Step 5: Build the volcano plot ----
+# Colors from GLOBAL_COLORS for consistency across all plots
 FLAGIP_COLORS <- c(
-  "in_both"    = "#0072B2",   # Blue — validated by both Flag IP methods
-  "in_cflag"   = "#009E73",   # Bluish-green — validated by C-Flag only
-  "in_nflag"   = "#D55E00",   # Vermillion — validated by N-Flag only
-  "trip4_only" = "#F0C571",   # Pale orange — TRIP4-enriched, no Flag IP support
-  "wt_enriched" = "#B0B0B0",  # Gray — enriched in WT
-  "nonsig"      = "#D0D0D0"   # Light gray
+  "in_both"    = GLOBAL_COLORS["flag_both"],     # Yellow — both Flag IP methods
+  "in_cflag"   = GLOBAL_COLORS["flag_c_only"],   # Sky blue — C-Flag only
+  "in_nflag"   = GLOBAL_COLORS["flag_n_only"],   # Pink — N-Flag only
+  "trip4_only" = GLOBAL_COLORS["enriched_up"],   # Vermillion — uniform with all plots!
+  "wt_enriched" = GLOBAL_COLORS["enriched_dn"],  # Gray
+  "nonsig"      = GLOBAL_COLORS["nonsig"]        # Light gray
 )
 
 FLAGIP_LABELS <- c(
