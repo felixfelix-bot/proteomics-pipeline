@@ -182,6 +182,9 @@ venn-examples: check ## Generate 3 Venn diagram style examples (choose your favo
 venn-label-examples: check ## Generate 3 Venn label position variants
 	$(RSCRIPT) R/run_step.R venn_label_examples
 
+string-network: check ## STRING network analysis + GO by network membership
+	$(RSCRIPT) R/run_step.R string_network
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""
@@ -221,6 +224,10 @@ open-venn-examples: ## Open the 3 Venn diagram example PDFs
 
 open-venn-label-examples: ## Open Venn label position variant PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/venn_label_v*.pdf)
+
+open-string-network: ## Open STRING network plot + GO by network category
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/string_network_*.pdf) \
+	            $(wildcard $(FIGURE_DIR)/GO_STRING_*.pdf)
 
 open-targeted-go: ## Open all GO enrichment plot PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)
