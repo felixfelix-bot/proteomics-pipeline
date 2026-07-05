@@ -31,11 +31,16 @@ experiments <- load_all_experiments()
 cat("Initializing STRINGdb (version 12.0, human, score >= 400)...\n")
 cat("  (first run downloads ~100MB, subsequent runs use cache)\n")
 
+# Use a persistent cache directory inside the project (not R temp dir)
+# This prevents download issues on Windows/OneDrive
+string_cache <- file.path(OUTPUT_DIR, "string_cache")
+dir.create(string_cache, showWarnings = FALSE, recursive = TRUE)
+
 string_db <- STRINGdb$new(
   version         = STRING_VERSION,
   species         = STRING_TAXON,
   score_threshold = STRING_SCORE_THRESHOLD,
-  input_directory = ""
+  input_directory = string_cache
 )
 
 # =====================================================================
