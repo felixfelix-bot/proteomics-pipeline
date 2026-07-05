@@ -168,8 +168,11 @@ context: check ## Print data context (file structure, overlaps, gene names)
 chx-crac-analysis: check ## CHX/DMSO volcanos + GO, CRAC volcano + GO
 	$(RSCRIPT) R/run_step.R chx_crac_analysis
 
-list-data: ## List ALL CSV files in data/ (paths, sizes, headers — no data values)
+list-data: ## List ALL CSV files (paths, sizes, headers — no data values)
 	$(RSCRIPT) R/list_data.R
+
+headers: ## Print column names of every CSV file
+	$(RSCRIPT) R/print_headers.R
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
