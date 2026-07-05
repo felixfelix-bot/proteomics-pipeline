@@ -273,7 +273,7 @@ analyze_string_network <- function(df, experiment_name,
 
   # png() opens a PNG graphics device — everything plotted goes to this file.
   # file.path() joins path components (cross-platform). FIGURE_DIR is from config.
-  png(file.path(FIGURE_DIR, paste0("string_network_", experiment_name, ".png")),
+  png(safe_filepath(FIGURE_DIR, paste0("string_network_", experiment_name), ".png"),
       width = 12, height = 10, units = "in", res = FIG_DPI)
 
   # plot() draws the network graph.

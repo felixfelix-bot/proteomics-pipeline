@@ -104,12 +104,16 @@ if (length(seed_genes) > 0) {
 cat("\nMapping to STRING database (human, v", STRING_VERSION, ")...\n", sep = "")
 cat("  (First run downloads ~100MB — this is normal)\n")
 
+# Sanitize cache dir to prevent colon issues on Windows/OneDrive
+string_cache_dir <- file.path(OUTPUT_DIR, "string_cache")
+dir.create(string_cache_dir, showWarnings = FALSE, recursive = TRUE)
+
 string_map <- tryCatch({
   STRINGdb::STRINGdb$new(
     version = STRING_VERSION,
     species = STRING_TAXON,
     score_threshold = STRING_SCORE_THRESHOLD,
-    input_directory = file.path(OUTPUT_DIR, "string_cache")
+    input_directory = string_cache_dir
   )
 }, error = function(e) {
   cat("ERROR: Cannot connect to STRING database:\n", conditionMessage(e), "\n")
@@ -186,10 +190,8 @@ label_vec <- ifelse(V(g)$is_seed, V(g)$name_display, NA)
 
 # Save as PNG
 commit_hash <- get_git_hash()
-png_path <- file.path(FIGURE_DIR,
-  paste0("crac_string_network_", commit_hash, ".png"))
-pdf_path <- file.path(FIGURE_DIR,
-  paste0("crac_string_network_", commit_hash, ".pdf"))
+png_path <- safe_filepath(FIGURE_DIR, paste0("crac_string_network_", commit_hash), ".png")
+pdf_path <- safe_filepath(FIGURE_DIR, paste0("crac_string_network_", commit_hash), ".pdf")
 
 grDevices::png(png_path, width = 12, height = 10, units = "in", res = 300)
 plot(g,

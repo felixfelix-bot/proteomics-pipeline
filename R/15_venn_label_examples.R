@@ -38,8 +38,8 @@ fill_b <- GLOBAL_COLORS[["venn_b_only"]]
 save_venn <- function(vp, file_prefix, title) {
   safe_name <- sanitize_filename(file_prefix)
   versioned_name <- paste0(safe_name, "_", commit_hash)
-  png_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
-  pdf_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
+  png_path <- safe_filepath(FIGURE_DIR, versioned_name, ".png")
+  pdf_path <- safe_filepath(FIGURE_DIR, versioned_name, ".pdf")
 
   grDevices::png(png_path, width = 7, height = 6, units = "in", res = 300)
   grid.draw(vp)
@@ -134,8 +134,8 @@ vp3 <- draw.pairwise.venn(
 # Save with combined title that includes category names
 safe_name <- sanitize_filename("venn_label_v3_title_only")
 versioned_name <- paste0(safe_name, "_", commit_hash)
-png_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
-pdf_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
+png_path <- safe_filepath(FIGURE_DIR, versioned_name, ".png")
+pdf_path <- safe_filepath(FIGURE_DIR, versioned_name, ".pdf")
 
 full_title <- "TurboID vs Flag IP Overlap"
 

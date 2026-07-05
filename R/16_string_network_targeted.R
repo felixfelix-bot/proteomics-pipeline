@@ -171,8 +171,8 @@ analyze_string_network <- function(df, experiment_name,
   commit_hash <- get_git_hash()
   safe_name <- sanitize_filename(paste0("string_network_", experiment_name))
   versioned_name <- paste0(safe_name, "_", commit_hash)
-  png_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
-  pdf_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
+  png_path <- safe_filepath(FIGURE_DIR, versioned_name, ".png")
+  pdf_path <- safe_filepath(FIGURE_DIR, versioned_name, ".pdf")
 
   grDevices::png(png_path, width = 12, height = 10, units = "in", res = FIG_DPI)
   plot(g,

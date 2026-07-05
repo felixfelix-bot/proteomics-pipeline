@@ -34,21 +34,40 @@ get_git_hash <- function() {
 # Also avoid Unicode symbols (∩, ±, µ, etc.) that cause OneDrive errors.
 # This function replaces them with safe alternatives.
 sanitize_filename <- function(name) {
-  # Replace forbidden characters with underscores or safe equivalents
-  name <- gsub("[<>:\"/\\\\|?*]", "_", name)
+  # Replace ALL forbidden Windows characters with underscores
+  # This regex matches: < > : " / \ | ? *
+  # Use fixed=TRUE for the colon to be 100% sure it's caught
+  name <- gsub(":", "_", name)  # Colon FIRST — most common Windows killer
+  name <- gsub("[<>\"|?*]", "_", name)
+  name <- gsub("/", "_", name)
+  name <- gsub("\\\\", "_", name)
   # Replace common Unicode symbols that cause OneDrive/filesystem errors
-  name <- gsub("∩", "and", name)        # intersection symbol
-  name <- gsub("±", "plusminus", name)  # plus-minus
-  name <- gsub("µ", "u", name)          # micro sign
-  name <- gsub("→", "to", name)         # arrow
-  name <- gsub("°", "deg", name)        # degree
+  name <- gsub("\u2229", "and", name)        # intersection symbol \u2229
+  name <- gsub("\u00b1", "plusminus", name)  # plus-minus \u00b1
+  name <- gsub("\u00b5", "u", name)          # micro sign \u00b5
+  name <- gsub("\u2192", "to", name)         # arrow \u2192
+  name <- gsub("\u00b0", "deg", name)        # degree \u00b0
+  name <- gsub("\u2014", "-", name)          # em dash \u2014
+  name <- gsub("\u2013", "-", name)          # en dash \u2013
+  name <- gsub("\u2026", "", name)           # ellipsis \u2026
   # Remove any remaining non-ASCII characters
   name <- iconv(name, to = "ASCII//TRANSLIT")
   # Collapse multiple underscores
   name <- gsub("_+", "_", name)
-  # Trim trailing underscores
-  name <- gsub("_$", "", name)
+  # Trim trailing/leading underscores
+  name <- gsub("^_+|_+$", "", name)
   return(name)
+}
+
+# ---- Sanitize a full file path (directory + filename) ----
+# Use this when constructing file paths manually (outside save_figure/save_table).
+# Sanitizes BOTH the directory components and the filename.
+safe_filepath <- function(dir, filename, ext = "") {
+  safe_name <- sanitize_filename(filename)
+  # Also sanitize the directory path components
+  safe_dir <- gsub(":", "_", dir)
+  versioned <- paste0(safe_name, ext)
+  file.path(safe_dir, versioned)
 }
 
 # ---- Save a ggplot object to PNG and PDF ----

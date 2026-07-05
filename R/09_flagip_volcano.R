@@ -186,19 +186,16 @@ validate_dir <- file.path(TABLE_DIR, "flagip_validation")
 dir.create(validate_dir, showWarnings = FALSE, recursive = TRUE)
 
 if (sum(in_both) > 0) {
-  write.csv(data.frame(gene = df$gene[in_both]),
-            file.path(validate_dir, "trip4_validated_by_both_flagIP.csv"),
-            row.names = FALSE)
+  vp <- safe_filepath(validate_dir, "trip4_validated_by_both_flagIP", ".csv")
+  write.csv(data.frame(gene = df$gene[in_both]), vp, row.names = FALSE)
 }
 if (sum(in_cflag) > 0) {
-  write.csv(data.frame(gene = df$gene[in_cflag]),
-            file.path(validate_dir, "trip4_validated_by_cflag_only.csv"),
-            row.names = FALSE)
+  vp <- safe_filepath(validate_dir, "trip4_validated_by_cflag_only", ".csv")
+  write.csv(data.frame(gene = df$gene[in_cflag]), vp, row.names = FALSE)
 }
 if (sum(in_nflag) > 0) {
-  write.csv(data.frame(gene = df$gene[in_nflag]),
-            file.path(validate_dir, "trip4_validated_by_nflag_only.csv"),
-            row.names = FALSE)
+  vp <- safe_filepath(validate_dir, "trip4_validated_by_nflag_only", ".csv")
+  write.csv(data.frame(gene = df$gene[in_nflag]), vp, row.names = FALSE)
 }
 
 # ---- Step 5: Build the volcano plot ----

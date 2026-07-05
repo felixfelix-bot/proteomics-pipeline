@@ -69,8 +69,8 @@ title_str <- "TRIP4 without vs with Retinoic Acid"
 save_venn <- function(vp, prefix, subtitle) {
   safe_name <- sanitize_filename(prefix)
   versioned <- paste0(safe_name, "_", commit_hash)
-  png_path <- file.path(FIGURE_DIR, paste0(versioned, ".png"))
-  pdf_path <- file.path(FIGURE_DIR, paste0(versioned, ".pdf"))
+  png_path <- safe_filepath(FIGURE_DIR, versioned, ".png")
+  pdf_path <- safe_filepath(FIGURE_DIR, versioned, ".pdf")
 
   grDevices::png(png_path, width = 7, height = 6, units = "in", res = 300)
   grid.draw(vp)

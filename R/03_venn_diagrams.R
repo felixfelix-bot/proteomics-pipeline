@@ -321,7 +321,7 @@ if (length(gene_sets) >= 2) {
   # this file until we call dev.off() (device off) to close it.
   # file.path() joins folder + filename in a cross-platform way.
   #   width/height/res control the output dimensions and quality.
-  png(file.path(FIGURE_DIR, "upset_all_experiments.png"),
+  png(safe_filepath(FIGURE_DIR, "upset_all_experiments", ".png"),
       width = 10, height = 6, units = "in", res = FIG_DPI)
 
   # print() is needed here because the UpSetR plot is drawn to the active

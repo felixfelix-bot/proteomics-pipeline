@@ -67,8 +67,8 @@ make_two_set_venn <- function(set_a, set_b, label_a, label_b, title, file_prefix
   safe_name <- sanitize_filename(file_prefix)
   versioned_name <- paste0(safe_name, "_", commit_hash)
 
-  png_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
-  pdf_path <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
+  png_path <- safe_filepath(FIGURE_DIR, versioned_name, ".png")
+  pdf_path <- safe_filepath(FIGURE_DIR, versioned_name, ".pdf")
 
   # Re-draw to file
   grDevices::png(png_path, width = 7, height = 6, units = "in", res = 300)
