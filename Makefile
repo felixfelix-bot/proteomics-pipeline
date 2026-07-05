@@ -57,10 +57,10 @@ TABLE_DIR  := output/tables
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
-        string-network crac-network venn-overflow-examples \
+        string-network crac-network venn-overflow-examples gsea \
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
-        open-string-network open-crac-network open-venn-overflow-examples \
+        open-string-network open-crac-network open-venn-overflow-examples open-gsea \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -195,6 +195,9 @@ crac-network: check ## STRING network for CRAC RNA interactome data
 
 venn-overflow-examples: check ## 3 Venn overflow solutions (ext.text, equal circles, boxed labels)
 	$(RSCRIPT) R/run_step.R venn_overflow_examples
+
+gsea: check ## GSEA enrichment analysis (ranked gene list via clusterProfiler)
+	$(RSCRIPT) R/run_step.R gsea
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
