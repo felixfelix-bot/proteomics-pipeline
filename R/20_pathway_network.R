@@ -103,13 +103,13 @@ build_go_network <- function(pathway_id, pathway_desc, go_type, gene_list,
     vertices = data.frame(name = unique(c(int$from, int$to)))
   )
 
-  # Annotate vertices with logFC from the experiment data
-  exp_map <- experiment_df[, c("gene", "logFC", "padj")]
+  # Annotate vertices with log2FC from the experiment data
+  exp_map <- experiment_df[, c("gene", "log2FC", "padj")]
   exp_map <- exp_map[!duplicated(exp_map$gene), ]
 
   v_genes <- mapped$gene[match(V(g)$name, mapped$STRING_id)]
   V(g)$gene_name <- ifelse(is.na(v_genes), V(g)$name, v_genes)
-  V(g)$logFC <- exp_map$logFC[match(V(g)$gene_name, exp_map$gene)]
+  V(g)$logFC <- exp_map$log2FC[match(V(g)$gene_name, exp_map$gene)]
   V(g)$padj <- exp_map$padj[match(V(g)$gene_name, exp_map$gene)]
   V(g)$logFC[is.na(V(g)$logFC)] <- 0
   V(g)$padj[is.na(V(g)$padj)] <- 1

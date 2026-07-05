@@ -42,9 +42,9 @@ ONT_LABELS <- c(
 run_gsea <- function(df, exp_name, display_name) {
   cat(sprintf("\n======== %s (%d proteins) ========\n", display_name, nrow(df)))
 
-  # Build ranked gene list: sign(logFC) * -log10(adj.P.Val)
-  # This captures both direction (sign of logFC) AND significance (padj)
-  df$rank_metric <- sign(df$logFC) * -log10(df$adj.P.Val)
+  # Build ranked gene list: sign(log2FC) * -log10(padj)
+  # This captures both direction (sign of log2FC) AND significance (padj)
+  df$rank_metric <- sign(df$log2FC) * -log10(df$padj)
   df <- df[is.finite(df$rank_metric), ]
   df <- df[order(df$rank_metric, decreasing = TRUE), ]
 
@@ -341,9 +341,9 @@ crac_file <- file.path(DATA_DIR, "FLAG-TRIP4_list_CRACdata.csv")
 if (file.exists(crac_file)) {
   crac_df <- readr::read_csv(crac_file, show_col_types = FALSE)
   crac_df$gene <- crac_df[[CRAC_GENE_COL]]
-  crac_df$logFC <- crac_df[[CRAC_LOG2FC_COL]]
+  crac_df$log2FC <- crac_df[[CRAC_LOG2FC_COL]]
   crac_df$padj <- crac_df[[CRAC_PADJ_COL]]
-  crac_df <- crac_df[!is.na(crac_df$gene) & !is.na(crac_df$logFC) &
+  crac_df <- crac_df[!is.na(crac_df$gene) & !is.na(crac_df$log2FC) &
                       !is.na(crac_df$padj), ]
   run_gsea(crac_df, "CRAC", "CRAC RNA Interactome")
   cat(sprintf("\n"))
