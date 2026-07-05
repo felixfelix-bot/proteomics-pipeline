@@ -37,7 +37,7 @@ known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 # ---- Helper: RA comparison volcano (Plots 2 and 3) ----
 # Label top 20 significant genes (10 up + 10 down by combined score).
 # Uses a white background behind labels for readability on any background color.
-make_ra_volcano <- function(df, title, n_top = 30) {
+make_ra_volcano <- function(df, title, n_top = 60) {
   toPlot <- df
   toPlot$neglog10p <- -log10(toPlot$padj)
 
