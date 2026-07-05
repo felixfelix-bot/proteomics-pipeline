@@ -101,8 +101,8 @@ vp1 <- draw.pairwise.venn(
 )
 
 # Save
-file1 <- file.path(FIGURE_DIR,
-  paste0("venn_example_1_proportional_scaled_text_", commit_hash))
+file1 <- safe_filepath(FIGURE_DIR,
+  paste0("venn_example_1_proportional_scaled_text_", commit_hash), "")
 
 grDevices::png(paste0(file1, ".png"), width = 7, height = 6, units = "in", res = 300)
 grid.draw(vp1)
@@ -149,8 +149,8 @@ vp2 <- draw.pairwise.venn(
   ind       = FALSE
 )
 
-file2 <- file.path(FIGURE_DIR,
-  paste0("venn_example_2_equal_circles_", commit_hash))
+file2 <- safe_filepath(FIGURE_DIR,
+  paste0("venn_example_2_equal_circles_", commit_hash), "")
 
 grDevices::png(paste0(file2, ".png"), width = 7, height = 6, units = "in", res = 300)
 grid.draw(vp2)
@@ -232,8 +232,8 @@ p3 <- ggplot() +
     plot.title = element_text(hjust = 0.5, face = "bold", size = 14)
   )
 
-file3 <- file.path(FIGURE_DIR,
-  paste0("venn_example_3_ggplot_labels_", commit_hash))
+file3 <- safe_filepath(FIGURE_DIR,
+  paste0("venn_example_3_ggplot_labels_", commit_hash), "")
 
 ggsave(paste0(file3, ".png"), p3, width = 7, height = 6, dpi = 300)
 ggsave(paste0(file3, ".pdf"), p3, width = 7, height = 6)
