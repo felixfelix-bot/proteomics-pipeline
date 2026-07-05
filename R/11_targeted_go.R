@@ -145,7 +145,6 @@ run_targeted_go <- function(genes, set_name, universe) {
     fig_height_bar <- max(7, n_show_bar * 0.5)
 
     p_bar <- barplot(result_simple, showCategory = n_show_bar,
-                     orderBy = "Count",  # Capital C — sorts by gene count
                      title = dot_title) +
       ggplot2::labs(color = "p-adjusted value", fill = "p-adjusted value") +  # Descriptive legend
       ggplot2::theme(

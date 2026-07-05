@@ -57,8 +57,10 @@ TABLE_DIR  := output/tables
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
+        string-network crac-network \
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
+        open-string-network open-crac-network \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -90,6 +92,9 @@ help:
 	@echo "  make chx-crac-analysis  CHX/DMSO volcanos + GO, CRAC volcano + GO"
 	@echo "  make list-data        List ALL CSV files (paths, sizes, headers — no data values)"
 	@echo "  make venn-examples    Generate 3 Venn diagram style variants (pick your favorite)"
+	@echo "  make venn-label-examples  3 Venn label position variants"
+	@echo "  make string-network   STRING network + GO by membership (Lydia style)"
+	@echo "  make crac-network     STRING network for CRAC RNA interactome"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots"
@@ -185,6 +190,9 @@ venn-label-examples: check ## Generate 3 Venn label position variants
 string-network: check ## STRING network analysis + GO by network membership
 	$(RSCRIPT) R/run_step.R string_network
 
+crac-network: check ## STRING network for CRAC RNA interactome data
+	$(RSCRIPT) R/run_step.R crac_string_network
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""
@@ -228,6 +236,9 @@ open-venn-label-examples: ## Open Venn label position variant PDFs
 open-string-network: ## Open STRING network plot + GO by network category
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/string_network_*.pdf) \
 	            $(wildcard $(FIGURE_DIR)/GO_STRING_*.pdf)
+
+open-crac-network: ## Open CRAC STRING network plot
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/crac_string_network_*.pdf)
 
 open-targeted-go: ## Open all GO enrichment plot PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)

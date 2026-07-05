@@ -32,6 +32,17 @@ cat("=========================================\n\n")
 
 experiments <- load_all_experiments()
 
+# ---- DIAGNOSTIC: Print ALL experiment names found in data ----
+# This helps debug when experiment names don't match expected values.
+# The names come from the CSV filenames (minus _diffEx_minProb.csv suffix).
+cat("\n--- EXPERIMENT DIAGNOSTICS ---\n")
+cat(sprintf("Total experiments loaded: %d\n", length(experiments)))
+cat("All experiment names:\n")
+for (nm in names(experiments)) {
+  cat(sprintf("  - %s (%d proteins)\n", nm, nrow(experiments[[nm]])))
+}
+cat("--- END DIAGNOSTICS ---\n\n")
+
 # ---- Step 1: Find genes significant in each Flag IP experiment ----
 cat("Loading Flag IP experiment data...\n")
 
@@ -46,16 +57,29 @@ cflag_exp <- find_experiment(experiments, flag_c)
 if (!is.null(cflag_exp)) {
   cflag_sig <- get_significant_genes(cflag_exp)
   cat(sprintf("  C-flag significant:   %d proteins\n", length(cflag_sig)))
+  # Print sample gene names for debugging
+  if (length(cflag_sig) > 0) {
+    cat(sprintf("    Sample genes (first 10): %s\n",
+                paste(head(cflag_sig, 10), collapse = ", ")))
+  }
 } else {
   cat("  WARNING: C-flag experiment not found:", flag_c, "\n")
+  cat("  Tried also:", paste0(flag_c, "__1"), ",", paste0(flag_c, "__2"), "\n")
+  cat("  Check the experiment names listed above.\n")
 }
 
 nflag_exp <- find_experiment(experiments, flag_n)
 if (!is.null(nflag_exp)) {
   nflag_sig <- get_significant_genes(nflag_exp)
   cat(sprintf("  N-flag significant:   %d proteins\n", length(nflag_sig)))
+  if (length(nflag_sig) > 0) {
+    cat(sprintf("    Sample genes (first 10): %s\n",
+                paste(head(nflag_sig, 10), collapse = ", ")))
+  }
 } else {
   cat("  WARNING: N-flag experiment not found:", flag_n, "\n")
+  cat("  Tried also:", paste0(flag_n, "__1"), ",", paste0(flag_n, "__2"), "\n")
+  cat("  Check the experiment names listed above.\n")
 }
 
 # ---- Step 2: Load TurboID TRIP4 vs WT data ----
@@ -102,14 +126,52 @@ df$category[in_both] <- "in_both"
 
 # Report counts
 cat(sprintf("  TRIP4-enriched (total):     %d proteins\n", sum(trip4_idx)))
-cat(sprintf("    → Also in C-flag only:    %d\n", sum(in_cflag)))
-cat(sprintf("    → Also in N-flag only:    %d\n", sum(in_nflag)))
-cat(sprintf("    → Also in BOTH:           %d\n", sum(in_both)))
-cat(sprintf("    → TRIP4 only (no Flag IP): %d\n",
+cat(sprintf("    -> Also in C-flag only:    %d\n", sum(in_cflag)))
+cat(sprintf("    -> Also in N-flag only:    %d\n", sum(in_nflag)))
+cat(sprintf("    -> Also in BOTH:           %d\n", sum(in_both)))
+cat(sprintf("    -> TRIP4 only (no Flag IP): %d\n",
             sum(trip4_idx) - sum(in_cflag | in_nflag | in_both)))
 cat(sprintf("  WT-enriched:                 %d proteins\n", sum(wt_idx)))
 cat(sprintf("  Not significant:             %d proteins\n",
             nrow(df) - sum(trip4_idx) - sum(wt_idx)))
+
+# ---- DIAGNOSTIC: If overlap is zero, explain why ----
+if (sum(in_both) == 0 && sum(in_cflag) == 0 && sum(in_nflag) == 0) {
+  cat("\n  ========================================\n")
+  cat("  OVERLAP DIAGNOSTIC: No Flag IP overlap found!\n")
+  cat("  ========================================\n")
+  cat(sprintf("  TRIP4-enriched genes: %d\n", sum(trip4_idx)))
+  cat(sprintf("  C-flag significant:   %d\n", length(cflag_sig)))
+  cat(sprintf("  N-flag significant:   %d\n", length(nflag_sig)))
+
+  # Check raw intersection (without TRIP4 filter)
+  trip4_genes <- df$gene[trip4_idx]
+  raw_cflag_overlap <- intersect(trip4_genes, cflag_sig)
+  raw_nflag_overlap <- intersect(trip4_genes, nflag_sig)
+  cat(sprintf("\n  Raw overlap TRIP4 x C-flag: %d genes\n", length(raw_cflag_overlap)))
+  cat(sprintf("  Raw overlap TRIP4 x N-flag: %d genes\n", length(raw_nflag_overlap)))
+
+  if (length(raw_cflag_overlap) > 0) {
+    cat(sprintf("    Genes: %s\n", paste(head(raw_cflag_overlap, 20), collapse = ", ")))
+  }
+  if (length(raw_nflag_overlap) > 0) {
+    cat(sprintf("    Genes: %s\n", paste(head(raw_nflag_overlap, 20), collapse = ", ")))
+  }
+
+  # Check if gene names use different cases
+  cat("\n  Checking gene name format...\n")
+  cat(sprintf("    TurboID sample: %s\n",
+              paste(head(df$gene[trip4_idx], 5), collapse = ", ")))
+  if (length(cflag_sig) > 0) {
+    cat(sprintf("    C-flag sample:  %s\n",
+                paste(head(cflag_sig, 5), collapse = ", ")))
+  }
+  if (length(nflag_sig) > 0) {
+    cat(sprintf("    N-flag sample:  %s\n",
+                paste(head(nflag_sig, 5), collapse = ", ")))
+  }
+  cat("  ========================================\n\n")
+}
 
 # Factor with explicit ordering (priority: later levels drawn on top)
 df$category <- factor(df$category,
