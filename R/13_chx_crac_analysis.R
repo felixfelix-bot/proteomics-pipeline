@@ -158,29 +158,28 @@ if (!file.exists(crac_path)) {
   cat("Loading CRAC data...\n")
   crac_df <- readr::read_csv(crac_path, show_col_types = FALSE)
   cat(sprintf("  Raw rows: %d\n", nrow(crac_df)))
-  cat(sprintf("  Columns: %s\n", paste(colnames(crac_df), collapse = ", ")))
 
-  # Find columns using CRAC-specific names
-  crac_gene <- find_column(colnames(crac_df), c(CRAC_GENE_COL, "external_gene_name", "Gene", "gene"))
-  crac_fc   <- find_column(colnames(crac_df), c(CRAC_LOG2FC_COL, "logFC", "log2FC"))
-  crac_padj <- find_column(colnames(crac_df), c(CRAC_PADJ_COL, "FDR", "adj.P.Val", "padj"))
-  crac_pval <- find_column(colnames(crac_df), c(CRAC_PVAL_COL, "PValue", "P.Val"))
+  # Hardcoded CRAC column names (confirmed from actual file headers)
+  # CRAC data uses different names than the mass spec pipeline
+  crac_gene_col <- "external_gene_name"
+  crac_fc_col   <- "logFC"
+  crac_padj_col <- "FDR"
 
-  cat(sprintf("  Matched: gene='%s', logFC='%s', padj='%s', pval='%s'\n",
-              crac_gene %||% "NOT FOUND", crac_fc %||% "NOT FOUND",
-              crac_padj %||% "NOT FOUND", crac_pval %||% "NOT FOUND"))
+  # Verify columns exist
+  missing <- c()
+  if (!(crac_gene_col %in% colnames(crac_df))) missing <- c(missing, crac_gene_col)
+  if (!(crac_fc_col %in% colnames(crac_df)))   missing <- c(missing, crac_fc_col)
+  if (!(crac_padj_col %in% colnames(crac_df))) missing <- c(missing, crac_padj_col)
 
-  if (is.null(crac_gene) || is.null(crac_fc) || is.null(crac_padj)) {
-    cat("\n  ERROR: Could not find required columns in CRAC data.\n")
-    cat("  Need: gene column, logFC column, FDR/padj column.\n")
-    cat("  Available columns:\n")
-    for (c in colnames(crac_df)) cat("    - ", c, "\n", sep = "")
+  if (length(missing) > 0) {
+    cat("\n  ERROR: Missing columns in CRAC data:", paste(missing, collapse=", "), "\n")
+    cat("  Available columns:", paste(colnames(crac_df), collapse=", "), "\n")
   } else {
     # Build clean data frame with standardized names
     crac_clean <- data.frame(
-      gene = crac_df[[crac_gene]],
-      log2FC = crac_df[[crac_fc]],
-      padj = crac_df[[crac_padj]],
+      gene = crac_df[[crac_gene_col]],
+      log2FC = crac_df[[crac_fc_col]],
+      padj = crac_df[[crac_padj_col]],
       stringsAsFactors = FALSE
     )
 
