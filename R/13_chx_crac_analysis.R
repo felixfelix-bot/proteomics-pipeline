@@ -54,9 +54,9 @@ make_chx_volcano <- function(df, title, n_top = 20) {
   label_data <- rbind(top_up, top_dn)
 
   CHX_COLORS <- c(
-    "enriched_up" = GLOBAL_COLORS["enriched_up"],
-    "enriched_dn" = GLOBAL_COLORS["enriched_dn"],
-    "nonsig"      = GLOBAL_COLORS["nonsig"]
+    "enriched_up" = GLOBAL_COLORS[["enriched_up"]],
+    "enriched_dn" = GLOBAL_COLORS[["enriched_dn"]],
+    "nonsig"      = GLOBAL_COLORS[["nonsig"]]
   )
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +

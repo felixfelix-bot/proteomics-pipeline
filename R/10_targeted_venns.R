@@ -44,14 +44,16 @@ make_two_set_venn <- function(set_a, set_b, label_a, label_b, title, file_prefix
     area2     = length(set_b),
     cross.area = overlap_count,
     category  = c(label_a, label_b),
-    fill      = c(GLOBAL_COLORS["venn_a_only"], GLOBAL_COLORS["venn_b_only"]),
+    fill      = c(GLOBAL_COLORS[["venn_a_only"]], GLOBAL_COLORS[["venn_b_only"]]),
     alpha     = rep(0.5, 2),
     cat.cex   = 1.6,
     cex       = 2.0,
     fontfamily = "sans",
     cat.fontfamily = "sans",
     col       = "transparent",
-    margin    = 0.08,      # Extra margin to prevent label clipping
+    cat.pos   = c(-30, 30),      # Labels at upper edges, away from circle centers
+    cat.dist  = c(0.06, 0.06),   # Pushed further out to avoid overlapping circles
+    margin    = 0.08,
     ind       = FALSE
   )
 

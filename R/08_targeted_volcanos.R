@@ -37,7 +37,7 @@ known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 # ---- Helper: RA comparison volcano (Plots 2 and 3) ----
 # Label top 20 significant genes (10 up + 10 down by combined score).
 # Uses a white background behind labels for readability on any background color.
-make_ra_volcano <- function(df, title, n_top = 20) {
+make_ra_volcano <- function(df, title, n_top = 30) {
   toPlot <- df
   toPlot$neglog10p <- -log10(toPlot$padj)
 
@@ -140,11 +140,11 @@ make_main_volcano <- function(df, title) {
     levels = c("ascc_core", "known_ia", "enriched_up", "enriched_dn", "nonsig"))
 
   MAIN_COLORS <- c(
-    "ascc_core"   = GLOBAL_COLORS["ascc_core"],     # Blue — ASCC complex
-    "known_ia"    = GLOBAL_COLORS["known_ia"],       # Green — known interactors
-    "enriched_up" = GLOBAL_COLORS["enriched_up"],    # Vermillion — enriched in TRIP4
-    "enriched_dn" = GLOBAL_COLORS["enriched_dn"],    # Gray — enriched in WT
-    "nonsig"      = GLOBAL_COLORS["nonsig"]          # Light gray
+    "ascc_core"   = GLOBAL_COLORS[["ascc_core"]],     # Blue — ASCC complex
+    "known_ia"    = GLOBAL_COLORS[["known_ia"]],       # Green — known interactors
+    "enriched_up" = GLOBAL_COLORS[["enriched_up"]],    # Vermillion — enriched in TRIP4
+    "enriched_dn" = GLOBAL_COLORS[["enriched_dn"]],    # Gray — enriched in WT
+    "nonsig"      = GLOBAL_COLORS[["nonsig"]]          # Light gray
   )
 
   MAIN_LABELS <- c(
@@ -156,7 +156,9 @@ make_main_volcano <- function(df, title) {
   )
 
   # Label only ASCC complex and known interactors
-  label_data <- toPlot[toPlot$category %in% c("ascc_core", "known_ia"), ]
+  # BUT: don't label proteins enriched in WT (negative log2FC) — per researcher request
+  label_data <- toPlot[toPlot$category %in% c("ascc_core", "known_ia") &
+                       !is.na(toPlot$log2FC) & toPlot$log2FC > 0, ]
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
                                              color = category)) +

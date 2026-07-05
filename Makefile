@@ -56,9 +56,9 @@ TABLE_DIR  := output/tables
 .DEFAULT_GOAL := help
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
-        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples \
+        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
         all-volcano all-venn all-targeted targeted-plots \
-        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples \
+        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -179,6 +179,9 @@ headers: ## Print column names of every CSV file
 venn-examples: check ## Generate 3 Venn diagram style examples (choose your favorite)
 	$(RSCRIPT) R/run_step.R venn_examples
 
+venn-label-examples: check ## Generate 3 Venn label position variants
+	$(RSCRIPT) R/run_step.R venn_label_examples
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""
@@ -215,6 +218,9 @@ open-targeted-venn: ## Open targeted Venn diagram PDFs
 
 open-venn-examples: ## Open the 3 Venn diagram example PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/venn_example_*.pdf)
+
+open-venn-label-examples: ## Open Venn label position variant PDFs
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/venn_label_v*.pdf)
 
 open-targeted-go: ## Open all GO enrichment plot PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)

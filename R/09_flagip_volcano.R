@@ -41,15 +41,18 @@ flag_n <- "BK516_Nflag_vs_BK516_Ctrl"
 cflag_sig <- character(0)
 nflag_sig <- character(0)
 
-if (flag_c %in% names(experiments)) {
-  cflag_sig <- get_significant_genes(experiments[[flag_c]])
+# Use find_experiment() to handle dedup suffixes (BK516_Cflag_vs_BK516_Ctrl__1)
+cflag_exp <- find_experiment(experiments, flag_c)
+if (!is.null(cflag_exp)) {
+  cflag_sig <- get_significant_genes(cflag_exp)
   cat(sprintf("  C-flag significant:   %d proteins\n", length(cflag_sig)))
 } else {
   cat("  WARNING: C-flag experiment not found:", flag_c, "\n")
 }
 
-if (flag_n %in% names(experiments)) {
-  nflag_sig <- get_significant_genes(experiments[[flag_n]])
+nflag_exp <- find_experiment(experiments, flag_n)
+if (!is.null(nflag_exp)) {
+  nflag_sig <- get_significant_genes(nflag_exp)
   cat(sprintf("  N-flag significant:   %d proteins\n", length(nflag_sig)))
 } else {
   cat("  WARNING: N-flag experiment not found:", flag_n, "\n")
@@ -139,12 +142,12 @@ if (sum(in_nflag) > 0) {
 # ---- Step 5: Build the volcano plot ----
 # Colors from GLOBAL_COLORS for consistency across all plots
 FLAGIP_COLORS <- c(
-  "in_both"    = GLOBAL_COLORS["flag_both"],     # Yellow — both Flag IP methods
-  "in_cflag"   = GLOBAL_COLORS["flag_c_only"],   # Sky blue — C-Flag only
-  "in_nflag"   = GLOBAL_COLORS["flag_n_only"],   # Pink — N-Flag only
-  "trip4_only" = GLOBAL_COLORS["enriched_up"],   # Vermillion — uniform with all plots!
-  "wt_enriched" = GLOBAL_COLORS["enriched_dn"],  # Gray
-  "nonsig"      = GLOBAL_COLORS["nonsig"]        # Light gray
+  "in_both"    = GLOBAL_COLORS[["flag_both"]],     # Yellow — both Flag IP methods
+  "in_cflag"   = GLOBAL_COLORS[["flag_c_only"]],   # Sky blue — C-Flag only
+  "in_nflag"   = GLOBAL_COLORS[["flag_n_only"]],   # Pink — N-Flag only
+  "trip4_only" = GLOBAL_COLORS[["enriched_up"]],   # Vermillion — TRIP4-enriched only
+  "wt_enriched" = GLOBAL_COLORS[["enriched_dn"]],  # Gray
+  "nonsig"      = GLOBAL_COLORS[["nonsig"]]        # Light gray
 )
 
 FLAGIP_LABELS <- c(

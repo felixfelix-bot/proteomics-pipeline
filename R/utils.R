@@ -342,5 +342,24 @@ load_all_experiments <- function(data_dir = DATA_DIR) {
   return(experiments)
 }
 
+# ---- Find an experiment by name (handles dedup suffixes) ----
+# When duplicate experiment names are found, discover_diffex_csvs()
+# appends __1, __2 suffixes. This helper tries the exact name first,
+# then falls back to __1 variant (usually the n=5 version with more replicates).
+find_experiment <- function(experiments, name) {
+  if (name %in% names(experiments)) return(experiments[[name]])
+  name1 <- paste0(name, "__1")
+  if (name1 %in% names(experiments)) {
+    cat(sprintf("  [INFO] '%s' matched as '%s' (deduplicated variant)\n", name, name1))
+    return(experiments[[name1]])
+  }
+  name2 <- paste0(name, "__2")
+  if (name2 %in% names(experiments)) {
+    cat(sprintf("  [INFO] '%s' matched as '%s' (deduplicated variant)\n", name, name2))
+    return(experiments[[name2]])
+  }
+  return(NULL)
+}
+
 # This line runs when the file is sourced — confirms it loaded successfully.
 cat("[utils] Utility functions loaded.\n")

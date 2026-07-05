@@ -50,8 +50,8 @@ n_only_b <- n_b - n_overlap   # 20
 
 title_str <- "TRIP4 without vs with Retinoic Acid"
 
-fill_a <- GLOBAL_COLORS["venn_a_only"]
-fill_b <- GLOBAL_COLORS["venn_b_only"]
+fill_a <- GLOBAL_COLORS[["venn_a_only"]]
+fill_b <- GLOBAL_COLORS[["venn_b_only"]]
 
 # =====================================================================
 # EXAMPLE 1: Area-Proportional with Auto-Scaling Text
