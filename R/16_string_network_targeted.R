@@ -49,11 +49,31 @@ analyze_string_network <- function(df, experiment_name,
   cat(sprintf("\n  [%s] Mapping proteins to STRING...\n", experiment_name))
 
   # ---- STEP 1: Map gene symbols to STRING IDs ----
+  # STRINGdb$map() sometimes fails with "incorrect number of dimensions"
+  # when the input data frame has extra columns it doesn't expect.
+  # Fix: pass only the columns STRING needs (gene + log2FC + padj).
+  map_input <- data.frame(
+    gene = df$gene,
+    log2FC = df$log2FC,
+    padj = df$padj,
+    stringsAsFactors = FALSE
+  )
+  map_input <- map_input[!is.na(map_input$gene) & map_input$gene != "", ]
+
   mapped <- tryCatch({
-    string_db$map(df, "gene", removeUnmappedRows = TRUE)
+    string_db$map(map_input, "gene", removeUnmappedRows = TRUE)
   }, error = function(e) {
     cat(sprintf("    ERROR mapping: %s\n", conditionMessage(e)))
-    return(NULL)
+    cat("    Retrying with simplified input...\n")
+    # Fallback: just gene names, no extra columns
+    simple_input <- data.frame(gene = unique(df$gene), stringsAsFactors = FALSE)
+    simple_input <- simple_input[!is.na(simple_input$gene) & simple_input$gene != "", ]
+    tryCatch({
+      string_db$map(simple_input, "gene", removeUnmappedRows = TRUE)
+    }, error = function(e2) {
+      cat(sprintf("    Still failing: %s\n", conditionMessage(e2)))
+      return(NULL)
+    })
   })
 
   if (is.null(mapped) || nrow(mapped) == 0) {
@@ -208,25 +228,38 @@ analyze_string_network <- function(df, experiment_name,
 }
 
 # =====================================================================
-# Run STRING analysis on key experiments
+# Run STRING analysis on ALL experiments
 # =====================================================================
-STRING_EXPERIMENTS <- list(
-  "TRIP4_TurboID_vs_WT" = "BK467_TRIP4_vs_BK467_WT"
-)
-
 all_string_results <- list()
 
-for (exp_label in names(STRING_EXPERIMENTS)) {
-  exp_key <- STRING_EXPERIMENTS[[exp_label]]
-  exp_data <- find_experiment(experiments, exp_key)
+for (exp_name in names(experiments)) {
+  # Skip duplicate experiments (only process main copy)
+  if (grepl("__[0-9]+$", exp_name)) next
 
-  if (!is.null(exp_data)) {
-    result <- analyze_string_network(exp_data, exp_label)
-    if (!is.null(result)) {
-      all_string_results[[exp_label]] <- result
-    }
-  } else {
-    cat(sprintf("\n  WARNING: %s not found in data\n", exp_key))
+  # Build display label (underscores → spaces for titles)
+  exp_label <- gsub("_", " ", exp_name)
+
+  exp_data <- experiments[[exp_name]]
+  result <- analyze_string_network(exp_data, exp_label)
+
+  if (!is.null(result)) {
+    all_string_results[[exp_label]] <- result
+  }
+}
+
+# Also process CRAC data
+crac_file <- file.path(DATA_DIR, "FLAG-TRIP4_list_CRACdata.csv")
+if (file.exists(crac_file)) {
+  cat("\n--- CRAC RNA Interactome ---\n")
+  crac_df <- load_proteomics_csv(
+    crac_file,
+    gene_col = CRAC_GENE_COL,
+    log2fc_col = CRAC_LOG2FC_COL,
+    padj_col = CRAC_PADJ_COL
+  )
+  result <- analyze_string_network(crac_df, "CRAC RNA Interactome")
+  if (!is.null(result)) {
+    all_string_results[["CRAC RNA Interactome"]] <- result
   }
 }
 
