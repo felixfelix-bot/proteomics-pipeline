@@ -6,17 +6,16 @@
 #
 # PLOT 1: TRIP4 TurboID vs Wild Type (MAIN experiment)
 #   - All circles, same size
-#   - WT-enriched proteins (negative log2FC): gray
-#   - TRIP4-enriched proteins (positive log2FC, sig): dark orange
-#   - Known interactors: colored but NOT labeled
-#   - ASCC core: colored but NOT labeled
-#   - Label: none for this plot
+#   - ASCC complex (ASCC1, ASCC2, ASCC3, TRIP4): blue, LABELED
+#   - Known interactors (excluding ASCC): green, LABELED
+#   - WT-enriched proteins (negative log2FC): gray, no labels
+#   - Other TRIP4-enriched proteins (positive, sig): vermillion, no labels
+#   - Category names in legend: ASCC complex, Known interactors, etc.
 #
 # PLOT 2: BK467 TRIP4 without RA vs with RA
 #   - All circles, same size
-#   - Enriched proteins: orange
-#   - Do NOT label known interactors or ASCC core
-#   - Label: top 20 proteins by combined significance (10 up + 10 down)
+#   - Enriched proteins: orange, LABEL ALL of them
+#   - Title: proper µM symbol
 #
 # PLOT 3: BK504 TRIP4 without RA vs with RA
 #   - Same rules as Plot 2
@@ -24,7 +23,6 @@
 # Usage:
 #   make targeted-volcano
 ###############################################################################
-
 cat("\n=========================================\n")
 cat(" Targeted Volcano Plots\n")
 cat("=========================================\n\n")
@@ -36,50 +34,28 @@ known_interactors <- load_known_interactors(interactors_file)
 ASCC_CORE <- c("TRIP4", "ASCC1", "ASCC2", "ASCC3")
 known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 
-# Colors (all categories use circles now — researcher said no triangles)
-TARGETED_COLORS <- c(
-  "ascc_core"    = "#0072B2",   # Blue
-  "known_ia"     = "#009E73",   # Green
-  "enriched_up"  = "#D55E00",   # Vermillion (orange) — enriched in TRIP4
-  "enriched_dn"  = "#B0B0B0",   # Gray — enriched in WT control
-  "nonsig"       = "#D0D0D0"    # Light gray — not significant
-)
-
 # ---- Helper: RA comparison volcano (Plots 2 and 3) ----
-# For RA comparison plots: label top 20 proteins by significance,
-# do NOT label known interactors or ASCC core specifically.
-make_ra_volcano <- function(df, title, n_top = 20) {
+# Label ALL significant genes (researcher preference: few genes are sig in RA)
+make_ra_volcano <- function(df, title) {
   toPlot <- df
   toPlot$neglog10p <- -log10(toPlot$padj)
 
-  # Categories: enriched or nonsig (no separate known_ia/ascc categories)
+  # Use config thresholds: padj < P_VALUE_CUTOFF, |log2FC| > LOG2FC_CUTOFF
   toPlot$category <- "nonsig"
-  toPlot$category[abs(toPlot$log2FC) >= 1 & toPlot$neglog10p > 1] <- "enriched_up"
+  toPlot$category[abs(toPlot$log2FC) > LOG2FC_CUTOFF &
+                  toPlot$padj < P_VALUE_CUTOFF] <- "enriched_up"
   toPlot$category <- factor(toPlot$category, levels = c("enriched_up", "nonsig"))
 
-  # Find top N proteins by combined significance on each side
-  # "Combined significance" = product of fold change magnitude and -log10(p)
-  sig_only <- toPlot[abs(toPlot$log2FC) >= 1 & toPlot$neglog10p > 1, ]
-  sig_only$combined_score <- abs(sig_only$log2FC) * sig_only$neglog10p
-
-  # Top 10 up-regulated (positive log2FC)
-  top_up <- sig_only[sig_only$log2FC > 0, ]
-  top_up <- top_up[order(-top_up$combined_score), ]
-  top_up <- head(top_up, n_top / 2)
-
-  # Top 10 down-regulated (negative log2FC)
-  top_dn <- sig_only[sig_only$log2FC < 0, ]
-  top_dn <- top_dn[order(-top_dn$combined_score), ]
-  top_dn <- head(top_dn, n_top / 2)
-
-  label_data <- rbind(top_up, top_dn)
+  # Label ALL significant genes (few in RA experiments)
+  label_data <- toPlot[toPlot$category == "enriched_up", ]
 
   RA_COLORS <- c(
     "enriched_up" = "#D55E00",
     "nonsig"      = "#D0D0D0"
   )
 
-  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
+                                             color = category)) +
     ggplot2::geom_point(alpha = 0.5, size = 0.8) +
     ggplot2::scale_color_manual(
       values = RA_COLORS,
@@ -90,10 +66,16 @@ make_ra_volcano <- function(df, title, n_top = 20) {
       data = label_data,
       ggplot2::aes(label = gene),
       size = 2.5, fontface = "bold",
-      max.overlaps = 25, show.legend = FALSE
+      max.overlaps = 50, show.legend = FALSE
     ) +
-    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey50", linewidth = 0.3) +
-    ggplot2::geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    ggplot2::geom_hline(
+      yintercept = -log10(P_VALUE_CUTOFF),
+      linetype = "dashed", color = "grey50", linewidth = 0.3
+    ) +
+    ggplot2::geom_vline(
+      xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF),
+      linetype = "dashed", color = "grey50", linewidth = 0.3
+    ) +
     ggplot2::labs(
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
@@ -102,47 +84,85 @@ make_ra_volcano <- function(df, title, n_top = 20) {
     ggplot2::theme_bw() +
     ggplot2::theme(
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+      axis.title.x = ggplot2::element_text(hjust = 0.5),
       axis.text = ggplot2::element_text(colour = "black", size = 8),
       legend.position = "right",
-      panel.grid.minor = ggplot2::element_blank()
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
     )
 
   return(p)
 }
 
 # ---- Helper: Main TRIP4 vs WT volcano ----
-# WT-enriched proteins = gray, only TRIP4-enriched = orange
-# No labels on this plot
+# ASCC complex and known interactors highlighted and LABELED.
+# WT-enriched = gray, other TRIP4-enriched = vermillion, not sig = light gray.
 make_main_volcano <- function(df, title) {
   toPlot <- df
   toPlot$neglog10p <- -log10(toPlot$padj)
 
-  # Three categories: enriched_up (TRIP4, orange), enriched_dn (WT, gray), nonsig
+  # Start: not significant
   toPlot$category <- "nonsig"
-  toPlot$category[toPlot$log2FC >= 1 & toPlot$neglog10p > 1] <- "enriched_up"
-  toPlot$category[toPlot$log2FC <= -1 & toPlot$neglog10p > 1] <- "enriched_dn"
+
+  # WT-enriched (significant, negative log2FC)
+  wt_idx <- toPlot$padj < P_VALUE_CUTOFF & toPlot$log2FC < -LOG2FC_CUTOFF
+  toPlot$category[wt_idx] <- "enriched_dn"
+
+  # TRIP4-enriched (significant, positive log2FC)
+  trip4_idx <- toPlot$padj < P_VALUE_CUTOFF & toPlot$log2FC > LOG2FC_CUTOFF
+  toPlot$category[trip4_idx] <- "enriched_up"
+
+  # Known interactors (excluding ASCC core)
+  toPlot$category[toPlot$gene %in% known_ia_excl_core] <- "known_ia"
+
+  # ASCC complex (overwrites everything else)
+  toPlot$category[toPlot$gene %in% ASCC_CORE] <- "ascc_core"
+
+  # Factor with ordering (last = drawn on top)
   toPlot$category <- factor(toPlot$category,
-                            levels = c("enriched_up", "enriched_dn", "nonsig"))
+    levels = c("ascc_core", "known_ia", "enriched_up", "enriched_dn", "nonsig"))
 
   MAIN_COLORS <- c(
-    "enriched_up" = "#D55E00",   # Orange — enriched in TRIP4
+    "ascc_core"   = "#0072B2",   # Blue — ASCC complex
+    "known_ia"    = "#009E73",   # Green — known interactors
+    "enriched_up" = "#D55E00",   # Vermillion — enriched in TRIP4
     "enriched_dn" = "#B0B0B0",   # Gray — enriched in WT control
     "nonsig"      = "#D0D0D0"    # Light gray
   )
 
-  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+  MAIN_LABELS <- c(
+    "ascc_core"   = "ASCC complex",
+    "known_ia"    = "Known interactors",
+    "enriched_up" = "Enriched in TRIP4",
+    "enriched_dn" = "Enriched in WT",
+    "nonsig"      = "Not significant"
+  )
+
+  # Label only ASCC complex and known interactors
+  label_data <- toPlot[toPlot$category %in% c("ascc_core", "known_ia"), ]
+
+  p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
+                                             color = category)) +
     ggplot2::geom_point(alpha = 0.5, size = 0.8) +
     ggplot2::scale_color_manual(
       values = MAIN_COLORS,
-      labels = c(
-        "enriched_up" = "Enriched in TRIP4",
-        "enriched_dn" = "Enriched in WT",
-        "nonsig"      = "Not significant"
-      ),
-      name = NULL
+      labels = MAIN_LABELS,
+      name = NULL, drop = FALSE
     ) +
-    ggplot2::geom_hline(yintercept = 1, linetype = "dashed", color = "grey50", linewidth = 0.3) +
-    ggplot2::geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    ggrepel::geom_text_repel(
+      data = label_data,
+      ggplot2::aes(label = gene),
+      size = 2.5, fontface = "bold",
+      max.overlaps = 30, show.legend = FALSE
+    ) +
+    ggplot2::geom_hline(
+      yintercept = -log10(P_VALUE_CUTOFF),
+      linetype = "dashed", color = "grey50", linewidth = 0.3
+    ) +
+    ggplot2::geom_vline(
+      xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF),
+      linetype = "dashed", color = "grey50", linewidth = 0.3
+    ) +
     ggplot2::labs(
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
@@ -151,9 +171,11 @@ make_main_volcano <- function(df, title) {
     ggplot2::theme_bw() +
     ggplot2::theme(
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+      axis.title.x = ggplot2::element_text(hjust = 0.5),
       axis.text = ggplot2::element_text(colour = "black", size = 8),
       legend.position = "right",
-      panel.grid.minor = ggplot2::element_blank()
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
     )
 
   return(p)
@@ -183,10 +205,11 @@ cat("\n[2/3] TRIP4 without RA vs with RA...\n")
 
 exp2 <- "BK467_TRIP4_RA02_vs_BK467_TRIP4"
 if (exp2 %in% names(experiments)) {
+  # Use proper mu symbol \u00b5M for micromolar
+  title2 <- sprintf("TRIP4 without RA vs with RA (0.2 %sM)", "\u00b5")
   p2 <- make_ra_volcano(
     experiments[[exp2]],
-    title = "TRIP4 without RA vs with RA (0.2 uM)",
-    n_top = 20
+    title = title2
   )
   save_figure(p2, "targeted_volcano_BK467_RA_effect",
               width = 8, height = 6)
@@ -201,10 +224,10 @@ cat("\n[3/3] BK504 TRIP4 without RA vs with RA...\n")
 
 exp3 <- "BK504_TRIP4_RA04_vs_BK504_TRIP4"
 if (exp3 %in% names(experiments)) {
+  title3 <- sprintf("TRIP4 without RA vs with RA (0.4 %sM)", "\u00b5")
   p3 <- make_ra_volcano(
     experiments[[exp3]],
-    title = "TRIP4 without RA vs with RA (0.4 uM)",
-    n_top = 20
+    title = title3
   )
   save_figure(p3, "targeted_volcano_BK504_RA_effect",
               width = 8, height = 6)
