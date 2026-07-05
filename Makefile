@@ -15,6 +15,11 @@
 #   make push        - git add, commit, and push (usage: make push m="message")
 #   make status      - show git status
 
+# ---- Cross-platform file open command ----
+# Uses R's browseURL() which works on Windows (start), macOS (open), and Linux (xdg-open)
+# since R is guaranteed to be installed for this pipeline.
+OPEN_CMD := $(RSCRIPT) -e "for(f in commandArgs(T)) browseURL(f)"
+
 # ---- Configuration ----
 # Rscript path - auto-detected, or override via: make RSCRIPT=/path/to/Rscript all
 # On Windows: R is typically at "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
@@ -50,7 +55,11 @@ TABLE_DIR  := output/tables
 # ---- Default target ----
 .DEFAULT_GOAL := help
 
-.PHONY: help install all test volcano venn go string families overlap clean pull push status check
+.PHONY: help install all test volcano venn go string families overlap clean pull push status check \
+        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano \
+        all-volcano all-venn all-targeted targeted-plots \
+        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go \
+        open-targeted-plots open-all
 
 # ---- Help ----
 help:
@@ -82,6 +91,15 @@ help:
 	@echo "  make all-volcano       All volcano plots"
 	@echo "  make all-venn          All Venn diagrams"
 	@echo "  make all-targeted      All targeted analysis"
+	@echo "  make targeted-plots    Alias for make all-targeted"
+	@echo ""
+	@echo "Open output PDFs (after running the corresponding make target):"
+	@echo "  make open-targeted-volcano    Open targeted volcano PDFs"
+	@echo "  make open-flagip-volcano      Open Flag IP volcano PDF"
+	@echo "  make open-targeted-venn       Open Venn diagram PDFs"
+	@echo "  make open-targeted-go         Open all GO enrichment PDFs"
+	@echo "  make open-targeted-plots      Open ALL targeted plot PDFs"
+	@echo "  make open-all                 Open every output PDF"
 	@echo ""
 	@echo "Git operations:"
 	@echo "  make pull        Pull latest changes from GitHub"
@@ -153,6 +171,42 @@ all-venn: venn targeted-venn ## All Venn diagram targets
 all-targeted: targeted-volcano flagip-volcano targeted-venn targeted-go ## All targeted plots
 	@echo ""
 	@echo "All targeted analysis complete."
+
+# ---- Convenience alias ----
+targeted-plots: all-targeted ## Run all targeted plots (volcano + flagIP + venn + GO)
+	@echo ""
+	@echo "All targeted plots complete."
+
+# ======================================================================
+# OPEN TARGETS — Open output PDFs with default system viewer
+# Uses R's browseURL() for cross-platform support (Windows/macOS/Linux)
+
+open-targeted-volcano: ## Open targeted volcano PDFs
+	$(OPEN_CMD) $(FIGURE_DIR)/targeted_volcano_BK467_TRIP4_vs_WT.pdf \
+	            $(FIGURE_DIR)/targeted_volcano_BK467_RA_effect.pdf \
+	            $(FIGURE_DIR)/targeted_volcano_BK504_RA_effect.pdf
+
+open-flagip-volcano: ## Open Flag IP overlap volcano PDF
+	$(OPEN_CMD) $(FIGURE_DIR)/flagip_overlap_volcano_BK467_TRIP4_vs_WT.pdf
+
+open-targeted-venn: ## Open targeted Venn diagram PDFs
+	$(OPEN_CMD) $(FIGURE_DIR)/targeted_venn_RA_effect_BK467.pdf \
+	            $(FIGURE_DIR)/targeted_venn_turboid_flagip.pdf
+
+open-targeted-go: ## Open all GO enrichment plot PDFs
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)
+
+open-targeted-plots: ## Open ALL targeted plot PDFs
+	$(OPEN_CMD) $(FIGURE_DIR)/targeted_volcano_BK467_TRIP4_vs_WT.pdf \
+	            $(FIGURE_DIR)/targeted_volcano_BK467_RA_effect.pdf \
+	            $(FIGURE_DIR)/targeted_volcano_BK504_RA_effect.pdf \
+	            $(FIGURE_DIR)/flagip_overlap_volcano_BK467_TRIP4_vs_WT.pdf \
+	            $(FIGURE_DIR)/targeted_venn_RA_effect_BK467.pdf \
+	            $(FIGURE_DIR)/targeted_venn_turboid_flagip.pdf \
+	            $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)
+
+open-all: ## Open ALL output PDFs (all steps)
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/*.pdf)
 
 # ---- Cleanup ----
 clean: ## Remove all generated output
