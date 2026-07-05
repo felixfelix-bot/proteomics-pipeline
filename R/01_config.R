@@ -150,6 +150,10 @@ GLOBAL_COLORS <- c(
   "flag_c_only"   = "#56B4E9",   # Sky blue — validated by C-Flag only
   "flag_n_only"   = "#CC79A7",   # Pink — validated by N-Flag only
 
+  # CHX/DMSO specific
+  "chx_enriched"  = "#D55E00",   # Orange — enriched in CHX
+  "dmso_enriched" = "#7B3294",   # Purple — enriched in DMSO
+
   # Venn diagram fill colors (solid, not count-based)
   "venn_overlap"  = "#08519C",   # Dark blue — common to both sets
   "venn_a_only"   = "#6BAED6",   # Light blue — set A unique region

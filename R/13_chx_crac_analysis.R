@@ -32,9 +32,17 @@ CHX_TITLES <- list(
 )
 
 # ---- CHX/DMSO volcano plots ----
-# Same style as the main targeted volcano: label top 20 by significance,
-# WT-enriched = gray, TRIP4-enriched = orange
-make_chx_volcano <- function(df, title, n_top = 20) {
+# Parameterized: colors and labels differ per comparison type.
+#   CHX vs DMSO: orange (CHX-enriched) vs purple (DMSO-enriched)
+#   CHX vs WT:   orange (CHX-enriched) vs gray (WT-enriched)
+#   DMSO vs WT:  orange (DMSO-enriched) vs gray (WT-enriched)
+#   CRAC:        orange (bound) vs gray (not bound)
+#
+# n_top = 40 gives up to 20 labels per side.
+make_volcano <- function(df, title, n_top = 40,
+                         up_color = NULL, up_label = "Enriched",
+                         dn_color = NULL, dn_label = "Decreased",
+                         nonsig_color = NULL) {
   toPlot <- df
   toPlot$neglog10p <- -log10(toPlot$padj)
 
@@ -43,6 +51,11 @@ make_chx_volcano <- function(df, title, n_top = 20) {
   toPlot$category[toPlot$padj < P_VALUE_CUTOFF & toPlot$log2FC < -LOG2FC_CUTOFF] <- "enriched_dn"
   toPlot$category <- factor(toPlot$category,
     levels = c("enriched_up", "enriched_dn", "nonsig"))
+
+  # Default colors from global
+  if (is.null(up_color))     up_color     <- GLOBAL_COLORS[["enriched_up"]]
+  if (is.null(dn_color))     dn_color     <- GLOBAL_COLORS[["enriched_dn"]]
+  if (is.null(nonsig_color)) nonsig_color <- GLOBAL_COLORS[["nonsig"]]
 
   # Top N labels by combined significance score
   sig_only <- toPlot[toPlot$category %in% c("enriched_up", "enriched_dn"), ]
@@ -53,23 +66,32 @@ make_chx_volcano <- function(df, title, n_top = 20) {
   top_dn <- head(sig_only[sig_only$log2FC < 0, ][order(-sig_only[sig_only$log2FC < 0, ]$combined_score), ], n_top / 2)
   label_data <- rbind(top_up, top_dn)
 
-  CHX_COLORS <- c(
-    "enriched_up" = GLOBAL_COLORS[["enriched_up"]],
-    "enriched_dn" = GLOBAL_COLORS[["enriched_dn"]],
-    "nonsig"      = GLOBAL_COLORS[["nonsig"]]
+  PLOT_COLORS <- c(
+    "enriched_up" = up_color,
+    "enriched_dn" = dn_color,
+    "nonsig"      = nonsig_color
+  )
+
+  PLOT_LABELS <- c(
+    "enriched_up" = up_label,
+    "enriched_dn" = dn_label,
+    "nonsig"      = "Not significant"
   )
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
     ggplot2::geom_point(alpha = 0.5, size = 0.8) +
     ggplot2::scale_color_manual(
-      values = CHX_COLORS,
-      labels = c("enriched_up" = "Enriched in TRIP4", "enriched_dn" = "Enriched in control", "nonsig" = "Not significant"),
-      name = NULL
+      values = PLOT_COLORS,
+      labels = PLOT_LABELS,
+      name = NULL, drop = FALSE
     ) +
     ggrepel::geom_text_repel(
       data = label_data, ggplot2::aes(label = gene),
       size = 2.5, fontface = "bold", max.overlaps = 50,
-      show.legend = FALSE, bg.color = "white", bg.r = 0.15
+      show.legend = FALSE, bg.color = "white", bg.r = 0.15,
+      segment.color = "grey40", segment.size = 0.3,
+      min.segment.length = 0.2,
+      arrow = grid::arrow(length = grid::unit(0.01, "npc"))
     ) +
     ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50", linewidth = 0.3) +
     ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed", color = "grey50", linewidth = 0.3) +
@@ -82,11 +104,37 @@ make_chx_volcano <- function(df, title, n_top = 20) {
   return(p)
 }
 
+# Per-experiment color/label configuration for CHX/DMSO
+CHX_PLOT_CONFIG <- list(
+  "TRIP4_CHX_vs_TRIP4_DMSO" = list(
+    up_color = GLOBAL_COLORS[["chx_enriched"]],    # Orange
+    up_label = "Enriched in CHX",
+    dn_color = GLOBAL_COLORS[["dmso_enriched"]],   # Purple
+    dn_label = "Enriched in DMSO"
+  ),
+  "TRIP4_CHX_vs_WT" = list(
+    up_color = GLOBAL_COLORS[["chx_enriched"]],    # Orange
+    up_label = "Enriched in CHX",
+    dn_color = GLOBAL_COLORS[["enriched_dn"]],     # Gray
+    dn_label = "Enriched in WT"
+  ),
+  "TRIP4_DMSO_vs_WT" = list(
+    up_color = GLOBAL_COLORS[["enriched_up"]],     # Orange (vermillion)
+    up_label = "Enriched in DMSO",
+    dn_color = GLOBAL_COLORS[["enriched_dn"]],     # Gray
+    dn_label = "Enriched in WT"
+  )
+)
+
 cat("\n--- CHX/DMSO Volcano Plots ---\n\n")
 for (exp_name in names(CHX_TITLES)) {
-  if (exp_name %in% names(experiments)) {
+  exp_data <- find_experiment(experiments, exp_name)
+  if (!is.null(exp_data)) {
     cat(sprintf("[%s] Creating volcano...\n", exp_name))
-    p <- make_chx_volcano(experiments[[exp_name]], CHX_TITLES[[exp_name]])
+    cfg <- CHX_PLOT_CONFIG[[exp_name]]
+    p <- make_volcano(exp_data, CHX_TITLES[[exp_name]],
+                      up_color = cfg$up_color, up_label = cfg$up_label,
+                      dn_color = cfg$dn_color, dn_label = cfg$dn_label)
     save_figure(p, paste0("volcano_", exp_name), width = 8, height = 6)
   } else {
     cat(sprintf("  WARNING: %s not found in data\n", exp_name))
@@ -195,7 +243,9 @@ if (!file.exists(crac_path)) {
 
     # ---- CRAC volcano plot ----
     cat("\n  Creating CRAC volcano plot...\n")
-    p_crac <- make_chx_volcano(crac_clean, "FLAG-TRIP4 CRAC: RNA Interactome")
+    p_crac <- make_volcano(crac_clean, "FLAG-TRIP4 CRAC: RNA Interactome",
+                           up_label = "Enriched (TRIP4-bound)",
+                           dn_label = "Decreased")
     save_figure(p_crac, "volcano_CRAC_FLAG_TRIP4", width = 8, height = 6)
 
     # ---- CRAC GO analysis ----
