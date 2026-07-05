@@ -56,9 +56,9 @@ TABLE_DIR  := output/tables
 .DEFAULT_GOAL := help
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
-        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data \
+        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis \
         all-volcano all-venn all-targeted targeted-plots \
-        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go \
+        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -87,6 +87,7 @@ help:
 	@echo "  make targeted-venn     RA effect Venn + TurboID vs C/N-Flag Venn"
 	@echo "  make targeted-go       GO enrichment on 3 targeted gene sets"
 	@echo "  make context          Print data context (file info, overlaps, gene names)"
+	@echo "  make chx-crac-analysis  CHX/DMSO volcanos + GO, CRAC volcano + GO"
 	@echo "  make list-data        List ALL CSV files (paths, sizes, headers — no data values)"
 	@echo ""
 	@echo "Group targets:"
@@ -164,6 +165,9 @@ go-network-volcano: check ## Volcano highlighting GO network proteins (no labels
 context: check ## Print data context (file structure, overlaps, gene names)
 	$(RSCRIPT) R/print_context.R
 
+chx-crac-analysis: check ## CHX/DMSO volcanos + GO, CRAC volcano + GO
+	$(RSCRIPT) R/run_step.R chx_crac_analysis
+
 list-data: ## List ALL CSV files in data/ (paths, sizes, headers — no data values)
 	$(RSCRIPT) R/list_data.R
 
@@ -203,6 +207,14 @@ open-targeted-venn: ## Open targeted Venn diagram PDFs
 
 open-targeted-go: ## Open all GO enrichment plot PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)
+
+open-chx-crac: ## Open CHX/DMSO + CRAC volcano and GO PDFs
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/volcano_TRIP4_CHX*.pdf) \
+	            $(wildcard $(FIGURE_DIR)/volcano_TRIP4_DMSO*.pdf) \
+	            $(wildcard $(FIGURE_DIR)/volcano_CRAC*.pdf) \
+	            $(wildcard $(FIGURE_DIR)/GO_TRIP4_CHX*.pdf) \
+	            $(wildcard $(FIGURE_DIR)/GO_TRIP4_DMSO*.pdf) \
+	            $(wildcard $(FIGURE_DIR)/GO_CRAC*.pdf)
 
 open-targeted-plots: ## Open ALL targeted plot PDFs
 	$(OPEN_CMD) $(FIGURE_DIR)/targeted_volcano_BK467_TRIP4_vs_WT.pdf \

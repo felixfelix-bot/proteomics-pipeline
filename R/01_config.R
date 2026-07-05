@@ -60,6 +60,17 @@ dir.create(TABLE_DIR,  recursive = TRUE, showWarnings = FALSE)
 KEYTYPE <- "SYMBOL"     # Our gene identifiers are gene symbols (e.g., "TRIP4")
 STRING_TAXON <- 9606    # Human NCBI taxon ID (used by STRING database)
 
+# ---- CRAC data column names (different from mass spec CSVs) ----
+# CRAC (Cross-linking and Analysis of cDNAs) data uses different column
+# names than the DIA-NN/limma pipeline output. The Excel export has:
+#   external_gene_name → gene symbol (maps to COL_GENE)
+#   logFC              → log fold change (same name, maps to COL_LOG2FC)
+#   FDR                → false discovery rate (maps to COL_PADJ)
+CRAC_GENE_COL   <- "external_gene_name"
+CRAC_LOG2FC_COL <- "logFC"
+CRAC_PADJ_COL   <- "FDR"
+CRAC_PVAL_COL   <- "PValue"
+
 # ---- Column name mapping (from mass spec output CSV) ----
 # These tell the pipeline which columns to use from the CSV files.
 # The mass spectrometry pipeline outputs CSVs with specific column names.
@@ -103,7 +114,11 @@ EXPERIMENTS <- list(
   flag_RA_cflag_vs_ctrl  = "BK523_Cflag_RA04_vs_BK523_Ctrl_RA04",
   flag_RA_cflag_vs_nflag = "BK523_Cflag_RA04_vs_BK523_Nflag_RA04",
   flag_RA_nflag_vs_nflag = "BK523_Nflag_RA04_vs_BK516_Nflag",
-  flag_RA_nflag_vs_ctrl  = "BK523_Nflag_RA04_vs_BK523_Ctrl_RA04"
+  flag_RA_nflag_vs_ctrl  = "BK523_Nflag_RA04_vs_BK523_Ctrl_RA04",
+  # CHX/DMSO TurboID (TRIP4 translation inhibitor experiments)
+  chx_vs_dmso            = "TRIP4_CHX_vs_TRIP4_DMSO",
+  chx_vs_wt              = "TRIP4_CHX_vs_WT",
+  dmso_vs_wt             = "TRIP4_DMSO_vs_WT"
 )
 
 # ---- Key comparisons (used for Venn diagrams, overlay plots, GO) ----
