@@ -52,23 +52,27 @@ main <- function() {
   )
 
   # Set up logging (captures all output to file + console)
-  source("R/setup_logging.R")
+  sys.source("R/setup_logging.R", envir = .GlobalEnv)
   setup_logging(script_name = step)
 
-  # Load config and utils
+  # Load config and utils into the GLOBAL environment
+  # This ensures all functions are visible to subsequent source() calls.
+  # source() with local=TRUE evaluates in parent.frame() (main's env),
+  # but subsequent source() calls create sibling environments that can't
+  # see each other. Using sys.source() into .GlobalEnv avoids this.
   project_root <- getwd()
   Sys.setenv(PROJECT_ROOT = project_root)
-  source(file.path(project_root, "R", "01_config.R"))
-  source(file.path(project_root, "R", "utils.R"))
+  sys.source(file.path(project_root, "R", "01_config.R"), envir = .GlobalEnv)
+  sys.source(file.path(project_root, "R", "utils.R"), envir = .GlobalEnv)
 
   cat("\n=========================================\n")
   cat(sprintf(" Running step: %s\n", step))
   cat("=========================================\n\n")
 
-  # Run the step
+  # Run the step — also source into .GlobalEnv so it can see all functions
   success <- TRUE
   tryCatch({
-    source(file.path(project_root, step_scripts[[step]]))
+    sys.source(file.path(project_root, step_scripts[[step]]), envir = .GlobalEnv)
   }, error = function(e) {
     success <<- FALSE
     cat("\n\nFATAL ERROR in step '", step, "':\n", sep = "")
