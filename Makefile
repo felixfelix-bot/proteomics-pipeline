@@ -57,10 +57,10 @@ TABLE_DIR  := output/tables
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
-        string-network crac-network venn-overflow-examples gsea \
+        string-network crac-network venn-overflow-examples gsea pathway-network \
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
-        open-string-network open-crac-network open-venn-overflow-examples open-gsea \
+        open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -96,6 +96,7 @@ help:
 	@echo "  make string-network   STRING network + GO by membership (Lydia style)"
 	@echo "  make crac-network     STRING network for CRAC RNA interactome"
 	@echo "  make gsea             GSEA (ranked gene list, Lydia style)"
+	@echo "  make pathway-network  STRING network maps for enriched pathways"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots"
@@ -113,6 +114,7 @@ help:
 	@echo "  make open-string-network      Open STRING network PDFs"
 	@echo "  make open-crac-network        Open CRAC STRING network PDFs"
 	@echo "  make open-gsea                Open GSEA enrichment plots"
+	@echo "  make open-pathway-network      Open pathway STRING network maps"
 	@echo "  make open-all                 Open every output PDF"
 	@echo ""
 	@echo "Git operations:"
@@ -203,6 +205,9 @@ venn-overflow-examples: check ## 3 Venn overflow solutions (ext.text, equal circ
 gsea: check ## GSEA enrichment analysis (ranked gene list via clusterProfiler)
 	$(RSCRIPT) R/run_step.R gsea
 
+pathway-network: check ## STRING network maps for enriched GO pathways
+	$(RSCRIPT) R/run_step.R pathway_network
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""
@@ -252,6 +257,9 @@ open-crac-network: ## Open CRAC STRING network plot
 
 open-gsea: ## Open GSEA enrichment plots (dotplot, ridgeplot, enrichment)
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/GSEA_*.pdf)
+
+open-pathway-network: ## Open pathway STRING network maps
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/pathway_net_*.pdf)
 
 open-venn-overflow-examples: ## Open Venn overflow example PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/example*_venn_*.pdf)
