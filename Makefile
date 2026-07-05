@@ -56,7 +56,7 @@ TABLE_DIR  := output/tables
 .DEFAULT_GOAL := help
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
-        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context \
+        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data \
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go \
         open-targeted-plots open-all
@@ -87,6 +87,7 @@ help:
 	@echo "  make targeted-venn     RA effect Venn + TurboID vs C/N-Flag Venn"
 	@echo "  make targeted-go       GO enrichment on 3 targeted gene sets"
 	@echo "  make context          Print data context (file info, overlaps, gene names)"
+	@echo "  make list-data        List ALL CSV files (paths, sizes, headers — no data values)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots"
@@ -162,6 +163,9 @@ go-network-volcano: check ## Volcano highlighting GO network proteins (no labels
 
 context: check ## Print data context (file structure, overlaps, gene names)
 	$(RSCRIPT) R/print_context.R
+
+list-data: ## List ALL CSV files in data/ (paths, sizes, headers — no data values)
+	$(RSCRIPT) R/list_data.R
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
