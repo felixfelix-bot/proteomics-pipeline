@@ -57,10 +57,10 @@ TABLE_DIR  := output/tables
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
-        string-network crac-network \
+        string-network crac-network venn-overflow-examples \
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
-        open-string-network open-crac-network \
+        open-string-network open-crac-network open-venn-overflow-examples \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -193,6 +193,9 @@ string-network: check ## STRING network analysis + GO by network membership
 crac-network: check ## STRING network for CRAC RNA interactome data
 	$(RSCRIPT) R/run_step.R crac_string_network
 
+venn-overflow-examples: check ## 3 Venn overflow solutions (ext.text, equal circles, boxed labels)
+	$(RSCRIPT) R/run_step.R venn_overflow_examples
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""
@@ -239,6 +242,9 @@ open-string-network: ## Open STRING network plot + GO by network category
 
 open-crac-network: ## Open CRAC STRING network plot
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/crac_string_network_*.pdf)
+
+open-venn-overflow-examples: ## Open Venn overflow example PDFs
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/example*_venn_*.pdf)
 
 open-targeted-go: ## Open all GO enrichment plot PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)
