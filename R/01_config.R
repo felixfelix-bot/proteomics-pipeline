@@ -139,22 +139,22 @@ MAIN_COMPARISONS <- list(
 # Usage: GLOBAL_COLORS["enriched_up"]  →  "#D55E00"
 GLOBAL_COLORS <- c(
   # Main volcano categories
-  "ascc_core"     = "#0072B2",   # Blue — ASCC complex
-  "known_ia"      = "#009E73",   # Bluish-green — known interactors
-  "enriched_up"   = "#D55E00",   # Vermillion/orange — enriched in TRIP4
-  "enriched_dn"   = "#B0B0B0",   # Gray — enriched in WT
-  "nonsig"        = "#D0D0D0",   # Light gray — not significant
+  "ascc_core"     = "#0072B2",   # Deep Navy — ASCC complex
+  "known_ia"      = "#009E73",   # Bluish Green — known interactors
+  "enriched_up"   = "#D55E00",   # Vermillion Orange — enriched in TRIP4
+  "enriched_dn"   = "#8C8C8C",   # Light Grey — enriched in WT
+  "nonsig"        = "#D0D0D0",   # Lighter grey — not significant
 
-  # Flag IP validation categories (DISTINCT hues, not shades of orange)
-  "flag_both"     = "#F0E442",   # Yellow — validated by C-Flag + N-Flag
-  "flag_c_only"   = "#56B4E9",   # Sky blue — validated by C-Flag only
-  "flag_n_only"   = "#CC79A7",   # Pink — validated by N-Flag only
+  # Flag IP validation categories (Aruna's thesis palette)
+  "flag_both"     = "#009E73",   # Bluish Green — validated by C-Flag + N-Flag
+  "flag_c_only"   = "#0072B2",   # Deep Navy — validated by C-Flag only
+  "flag_n_only"   = "#CC79A7",   # Muted Mauve — validated by N-Flag only
 
   # CHX/DMSO specific
-  "chx_enriched"  = "#D55E00",   # Orange — enriched in CHX
-  "dmso_enriched" = "#7B3294",   # Purple — enriched in DMSO
+  "chx_enriched"  = "#D55E00",   # Vermillion Orange — enriched in CHX
+  "dmso_enriched" = "#882255",   # Amethyst/Dark Plum — enriched in DMSO
 
-  # Venn diagram fill colors (solid, not count-based)
+  # Venn diagram fill colors
   "venn_overlap"  = "#08519C",   # Dark blue — common to both sets
   "venn_a_only"   = "#6BAED6",   # Light blue — set A unique region
   "venn_b_only"   = "#FDAE6B"    # Light salmon — set B unique region
