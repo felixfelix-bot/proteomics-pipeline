@@ -130,13 +130,14 @@ for (exp_name in names(CHX_TITLES)) {
     title_str <- paste0("GO analysis of ", CHX_TITLES[[exp_name]], " — ", ONT_LABELS[ont])
 
     p_dot <- dotplot(result, showCategory = n_show, title = title_str) +
-      ggplot2::labs(x = "Gene Ratio") +
+      ggplot2::labs(x = "Gene Ratio", color = "p-adjusted value") +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"), axis.text.y = ggplot2::element_text(size = 7))
     save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = fig_h)
 
     n_bar <- min(15, nrow(res_df))
     fig_hb <- max(7, n_bar * 0.5)
     p_bar <- barplot(result, showCategory = n_bar, orderBy = "Count", title = title_str) +
+      ggplot2::labs(color = "p-adjusted value", fill = "p-adjusted value") +
       ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"), axis.text.y = ggplot2::element_text(size = 7))
     save_figure(p_bar, paste0(prefix, "_barplot"), width = 10, height = fig_hb)
   }
@@ -225,13 +226,14 @@ if (!file.exists(crac_path)) {
         title_str <- paste0("GO analysis of FLAG-TRIP4 CRAC RNA Interactome — ", ONT_LABELS[ont])
 
         p_dot <- dotplot(result, showCategory = n_show, title = title_str) +
-          ggplot2::labs(x = "Gene Ratio") +
+          ggplot2::labs(x = "Gene Ratio", color = "p-adjusted value") +
           ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"), axis.text.y = ggplot2::element_text(size = 7))
         save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = fig_h)
 
         n_bar <- min(15, nrow(res_df))
         fig_hb <- max(7, n_bar * 0.5)
         p_bar <- barplot(result, showCategory = n_bar, orderBy = "Count", title = title_str) +
+          ggplot2::labs(color = "p-adjusted value", fill = "p-adjusted value") +
           ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"), axis.text.y = ggplot2::element_text(size = 7))
         save_figure(p_bar, paste0(prefix, "_barplot"), width = 10, height = fig_hb)
       }

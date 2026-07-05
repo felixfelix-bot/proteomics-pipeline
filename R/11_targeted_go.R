@@ -128,7 +128,8 @@ run_targeted_go <- function(genes, set_name, universe) {
 
     p_dot <- dotplot(result_simple, showCategory = n_show,
                      title = dot_title) +
-      ggplot2::labs(x = "Gene Ratio") +  # Fix: space between Gene and Ratio
+      ggplot2::labs(x = "Gene Ratio",  # Fix: space between Gene and Ratio
+                    color = "p-adjusted value") +  # Descriptive legend name
       ggplot2::theme(
         plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
         axis.text.y = ggplot2::element_text(size = 7)
@@ -146,6 +147,7 @@ run_targeted_go <- function(genes, set_name, universe) {
     p_bar <- barplot(result_simple, showCategory = n_show_bar,
                      orderBy = "Count",  # Capital C — sorts by gene count
                      title = dot_title) +
+      ggplot2::labs(color = "p-adjusted value", fill = "p-adjusted value") +  # Descriptive legend
       ggplot2::theme(
         plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
         axis.text.y = ggplot2::element_text(size = 7)

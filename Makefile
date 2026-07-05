@@ -56,9 +56,9 @@ TABLE_DIR  := output/tables
 .DEFAULT_GOAL := help
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
-        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis \
+        targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples \
         all-volcano all-venn all-targeted targeted-plots \
-        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac \
+        open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples \
         open-targeted-plots open-all
 
 # ---- Help ----
@@ -89,6 +89,7 @@ help:
 	@echo "  make context          Print data context (file info, overlaps, gene names)"
 	@echo "  make chx-crac-analysis  CHX/DMSO volcanos + GO, CRAC volcano + GO"
 	@echo "  make list-data        List ALL CSV files (paths, sizes, headers — no data values)"
+	@echo "  make venn-examples    Generate 3 Venn diagram style variants (pick your favorite)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots"
@@ -101,6 +102,7 @@ help:
 	@echo "  make open-flagip-volcano      Open Flag IP volcano PDF"
 	@echo "  make open-targeted-venn       Open Venn diagram PDFs"
 	@echo "  make open-targeted-go         Open all GO enrichment PDFs"
+	@echo "  make open-venn-examples       Open 3 Venn diagram example PDFs"
 	@echo "  make open-targeted-plots      Open ALL targeted plot PDFs"
 	@echo "  make open-all                 Open every output PDF"
 	@echo ""
@@ -174,6 +176,9 @@ list-data: ## List ALL CSV files (paths, sizes, headers — no data values)
 headers: ## Print column names of every CSV file
 	$(RSCRIPT) R/print_headers.R
 
+venn-examples: check ## Generate 3 Venn diagram style examples (choose your favorite)
+	$(RSCRIPT) R/run_step.R venn_examples
+
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
 	@echo ""
@@ -207,6 +212,9 @@ open-flagip-volcano: ## Open Flag IP overlap volcano PDF
 open-targeted-venn: ## Open targeted Venn diagram PDFs
 	$(OPEN_CMD) $(FIGURE_DIR)/targeted_venn_RA_effect_BK467.pdf \
 	            $(FIGURE_DIR)/targeted_venn_turboid_flagip.pdf
+
+open-venn-examples: ## Open the 3 Venn diagram example PDFs
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/venn_example_*.pdf)
 
 open-targeted-go: ## Open all GO enrichment plot PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/targeted_GO_*.pdf)
