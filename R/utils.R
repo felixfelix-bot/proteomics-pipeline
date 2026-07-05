@@ -64,10 +64,11 @@ sanitize_filename <- function(name) {
 # Sanitizes BOTH the directory components and the filename.
 safe_filepath <- function(dir, filename, ext = "") {
   safe_name <- sanitize_filename(filename)
-  # Also sanitize the directory path components
-  safe_dir <- gsub(":", "_", dir)
+  # Do NOT sanitize the directory path — it comes from config constants
+  # (FIGURE_DIR, TABLE_DIR) which are already valid OS paths.
+  # Stripping colons here would break Windows drive letters (C: -> C_).
   versioned <- paste0(safe_name, ext)
-  file.path(safe_dir, versioned)
+  file.path(dir, versioned)
 }
 
 # ---- Save a ggplot object to PNG and PDF ----
