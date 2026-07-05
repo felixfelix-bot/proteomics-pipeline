@@ -183,7 +183,7 @@ if (exp_name %in% names(EXPERIMENTS)) {
 # EXPERIMENT 2: RA effect — TRIP4+RA vs TRIP4 (RA-dependent changes)
 # =====================================================================
 cat("\n[2/4] RA effect (TRIP4+RA vs TRIP4)...\n")
-exp_name <- "turbo_trip4_ra_vs_trip4"
+exp_name <- "turbo_RA_vs_trip4"
 if (exp_name %in% names(EXPERIMENTS)) {
   actual_name <- EXPERIMENTS[[exp_name]]
   if (actual_name %in% names(experiments)) {

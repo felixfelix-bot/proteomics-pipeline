@@ -95,6 +95,7 @@ help:
 	@echo "  make venn-label-examples  3 Venn label position variants"
 	@echo "  make string-network   STRING network + GO by membership (Lydia style)"
 	@echo "  make crac-network     STRING network for CRAC RNA interactome"
+	@echo "  make gsea             GSEA (ranked gene list, Lydia style)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots"
@@ -109,6 +110,9 @@ help:
 	@echo "  make open-targeted-go         Open all GO enrichment PDFs"
 	@echo "  make open-venn-examples       Open 3 Venn diagram example PDFs"
 	@echo "  make open-targeted-plots      Open ALL targeted plot PDFs"
+	@echo "  make open-string-network      Open STRING network PDFs"
+	@echo "  make open-crac-network        Open CRAC STRING network PDFs"
+	@echo "  make open-gsea                Open GSEA enrichment plots"
 	@echo "  make open-all                 Open every output PDF"
 	@echo ""
 	@echo "Git operations:"
@@ -245,6 +249,9 @@ open-string-network: ## Open STRING network plot + GO by network category
 
 open-crac-network: ## Open CRAC STRING network plot
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/crac_string_network_*.pdf)
+
+open-gsea: ## Open GSEA enrichment plots (dotplot, ridgeplot, enrichment)
+	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/GSEA_*.pdf)
 
 open-venn-overflow-examples: ## Open Venn overflow example PDFs
 	$(OPEN_CMD) $(wildcard $(FIGURE_DIR)/example*_venn_*.pdf)
