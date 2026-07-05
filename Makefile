@@ -25,23 +25,21 @@ OPEN_CMD := $(RSCRIPT) -e "for(f in commandArgs(T)) browseURL(f)"
 # On Windows: R is typically at "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
 # On Linux/macOS: usually on PATH, or in conda/mamba env
 
-# Try to find Rscript automatically
-RSCRIPT ?= $(shell \
-	if command -v Rscript >/dev/null 2>&1; then \
-		command -v Rscript; \
-	elif [ -f "/usr/lib/R/bin/Rscript" ]; then \
-		echo "/usr/lib/R/bin/Rscript"; \
-	elif ls /home/*/.local/bin/Rscript >/dev/null 2>&1; then \
-		ls /home/*/.local/bin/Rscript | head -1; \
-	else \
-		echo "Rscript"; \
-	fi)
-
-# Windows fallback (checked at runtime via make)
+# Windows: hardcode the known path (no Unix shell probing needed)
 ifeq ($(OS),Windows_NT)
-	ifeq ($(shell command -v Rscript 2>/dev/null),)
-		RSCRIPT := "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
-	endif
+	RSCRIPT := "C:/Program Files/R/R-4.6.1/bin/Rscript.exe"
+else
+# Linux/macOS: try to find Rscript automatically
+	RSCRIPT ?= $(shell \
+		if command -v Rscript >/dev/null 2>&1; then \
+			command -v Rscript; \
+		elif [ -f "/usr/lib/R/bin/Rscript" ]; then \
+			echo "/usr/lib/R/bin/Rscript"; \
+		elif ls /home/*/.local/bin/Rscript >/dev/null 2>&1; then \
+			ls /home/*/.local/bin/Rscript | head -1; \
+		else \
+			echo "Rscript"; \
+		fi)
 endif
 
 # Pipeline scripts
