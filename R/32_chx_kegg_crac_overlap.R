@@ -312,6 +312,17 @@ if (!file.exists(crac_path)) {
     cat(sprintf("    %s\n", paste(common_genes, collapse = ", ")))
   }
 
+  # Percentage overlap (multiple denominators for context)
+  pct_of_turbo <- if (length(turbo_sig) > 0) 100 * length(common_genes) / length(turbo_sig) else 0
+  pct_of_crac  <- if (length(crac_sig) > 0)  100 * length(common_genes) / length(crac_sig)  else 0
+  union_total  <- length(union(crac_sig, turbo_sig))
+  pct_jaccard  <- if (union_total > 0) 100 * length(common_genes) / union_total else 0
+
+  cat(sprintf("\n  Overlap statistics:\n"))
+  cat(sprintf("    %% of TurboID enriched:  %.1f%% (%d / %d)\n", pct_of_turbo, length(common_genes), length(turbo_sig)))
+  cat(sprintf("    %% of CRAC significant:  %.1f%% (%d / %d)\n", pct_of_crac,  length(common_genes), length(crac_sig)))
+  cat(sprintf("    Jaccard index:           %.1f%% (%d / %d union)\n", pct_jaccard, length(common_genes), union_total))
+
   # Export overlap CSV with gene, log2FC, padj from TurboID
   overlap_df <- df_turbo[df_turbo$gene %in% common_genes,
                          c("gene", "log2FC", "padj")]
