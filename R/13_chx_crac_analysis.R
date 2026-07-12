@@ -39,7 +39,7 @@ CHX_TITLES <- list(
 #   CRAC:        orange (bound) vs gray (not bound)
 #
 # n_top = 40 gives up to 20 labels per side.
-make_volcano <- function(df, title, n_top = 40,
+make_volcano <- function(df, title, n_top = 60,
                          up_color = NULL, up_label = "Enriched",
                          dn_color = NULL, dn_label = "Decreased",
                          nonsig_color = NULL) {
