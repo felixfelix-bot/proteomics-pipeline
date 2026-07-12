@@ -226,6 +226,9 @@ diagnostics: ## Print structural data summary (counts/ranges only, safe to share
 	@echo "Running diagnostics..."
 	@Rscript R/run_step.R diagnostics
 
+bidirectional-go-ra: check clean-old ## Bidirectional GO: -RA (left) vs +RA (right)
+	$(RSCRIPT) R/run_step.R bidirectional_go_ra
+
 network-go: check clean-old ## GO enrichment split by in-network vs not-in-network
 	$(RSCRIPT) R/run_step.R network_go
 
