@@ -296,7 +296,7 @@ for (ont in c("BP", "CC", "MF")) {
 
   # Combine side by side
   if (length(plots) == 2) {
-    combined <- plots$in + plots$not +
+    combined <- plots[["in"]] + plots$not +
       patchwork::plot_layout(widths = c(1, 1)) +
       patchwork::plot_annotation(
         title = sprintf("GO Enrichment: In-Network vs Not-In-Network — %s", ONT_NAMES[ont]),
