@@ -656,6 +656,108 @@ run_chx_kegg(depleted_genes, "depleted",
              "CHX-Depleted Proteins", universe)
 
 # =====================================================================
+# BIDIRECTIONAL KEGG DOT PLOT (enriched RIGHT vs depleted LEFT)
+# =====================================================================
+cat("\n=========================================\n")
+cat(" Bidirectional KEGG Dot Plot (Enriched vs Depleted)\n")
+cat("=========================================\n\n")
+
+run_chx_bidir_kegg <- function(genes, direction) {
+  if (length(genes) < 5) {
+    cat(sprintf("  [%s] Too few genes. Skipping.\n", direction))
+    return(NULL)
+  }
+
+  tryCatch({
+    entrez_map <- bitr(genes, fromType = "SYMBOL", toType = "ENTREZID",
+                       OrgDb = org.Hs.eg.db)
+    universe_map <- bitr(universe, fromType = "SYMBOL", toType = "ENTREZID",
+                         OrgDb = org.Hs.eg.db)
+
+    ekegg <- enrichKEGG(
+      gene = unique(entrez_map$ENTREZID),
+      organism = "hsa", pAdjustMethod = "BH",
+      pvalueCutoff = 0.05, universe = unique(universe_map$ENTREZID),
+      minGSSize = 2, maxGSSize = 5000
+    )
+
+    if (is.null(ekegg) || nrow(as.data.frame(ekegg)) == 0) {
+      cat(sprintf("  [%s] No KEGG terms\n", direction))
+      return(NULL)
+    }
+
+    ekegg <- setReadable(ekegg, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
+    res <- as.data.frame(ekegg)
+    res <- res[order(res$p.adjust), ]
+    res <- head(res, 15)
+
+    res$GeneRatioNum <- sapply(res$GeneRatio, function(x) {
+      p <- strsplit(as.character(x), "/")[[1]]
+      if (length(p) == 2) as.numeric(p[1]) / as.numeric(p[2]) else NA
+    })
+    res$signed_GeneRatio <- if (direction == "enriched") res$GeneRatioNum else -res$GeneRatioNum
+    res$direction <- direction
+    res$neg_log10_padj <- -log10(res$p.adjust)
+    res$short_Description <- sapply(res$Description, function(x) {
+      if (nchar(x) > 55) paste0(substr(x, 1, 52), "...") else x
+    })
+    cat(sprintf("  [%s] %d KEGG terms\n", direction, nrow(res)))
+    return(res)
+
+  }, error = function(e) {
+    cat(sprintf("  [%s] KEGG error: %s\n", direction, conditionMessage(e)))
+    return(NULL)
+  })
+}
+
+en_kegg <- run_chx_bidir_kegg(enriched_genes, "enriched")
+de_kegg <- run_chx_bidir_kegg(depleted_genes, "depleted")
+combined_kegg <- rbind(en_kegg, de_kegg)
+
+if (!is.null(combined_kegg) && nrow(combined_kegg) > 0) {
+  combined_kegg <- combined_kegg[order(combined_kegg$signed_GeneRatio, decreasing = TRUE), ]
+  combined_kegg$short_Description <- make.unique(combined_kegg$short_Description)
+  combined_kegg$short_Description <- factor(combined_kegg$short_Description,
+                                             levels = rev(combined_kegg$short_Description))
+
+  p_kegg_bidir <- ggplot2::ggplot(combined_kegg,
+    ggplot2::aes(x = signed_GeneRatio, y = short_Description,
+                 color = neg_log10_padj, size = Count)) +
+    ggplot2::geom_point(alpha = 0.85) +
+    ggplot2::scale_color_gradientn(
+      colors = c("#0072B2", "#56B4E9", "#F0E442", "#E69F00", "#D55E00"),
+      name = expression(-Log[10]~(adjusted~italic(p)~value))) +
+    ggplot2::scale_size_continuous(name = "Gene Count", range = c(2, 8)) +
+    ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "grey50", linewidth = 0.3) +
+    ggplot2::labs(
+      x = expression(Signed~Gene~Ratio~(left~"="-~depleted~"|"~right~"="+~enriched)),
+      y = NULL,
+      title = "CHX Proteins — Bidirectional KEGG Pathways",
+      subtitle = sprintf("Enriched: %d genes | Depleted: %d genes",
+                         length(enriched_genes), length(depleted_genes))
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
+      axis.text.y = ggplot2::element_text(size = 7),
+      legend.position = "right", legend.text = ggplot2::element_text(size = 8),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+    ) +
+    ggplot2::annotate("text", x = max(combined_kegg$signed_GeneRatio, na.rm = TRUE) * 0.8,
+                      y = 0.5, label = "ENRICHED", color = "#D55E00",
+                      fontface = "bold", size = 4, vjust = 0) +
+    ggplot2::annotate("text", x = min(combined_kegg$signed_GeneRatio, na.rm = TRUE) * 0.8,
+                      y = 0.5, label = "DEPLETED", color = "#0072B2",
+                      fontface = "bold", size = 4, vjust = 0)
+
+  save_figure(p_kegg_bidir, "chx_common_bidirectional_KEGG",
+              width = 10, height = max(6, nrow(combined_kegg) * 0.35))
+  cat("  Saved: chx_common_bidirectional_KEGG\n")
+}
+
+# =====================================================================
 # CIRCULAR NETWORKS (Lydia Panel C style) + STRING-STYLE BUBBLE
 # =====================================================================
 cat("\n=========================================\n")
