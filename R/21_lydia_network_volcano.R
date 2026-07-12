@@ -89,7 +89,10 @@ cat(sprintf("  Mapped %d of %d proteins to STRING\n", nrow(mapped), nrow(df)))
 #   Enriched = log2FC >= 1 AND -log10(padj) >= 1 (i.e., padj <= 0.1)
 #   Background = everything else = GREEN
 # =====================================================================
-FC_THRESHOLD <- 1      # log2FC >= 1 (fold change >= 2x)
+FC_THRESHOLD <- 0.999  # log2FC >= 1 (fold change >= 2x)
+                         # Using 0.999 for floating point tolerance
+                         # (R may store "1.0" from CSV as 0.9999999)
+                         # Threshold line on plot still drawn at 1.0
 NEGLOG10P_THRESHOLD <- 1  # -log10(padj) >= 1 (padj <= 0.1)
 
 # =====================================================================
@@ -334,7 +337,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
   # Aruna's thresholds: log2FC = 1, -log10(padj) = 1
   ggplot2::geom_hline(yintercept = NEGLOG10P_THRESHOLD,
                       linetype = "dashed", color = "grey50", linewidth = 0.3) +
-  ggplot2::geom_vline(xintercept = c(-FC_THRESHOLD, FC_THRESHOLD),
+  ggplot2::geom_vline(xintercept = c(-1, 1),
                       linetype = "dashed", color = "grey50", linewidth = 0.3) +
   ggplot2::labs(
     x = expression(Log[2]~Fold~Change),
