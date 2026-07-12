@@ -29,7 +29,8 @@ main <- function() {
                    "ra_common", "bidirectional_go",
                    "chx_common_analysis", "shinygo_comparison",
                    "diagnostics", "network_go", "bidirectional_go_ra",
-                   "string_style_network", "chx_volcano_venn")
+                   "string_style_network", "chx_volcano_venn",
+                   "flagip_validated_go", "poster_figures")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
