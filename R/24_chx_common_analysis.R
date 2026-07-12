@@ -557,9 +557,18 @@ for (ont in c("BP", "CC", "MF")) {
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
       plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
       axis.text.y = ggplot2::element_text(size = 7),
-      legend.position = "right", legend.text = ggplot2::element_text(size = 8),
+      legend.position = c(0.88, 0.72),
+      legend.text = ggplot2::element_text(size = 8),
+      legend.background = ggplot2::element_rect(fill = alpha("white", 0.85), color = "grey80", linewidth = 0.3),
+      legend.key = ggplot2::element_rect(fill = "white"),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+    ) +
+    ggplot2::guides(
+      color = ggplot2::guide_colorbar(barwidth = 1.2, barheight = 7,
+                                      title.position = "top", order = 1),
+      size = ggplot2::guide_legend(override.aes = list(size = 5, alpha = 1),
+                                   title.position = "top", order = 2)
     )
   p <- p +
     ggplot2::annotate("text", x = max(combined$signed_GeneRatio, na.rm = TRUE) * 0.8,
@@ -741,9 +750,18 @@ if (!is.null(combined_kegg) && nrow(combined_kegg) > 0) {
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
       plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
       axis.text.y = ggplot2::element_text(size = 7),
-      legend.position = "right", legend.text = ggplot2::element_text(size = 8),
+      legend.position = c(0.88, 0.72),
+      legend.text = ggplot2::element_text(size = 8),
+      legend.background = ggplot2::element_rect(fill = alpha("white", 0.85), color = "grey80", linewidth = 0.3),
+      legend.key = ggplot2::element_rect(fill = "white"),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+    ) +
+    ggplot2::guides(
+      color = ggplot2::guide_colorbar(barwidth = 1.2, barheight = 7,
+                                      title.position = "top", order = 1),
+      size = ggplot2::guide_legend(override.aes = list(size = 5, alpha = 1),
+                                   title.position = "top", order = 2)
     ) +
     ggplot2::annotate("text", x = max(combined_kegg$signed_GeneRatio, na.rm = TRUE) * 0.8,
                       y = 0.5, label = "ENRICHED", color = "#D55E00",
