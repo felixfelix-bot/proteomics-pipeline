@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCC Complex — Multifunctional Roles</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .poster-panel {
+    width: 900px;
+    background: #16213e;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .panel-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #D55E00;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .panel-subtitle {
+    text-align: center;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 24px;
+  }
+
+  /* SVG container */
+  svg { display: block; margin: 0 auto; }
+
+  /* Protein circle hover effect */
+  .protein { cursor: pointer; transition: all 0.2s; }
+  .protein:hover { filter: brightness(1.3); }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    max-width: 260px;
+    line-height: 1.5;
+    border: 1px solid rgba(255,255,255,0.2);
+    z-index: 100;
+  }
+  .tooltip strong { color: #D55E00; font-size: 14px; }
+
+  /* Legend */
+  .legend-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    fill: #e94560;
+  }
+</style>
+</head>
+<body>
+
+<div class="poster-panel">
+  <div class="panel-title">ASCC Complex: Multifunctional Roles in Gene Expression</div>
+  <div class="panel-subtitle">TRIP4/ASCC1 coordinates transcription, replication, DNA repair, RNA splicing, and translation</div>
+
+  <svg width="850" height="620" viewBox="0 0 850 620" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- DNA helix gradient -->
+      <linearGradient id="dnaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#4a90d9;stop-opacity:0.6"/>
+        <stop offset="100%" style="stop-color:#4a90d9;stop-opacity:0.3"/>
+      </linearGradient>
+      <!-- RNA gradient -->
+      <linearGradient id="rnaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#e94560;stop-opacity:0.4"/>
+        <stop offset="100%" style="stop-color:#e94560;stop-opacity:0.2"/>
+      </linearGradient>
+      <!-- Glows -->
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <!-- Arrowhead -->
+      <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6" fill="#888"/>
+      </marker>
+    </defs>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- TRANSCRIPTION (top-left) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <g transform="translate(20, 20)">
+      <text x="160" y="14" text-anchor="middle" class="section-label">Transcription</text>
+      <line x1="40" y1="22" x2="280" y2="22" stroke="#e94560" stroke-width="1" opacity="0.5"/>
+
+      <!-- DNA double helix -->
+      <path d="M 60,50 Q 90,35 120,50 T 180,50 T 240,50 T 280,50"
+            fill="none" stroke="#4a90d9" stroke-width="2.5" opacity="0.7"/>
+      <path d="M 60,70 Q 90,85 120,70 T 180,70 T 240,70 T 280,70"
+            fill="none" stroke="#4a90d9" stroke-width="2.5" opacity="0.7"/>
+      <!-- helix rungs -->
+      <line x1="75" y1="45" x2="75" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+      <line x1="105" y1="45" x2="105" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+      <line x1="135" y1="45" x2="135" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+      <line x1="165" y1="45" x2="165" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+      <line x1="195" y1="45" x2="195" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+      <line x1="225" y1="45" x2="225" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+      <line x1="255" y1="45" x2="255" y2="75" stroke="#4a90d9" stroke-width="1" opacity="0.3"/>
+
+      <!-- me marks -->
+      <circle cx="100" cy="38" r="3" fill="#aaa"/>
+      <text x="100" y="34" text-anchor="middle" font-size="7" fill="#888">me</text>
+      <circle cx="200" cy="38" r="3" fill="#aaa"/>
+      <text x="200" y="34" text-anchor="middle" font-size="7" fill="#888">me</text>
+
+      <!-- Proteins -->
+      <!-- TRIP4 (orange #D55E00) -->
+      <g class="protein" onmouseover="showTooltip(event, 'TRIP4 (ASC1)', 'Core scaffold subunit of ASCC complex. Regulates transcription via nuclear receptors. Our TurboID bait protein.')">
+        <circle cx="100" cy="110" r="18" fill="#D55E00" filter="url(#glow)"/>
+        <text x="100" y="114" text-anchor="middle" font-size="9" font-weight="700" fill="white">TRIP4</text>
+      </g>
+      <!-- ASCC3 (purple #CC79A7) -->
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC3', 'DNA helicase — unwinds DNA/RNA structures during repair')">
+        <circle cx="160" cy="110" r="18" fill="#CC79A7" filter="url(#glow)"/>
+        <text x="160" y="114" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC3</text>
+      </g>
+      <!-- ASCC2 (green #009E73) -->
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC2', 'Ubiquitin-binding scaffold — links ASCC to ubiquitinated substrates')">
+        <circle cx="220" cy="110" r="18" fill="#009E73" filter="url(#glow)"/>
+        <text x="220" y="114" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC2</text>
+      </g>
+      <!-- ASCC1 (blue #0072B2) -->
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC1', 'RNA-binding zinc-finger subunit — recruits ASCC to target sites')">
+        <circle cx="160" cy="150" r="16" fill="#0072B2" filter="url(#glow)"/>
+        <text x="160" y="154" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC1</text>
+      </g>
+      <!-- connections -->
+      <line x1="118" y1="110" x2="142" y2="110" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+      <line x1="178" y1="110" x2="202" y2="110" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+      <line x1="160" y1="128" x2="160" y2="134" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+    </g>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- REPLICATION (top-right) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <g transform="translate(440, 20)">
+      <text x="160" y="14" text-anchor="middle" class="section-label">Replication</text>
+      <line x1="40" y1="22" x2="280" y2="22" stroke="#e94560" stroke-width="1" opacity="0.5"/>
+
+      <!-- Replication fork (Y-shaped DNA) -->
+      <path d="M 80,100 L 140,100 L 180,60 L 240,60" fill="none" stroke="#4a90d9" stroke-width="2.5" opacity="0.7"/>
+      <path d="M 140,100 L 180,140 L 240,140" fill="none" stroke="#4a90d9" stroke-width="2.5" opacity="0.7"/>
+
+      <!-- Ub marks -->
+      <text x="100" y="80" font-size="8" fill="#ccc">Ub</text>
+      <text x="130" y="70" font-size="8" fill="#ccc">Ub</text>
+      <text x="200" y="50" font-size="8" fill="#ccc">Ub</text>
+
+      <!-- Proteins at fork -->
+      <g class="protein" onmouseover="showTooltip(event, 'TRIP4', 'Recruited to replication forks — may resolve R-loops during replication stress')">
+        <circle cx="155" cy="40" r="16" fill="#D55E00" filter="url(#glow)"/>
+        <text x="155" y="44" text-anchor="middle" font-size="8" font-weight="700" fill="white">TRIP4</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC3', 'Helicase activity resolves G-quadruplex/R-loop structures at forks')">
+        <circle cx="200" cy="75" r="14" fill="#CC79A7" filter="url(#glow)"/>
+        <text x="200" y="78" text-anchor="middle" font-size="7" font-weight="700" fill="white">C3</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC2', 'Binds ubiquitinated fork proteins')">
+        <circle cx="200" cy="125" r="14" fill="#009E73" filter="url(#glow)"/>
+        <text x="200" y="128" text-anchor="middle" font-size="7" font-weight="700" fill="white">C2</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC1', 'RNA-binding component — targets complex to fork-associated RNA')">
+        <circle cx="255" cy="95" r="14" fill="#0072B2" filter="url(#glow)"/>
+        <text x="255" y="98" text-anchor="middle" font-size="7" font-weight="700" fill="white">C1</text>
+      </g>
+    </g>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- DNA REPAIR (middle) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <g transform="translate(20, 210)">
+      <text x="390" y="14" text-anchor="middle" class="section-label">DNA Repair (Alkylation Damage Response)</text>
+      <line x1="100" y1="22" x2="680" y2="22" stroke="#e94560" stroke-width="1" opacity="0.5"/>
+
+      <!-- Damaged DNA strand -->
+      <rect x="100" y="50" width="580" height="30" rx="4" fill="url(#dnaGrad)"/>
+      <text x="120" y="70" font-size="8" fill="#888">DNA with alkylation damage</text>
+
+      <!-- Damage marks -->
+      <circle cx="250" cy="65" r="4" fill="#FF4444"/>
+      <text x="250" y="80" text-anchor="middle" font-size="7" fill="#FF6666">me-damage</text>
+      <circle cx="450" cy="65" r="4" fill="#FF4444"/>
+      <text x="450" y="80" text-anchor="middle" font-size="7" fill="#FF6666">me-damage</text>
+
+      <!-- Ub chain -->
+      <text x="300" y="48" font-size="8" fill="#ccc">Ub</text>
+      <text x="330" y="48" font-size="8" fill="#ccc">Ub</text>
+      <text x="360" y="48" font-size="8" fill="#ccc">Ub</text>
+
+      <!-- Proteins -->
+      <g class="protein" onmouseover="showTooltip(event, 'ALKBH3', 'Demethylase — directly repairs alkylated DNA bases (1-meA, 3-meC). Works with ASCC complex.')">
+        <circle cx="280" cy="120" r="18" fill="#E69F00" filter="url(#glow)"/>
+        <text x="280" y="124" text-anchor="middle" font-size="8" font-weight="700" fill="white">ALKBH3</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC2', 'Ubiquitin-binding — recruits ALKBH3 to ubiquitinated chromatin at damage sites')">
+        <circle cx="370" cy="120" r="18" fill="#009E73" filter="url(#glow)"/>
+        <text x="370" y="124" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC2</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC3', 'Helicase — unwinds DNA around damage site for ALKBH3 access')">
+        <circle cx="460" cy="120" r="18" fill="#CC79A7" filter="url(#glow)"/>
+        <text x="460" y="124" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC3</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'TRIP4', 'Scaffold — coordinates ALKBH3 recruitment and ASCC complex assembly at damage sites')">
+        <circle cx="550" cy="120" r="18" fill="#D55E00" filter="url(#glow)"/>
+        <text x="550" y="124" text-anchor="middle" font-size="8" font-weight="700" fill="white">TRIP4</text>
+      </g>
+
+      <!-- Arrow from complex to DNA -->
+      <line x1="370" y1="100" x2="350" y2="82" stroke="#666" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrow)"/>
+      <line x1="460" y1="100" x2="460" y2="82" stroke="#666" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrow)"/>
+
+      <!-- connections between complex members -->
+      <line x1="298" y1="120" x2="352" y2="120" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+      <line x1="388" y1="120" x2="442" y2="120" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+      <line x1="478" y1="120" x2="532" y2="120" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+    </g>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- SPLICING (bottom-left) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <g transform="translate(20, 380)">
+      <text x="180" y="14" text-anchor="middle" class="section-label">RNA Splicing</text>
+      <line x1="40" y1="22" x2="320" y2="22" stroke="#e94560" stroke-width="1" opacity="0.5"/>
+
+      <!-- Pre-mRNA wavy line -->
+      <path d="M 50,55 Q 80,45 110,55 T 170,55 T 230,55 T 290,55"
+            fill="none" stroke="#e94560" stroke-width="2" opacity="0.6"/>
+      <text x="160" y="38" text-anchor="middle" font-size="8" fill="#888">pre-mRNA</text>
+
+      <!-- Spliceosome oval -->
+      <ellipse cx="160" cy="120" rx="100" ry="50" fill="rgba(100,100,100,0.15)" stroke="#666" stroke-width="1" stroke-dasharray="4,2"/>
+
+      <!-- Proteins -->
+      <g class="protein" onmouseover="showTooltip(event, 'SNRNP200', 'U5 snRNP helicase — core spliceosome component. Catalyzes intron removal.')">
+        <circle cx="90" cy="120" r="16" fill="#56B4E9" filter="url(#glow)"/>
+        <text x="90" y="118" text-anchor="middle" font-size="6" font-weight="700" fill="white">SNRNP</text>
+        <text x="90" y="127" text-anchor="middle" font-size="6" font-weight="700" fill="white">200</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'RNF113', 'E3 ubiquitin ligase — links ASCC to spliceosome via ubiquitin signaling')">
+        <circle cx="160" cy="120" r="16" fill="#999999" filter="url(#glow)"/>
+        <text x="160" y="124" text-anchor="middle" font-size="7" font-weight="700" fill="white">RNF113</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC1', 'RNA-binding — bridges ASCC complex to spliceosomal RNA')">
+        <circle cx="230" cy="120" r="16" fill="#0072B2" filter="url(#glow)"/>
+        <text x="230" y="124" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC1</text>
+      </g>
+
+      <line x1="106" y1="120" x2="144" y2="120" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+      <line x1="176" y1="120" x2="214" y2="120" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+    </g>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- TRANSLATION (bottom-right) -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <g transform="translate(440, 380)">
+      <text x="160" y="14" text-anchor="middle" class="section-label">Translation (Ribosome Quality Control)</text>
+      <line x1="20" y1="22" x2="300" y2="22" stroke="#e94560" stroke-width="1" opacity="0.5"/>
+
+      <!-- mRNA -->
+      <line x1="30" y1="55" x2="280" y2="55" stroke="#e94560" stroke-width="2" opacity="0.5"/>
+      <text x="150" y="40" text-anchor="middle" font-size="8" fill="#888">mRNA</text>
+
+      <!-- Ribosome 1 (collided) -->
+      <ellipse cx="100" cy="80" rx="30" ry="25" fill="rgba(150,150,150,0.3)" stroke="#aaa" stroke-width="1.5"/>
+      <text x="100" y="78" text-anchor="middle" font-size="7" fill="#ccc">60S</text>
+      <text x="100" y="90" text-anchor="middle" font-size="6" fill="#ccc">40S</text>
+
+      <!-- Ribosome 2 (collided) -->
+      <ellipse cx="155" cy="80" rx="30" ry="25" fill="rgba(150,150,150,0.3)" stroke="#aaa" stroke-width="1.5"/>
+      <text x="155" y="78" text-anchor="middle" font-size="7" fill="#ccc">60S</text>
+      <text x="155" y="90" text-anchor="middle" font-size="6" fill="#ccc">40S</text>
+
+      <text x="128" y="115" text-anchor="middle" font-size="8" fill="#e94560" font-weight="600">Collided di-somes</text>
+
+      <!-- Ub marks on mRNA -->
+      <text x="100" y="55" text-anchor="middle" font-size="7" fill="#ccc">Ub</text>
+      <text x="155" y="50" text-anchor="middle" font-size="7" fill="#ccc">Ub</text>
+
+      <!-- ASCC recruited to stalled ribosomes -->
+      <g class="protein" onmouseover="showTooltip(event, 'TRIP4', 'Recruited to collided ribosomes — initiates ribosome-associated quality control (RQC)')">
+        <circle cx="80" cy="150" r="16" fill="#D55E00" filter="url(#glow)"/>
+        <text x="80" y="154" text-anchor="middle" font-size="8" font-weight="700" fill="white">TRIP4</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC2', 'Binds ubiquitinated ribosomal proteins — marks stalled ribosomes for rescue')">
+        <circle cx="150" cy="150" r="16" fill="#009E73" filter="url(#glow)"/>
+        <text x="150" y="154" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC2</text>
+      </g>
+      <g class="protein" onmouseover="showTooltip(event, 'ASCC3', 'Unwinds mRNA at stall site — facilitates ribosome recycling')">
+        <circle cx="220" cy="150" r="16" fill="#CC79A7" filter="url(#glow)"/>
+        <text x="220" y="154" text-anchor="middle" font-size="8" font-weight="700" fill="white">ASCC3</text>
+      </g>
+
+      <!-- Arrow up to ribosomes -->
+      <line x1="80" y1="134" x2="100" y2="108" stroke="#666" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrow)"/>
+      <line x1="150" y1="134" x2="140" y2="108" stroke="#666" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#arrow)"/>
+
+      <line x1="96" y1="150" x2="134" y2="150" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+      <line x1="166" y1="150" x2="204" y2="150" stroke="#888" stroke-width="1.5" opacity="0.5"/>
+    </g>
+
+  </svg>
+
+  <!-- Legend -->
+  <div class="legend-bar">
+    <div class="legend-item"><div class="legend-dot" style="background:#D55E00"></div> TRIP4 (ASC1) — bait protein</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0072B2"></div> ASCC1</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#009E73"></div> ASCC2</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#CC79A7"></div> ASCC3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E69F00"></div> ALKBH3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#56B4E9"></div> SNRNP200</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#999"></div> RNF113</div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+function showTooltip(event, name, description) {
+  const tooltip = document.getElementById('tooltip');
+  tooltip.innerHTML = '<strong>' + name + '</strong><br>' + description;
+  tooltip.style.left = (event.pageX + 10) + 'px';
+  tooltip.style.top = (event.pageY - 10) + 'px';
+  tooltip.style.opacity = '1';
+}
+
+document.addEventListener('mouseout', function() {
+  document.getElementById('tooltip').style.opacity = '0';
+});
+</script>
+
+</body>
+</html>
