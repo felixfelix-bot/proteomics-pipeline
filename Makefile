@@ -103,7 +103,9 @@ help:
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
-	@echo "  make aruna-all         Run EVERYTHING (all volcanos, GO, networks, RA, CHX, GSEA)"
+	@echo "  make aruna-all         Run EVERYTHING (fast then slow)"
+	@echo "  make aruna-fast        Quick targets only (volcanos, Venns, GO)"
+	@echo "  make aruna-slow        Slow targets only (STRING networks, GSEA)"
 	@echo "  make all-venn          All Venn diagrams"
 	@echo "  make all-targeted      All targeted analysis"
 	@echo "  make targeted-plots    Alias for make all-targeted"
@@ -243,9 +245,40 @@ all-targeted: targeted-volcano flagip-volcano targeted-venn targeted-go ## All t
 	@echo ""
 	@echo "All targeted analysis complete."
 
-# ---- Run EVERYTHING from Aruna's July 12 feedback ----
-aruna-all: all-volcano all-venn targeted-go string-network crac-network \
-           ra-common bidirectional-go chx-common gsea
+# ---- Timing wrapper ----
+# Prints elapsed time for each target so Aruna can see how long things take.
+# Usage: make timed-target STEP=volcano
+timed-target:
+	@START=$$(date +%s) ; \
+	echo "  >>> Running: $(STEP)" ; \
+	$(RSCRIPT) R/run_step.R $(STEP) ; \
+	RC=$$? ; \
+	END=$$(date +%s) ; \
+	ELAPSED=$$(($$END - $$START)) ; \
+	echo "  <<< $(STEP) finished in $${ELAPSED}s (exit $$RC)" ; \
+	exit $$RC
+
+# ---- FAST targets (seconds, no STRINGdb/network downloads) ----
+# These run in under a minute each. Bundle them so Aruna can review
+# outputs quickly while slower network analyses are still running.
+aruna-fast: targeted-volcano flagip-volcano targeted-venn targeted-go \
+            venn bidirectional-go
+	@echo ""
+	@echo "================================================"
+	@echo " FAST ANALYSIS COMPLETE — review output/figures/"
+	@echo " Now run: make aruna-slow"
+	@echo "================================================"
+
+# ---- SLOW targets (minutes — STRINGdb + network building) ----
+aruna-slow: lydia-volcano string-network crac-network \
+            ra-common chx-common gsea
+	@echo ""
+	@echo "================================================"
+	@echo " SLOW ANALYSIS COMPLETE — check output/figures/"
+	@echo "================================================"
+
+# ---- Run EVERYTHING (fast first, then slow) ----
+aruna-all: aruna-fast aruna-slow
 	@echo ""
 	@echo "================================================"
 	@echo " ALL ANALYSIS COMPLETE — check output/figures/"
