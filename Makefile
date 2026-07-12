@@ -226,6 +226,9 @@ diagnostics: ## Print structural data summary (counts/ranges only, safe to share
 	@echo "Running diagnostics..."
 	@Rscript R/run_step.R diagnostics
 
+network-go: check clean-old ## GO enrichment split by in-network vs not-in-network
+	$(RSCRIPT) R/run_step.R network_go
+
 lydia-volcano: check clean-old ## Lydia-style volcano with STRING network overlay
 	$(RSCRIPT) R/run_step.R lydia_network_volcano
 

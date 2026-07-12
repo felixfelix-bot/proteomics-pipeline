@@ -28,7 +28,7 @@ main <- function() {
                    "pathway_network", "lydia_network_volcano",
                    "ra_common", "bidirectional_go",
                    "chx_common_analysis", "shinygo_comparison",
-                   "diagnostics")
+                   "diagnostics", "network_go")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -60,7 +60,8 @@ main <- function() {
     bidirectional_go       = "R/23_bidirectional_go.R",
     chx_common_analysis    = "R/24_chx_common_analysis.R",
     shinygo_comparison     = "R/25_shinygo_comparison.R",
-    diagnostics            = "R/diagnostics.R"
+    diagnostics            = "R/diagnostics.R",
+    network_go             = "R/26_network_go_comparison.R"
   )
 
   # Set up logging (captures all output to file + console)
