@@ -265,13 +265,22 @@ SIG_NET_LABELS <- c(
 # Get all unique sig_network values present in data
 all_cats <- sort(unique(df$sig_network))
 present_colors <- SIG_NET_COLORS[all_cats]
-present_labels <- SIG_NET_LABELS[all_cats]
 
-# Deduplicate: if multiple sig_network values map to same label+color,
-# only show one legend entry. Build a deduped color/label set.
-deduped <- !duplicated(present_labels)
-legend_colors <- present_colors[deduped]
-legend_labels <- present_labels[deduped]
+# Build legend: one entry per visible category.
+# - "Highly enriched" EXCLUDED from legend (red dots stay, label removed)
+# - Duplicate greys consolidated to one entry
+# - Use breaks to control which categories appear
+legend_breaks <- c()
+for (cat_name in all_cats) {
+  # Skip "high_*" categories — they get red color but no legend entry
+  if (grepl("^high_", cat_name)) next
+  legend_breaks <- c(legend_breaks, cat_name)
+}
+# Deduplicate by label (removes duplicate grey entries, etc.)
+legend_labels <- SIG_NET_LABELS[legend_breaks]
+dedup_mask <- !duplicated(legend_labels)
+legend_breaks <- legend_breaks[dedup_mask]
+legend_labels <- legend_labels[dedup_mask]
 
 # Add annotation: % of enriched proteins in network
 enriched_total <- sum(df$sig != FALSE & !is.na(df$gene) & df$log2FC >= FC_THRESHOLD, na.rm = TRUE)
@@ -295,8 +304,9 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
   ggplot2::geom_point(alpha = 0.5, size = 1) +
   ggplot2::scale_color_manual(
     values = present_colors,
-    labels = present_labels,
-    name = NULL, drop = FALSE
+    breaks = legend_breaks,
+    labels = legend_labels,
+    name = NULL
   ) +
   ggplot2::guides(
     color = ggplot2::guide_legend(
