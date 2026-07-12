@@ -97,6 +97,8 @@ help:
 	@echo "  make pathway-network  STRING network maps for enriched pathways"
 	@echo "  make lydia-volcano   Lydia-style volcano w/ STRING network overlay"
 	@echo "  make chx-common      CHX/DMSO common analysis (enriched/depleted + STRING + GO)"
+	@echo "  make ra-common        RA common analysis across both concentrations"
+	@echo "  make bidirectional-go Bidirectional GO dot plot (up=right, down=left)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
@@ -213,6 +215,15 @@ lydia-volcano: check ## Lydia-style volcano with STRING network overlay
 
 chx-common: check ## CHX/DMSO common analysis — enriched/depleted + STRING + GO
 	$(RSCRIPT) R/run_step.R chx_common_analysis
+
+ra-common: check ## RA common protein analysis — enriched/depleted across RA02+RA04
+	$(RSCRIPT) R/run_step.R ra_common
+
+ra-common-network: ra-common ## Alias — same as ra-common
+	@echo "RA common analysis complete (includes STRING networks)."
+
+bidirectional-go: check ## Bidirectional GO dot plot — up right, down left
+	$(RSCRIPT) R/run_step.R bidirectional_go
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano lydia-volcano ## All volcano plot targets

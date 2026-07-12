@@ -26,6 +26,7 @@ main <- function() {
                    "venn_examples", "venn_label_examples", "string_network",
                    "crac_string_network", "venn_overflow_examples", "gsea",
                    "pathway_network", "lydia_network_volcano",
+                   "ra_common", "bidirectional_go",
                    "chx_common_analysis")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
@@ -54,6 +55,8 @@ main <- function() {
     gsea                   = "R/19_gsea.R",
     pathway_network        = "R/20_pathway_network.R",
     lydia_network_volcano  = "R/21_lydia_network_volcano.R",
+    ra_common              = "R/22_ra_common_analysis.R",
+    bidirectional_go       = "R/23_bidirectional_go.R",
     chx_common_analysis    = "R/24_chx_common_analysis.R"
   )
 
