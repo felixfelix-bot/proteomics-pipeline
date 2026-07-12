@@ -42,32 +42,48 @@ make_ra_volcano <- function(df, title, n_top = 60) {
   toPlot$neglog10p <- -log10(toPlot$padj)
 
   # Use config thresholds: padj < P_VALUE_CUTOFF, |log2FC| > LOG2FC_CUTOFF
+  # THREE categories per researcher feedback (Jul 12 voice message):
+  #   enriched_up (positive log2FC) = orange "Enriched with RA"
+  #   enriched_dn (negative log2FC) = blue "Enriched without RA"
+  #   nonsig = grey "Not significant"
   toPlot$category <- "nonsig"
-  toPlot$category[abs(toPlot$log2FC) > LOG2FC_CUTOFF &
+  toPlot$category[toPlot$log2FC > LOG2FC_CUTOFF &
                   toPlot$padj < P_VALUE_CUTOFF] <- "enriched_up"
-  toPlot$category <- factor(toPlot$category, levels = c("enriched_up", "nonsig"))
+  toPlot$category[toPlot$log2FC < -LOG2FC_CUTOFF &
+                  toPlot$padj < P_VALUE_CUTOFF] <- "enriched_dn"
+  toPlot$category <- factor(toPlot$category,
+    levels = c("enriched_up", "enriched_dn", "nonsig"))
 
   # Find top N proteins by combined significance on each side
-  # "Combined significance" = product of fold change magnitude and -log10(p)
-  sig_only <- toPlot[toPlot$category == "enriched_up", ]
-  sig_only <- sig_only[!is.na(sig_only$log2FC) & !is.na(sig_only$neglog10p), ]
-  sig_only$combined_score <- abs(sig_only$log2FC) * sig_only$neglog10p
+  sig_up <- toPlot[toPlot$category == "enriched_up", ]
+  sig_up <- sig_up[!is.na(sig_up$log2FC) & !is.na(sig_up$neglog10p), ]
+  sig_up$combined_score <- abs(sig_up$log2FC) * sig_up$neglog10p
 
-  # Top N/2 up-regulated (positive log2FC)
-  top_up <- sig_only[sig_only$log2FC > 0, ]
-  top_up <- top_up[order(-top_up$combined_score), ]
+  sig_dn <- toPlot[toPlot$category == "enriched_dn", ]
+  sig_dn <- sig_dn[!is.na(sig_dn$log2FC) & !is.na(sig_dn$neglog10p), ]
+  sig_dn$combined_score <- abs(sig_dn$log2FC) * sig_dn$neglog10p
+
+  # Top N/2 up-regulated (positive log2FC) — enriched with RA
+  top_up <- sig_up[order(-sig_up$combined_score), ]
   top_up <- head(top_up, n_top / 2)
 
-  # Top N/2 down-regulated (negative log2FC)
-  top_dn <- sig_only[sig_only$log2FC < 0, ]
-  top_dn <- top_dn[order(-top_dn$combined_score), ]
+  # Top N/2 down-regulated (negative log2FC) — enriched without RA
+  top_dn <- sig_dn[order(-sig_dn$combined_score), ]
   top_dn <- head(top_dn, n_top / 2)
 
   label_data <- rbind(top_up, top_dn)
 
+  # Aruna's requested colors: orange=with RA, blue=without RA, gray=nonsig
   RA_COLORS <- c(
-    "enriched_up" = "#D55E00",
-    "nonsig"      = "#D0D0D0"
+    "enriched_up" = "#D55E00",   # Vermillion Orange — enriched with RA
+    "enriched_dn" = "#0072B2",   # Deep Navy — enriched without RA
+    "nonsig"      = "#D0D0D0"    # Light grey — not significant
+  )
+
+  RA_LABELS <- c(
+    "enriched_up" = "Enriched with RA",
+    "enriched_dn" = "Enriched without RA",
+    "nonsig"      = "Not significant"
   )
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
@@ -75,8 +91,13 @@ make_ra_volcano <- function(df, title, n_top = 60) {
     ggplot2::geom_point(alpha = 0.5, size = 0.8) +
     ggplot2::scale_color_manual(
       values = RA_COLORS,
-      labels = c("enriched_up" = "Significant", "nonsig" = "Not significant"),
-      name = NULL
+      labels = RA_LABELS,
+      name = NULL, drop = FALSE
+    ) +
+    ggplot2::guides(
+      color = ggplot2::guide_legend(
+        override.aes = list(size = 5, alpha = 1)  # BIG dots for poster visibility
+      )
     ) +
     ggrepel::geom_text_repel(
       data = label_data,
@@ -168,6 +189,11 @@ make_main_volcano <- function(df, title) {
       labels = MAIN_LABELS,
       name = NULL, drop = FALSE
     ) +
+    ggplot2::guides(
+      color = ggplot2::guide_legend(
+        override.aes = list(size = 5, alpha = 1)  # BIG dots for poster visibility
+      )
+    ) +
     ggrepel::geom_text_repel(
       data = label_data,
       ggplot2::aes(label = gene),
@@ -194,6 +220,7 @@ make_main_volcano <- function(df, title) {
       axis.title.x = ggplot2::element_text(hjust = 0.5),
       axis.text = ggplot2::element_text(colour = "black", size = 8),
       legend.position = "right",
+      legend.text = ggplot2::element_text(size = 9),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
     )

@@ -95,9 +95,10 @@ help:
 	@echo "  make crac-network     STRING network for CRAC RNA interactome"
 	@echo "  make gsea             GSEA (ranked gene list, Lydia style)"
 	@echo "  make pathway-network  STRING network maps for enriched pathways"
+	@echo "  make lydia-volcano   Lydia-style volcano w/ STRING network overlay"
 	@echo ""
 	@echo "Group targets:"
-	@echo "  make all-volcano       All volcano plots"
+	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
 	@echo "  make all-venn          All Venn diagrams"
 	@echo "  make all-targeted      All targeted analysis"
 	@echo "  make targeted-plots    Alias for make all-targeted"
@@ -206,8 +207,11 @@ gsea: check ## GSEA enrichment analysis (ranked gene list via clusterProfiler)
 pathway-network: check ## STRING network maps for enriched GO pathways
 	$(RSCRIPT) R/run_step.R pathway_network
 
+lydia-volcano: check ## Lydia-style volcano with STRING network overlay
+	$(RSCRIPT) R/run_step.R lydia_network_volcano
+
 # ---- Group targets (run multiple steps at once) ----
-all-volcano: targeted-volcano flagip-volcano ## All volcano plot targets
+all-volcano: targeted-volcano flagip-volcano lydia-volcano ## All volcano plot targets
 	@echo ""
 	@echo "All volcano plots complete."
 
