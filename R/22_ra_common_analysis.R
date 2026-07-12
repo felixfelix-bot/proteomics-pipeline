@@ -425,16 +425,237 @@ g_depleted <- build_ra_string_network(
 )
 
 # =====================================================================
-# Summary
+# STEP 6: Circular network plots (Lydia's Panel C style)
 # =====================================================================
+cat("\n--- Step 6: Circular network plots (Lydia Panel C style) ---\n")
+
+build_circular_network <- function(common_table, title, file_prefix) {
+  if (is.null(common_table) || nrow(common_table) == 0) {
+    cat(sprintf("  [%s] No proteins — skipping circular plot.\n", title))
+    return(NULL)
+  }
+
+  # Re-use the graph if STRING mapped successfully
+  genes <- common_table$gene
+  cat(sprintf("\n  [%s] %d proteins for circular layout\n", title, length(genes)))
+
+  map_input <- as.data.frame(common_table[, c("gene", "mean_log2FC")])
+  map_input <- map_input[!is.na(map_input$gene) & map_input$gene != "", ]
+
+  mapped <- tryCatch({
+    string_db$map(map_input, "gene", removeUnmappedRows = TRUE)
+  }, error = function(e) {
+    cat(sprintf("    ERROR mapping: %s\n", conditionMessage(e)))
+    return(NULL)
+  })
+
+  if (is.null(mapped) || nrow(mapped) < 2) {
+    cat("    Fewer than 2 mapped — skipping.\n")
+    return(NULL)
+  }
+
+  mapped_ids <- unique(mapped$STRING_id)
+
+  # Get physical interactions among these proteins
+  if (!is.null(phys)) {
+    edges <- phys[phys$from %in% mapped_ids & phys$to %in% mapped_ids, ]
+  } else {
+    interactions <- string_db$get_interactions(mapped_ids)
+    edges <- interactions[interactions$from %in% mapped_ids &
+                          interactions$to %in% mapped_ids, ]
+  }
+
+  if (nrow(edges) < 1) {
+    cat("    No interactions — proteins don't form a network.\n")
+    cat("    Still generating circular protein list (no edges).\n")
+  }
+
+  # Build graph — include ALL mapped proteins as vertices
+  vertex_df <- data.frame(name = mapped_ids, stringsAsFactors = FALSE)
+  if (nrow(edges) > 0) {
+    g <- graph_from_data_frame(edges[, c("from", "to")], directed = FALSE,
+                               vertices = vertex_df)
+    g <- simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
+  } else {
+    g <- make_graph("empty", n = length(mapped_ids))
+    V(g)$name <- mapped_ids
+  }
+
+  # Add isolated vertices that have no edges
+  isolated <- mapped_ids[!mapped_ids %in% c(edges$from, edges$to)]
+  for (id in isolated) {
+    g <- g + vertices(id)
+  }
+
+  # Annotate
+  string_to_gene <- setNames(mapped$gene, mapped$STRING_id)
+  string_to_fc   <- setNames(mapped$mean_log2FC, mapped$STRING_id)
+
+  V(g)$gene_name <- sapply(V(g)$name, function(id) {
+    gn <- string_to_gene[id]
+    if (is.na(gn)) id else gn
+  })
+  V(g)$mean_log2FC <- as.numeric(string_to_fc[match(V(g)$name, names(string_to_fc))])
+
+  # Color: vermillion = enriched, navy = depleted
+  V(g)$color <- ifelse(!is.na(V(g)$mean_log2FC) & V(g)$mean_log2FC > 0,
+                       GLOBAL_COLORS[["enriched_up"]],
+                       GLOBAL_COLORS[["ascc_core"]])
+  V(g)$size        <- 6
+  V(g)$label       <- V(g)$gene_name
+  V(g)$frame.color <- NA
+
+  cat(sprintf("    Network: %d nodes, %d edges\n", vcount(g), ecount(g)))
+
+  # Circular layout (Lydia Panel C style)
+  set.seed(42)
+  layout_circle <- layout_in_circle(g, order = order(V(g)$gene_name))
+
+  commit_hash <- get_git_hash()
+  safe_name <- sanitize_filename(file_prefix)
+  versioned <- paste0(safe_name, "_", commit_hash)
+  png_path <- safe_filepath(FIGURE_DIR, versioned, ".png")
+  pdf_path <- safe_filepath(FIGURE_DIR, versioned, ".pdf")
+
+  plot_circular <- function() {
+    plot(g,
+         layout             = layout_circle,
+         vertex.label.cex   = 0.55,
+         vertex.label.font  = 2,
+         vertex.label.color = "black",
+         vertex.label.dist  = 1.2,
+         edge.color         = "grey80",
+         edge.width         = 0.4,
+         main               = title)
+    legend("bottomright",
+           legend = c("Enriched with RA", "Depleted with RA"),
+           col    = c(GLOBAL_COLORS[["enriched_up"]], GLOBAL_COLORS[["ascc_core"]]),
+           pch    = 19, pt.cex = 2, cex = 0.9, bty = "n")
+  }
+
+  grDevices::png(png_path, width = 12, height = 12, units = "in", res = FIG_DPI)
+  plot_circular()
+  grDevices::dev.off()
+
+  grDevices::pdf(pdf_path, width = 12, height = 12)
+  plot_circular()
+  grDevices::dev.off()
+
+  cat(sprintf("    Saved: %s\n", basename(png_path)))
+  cat(sprintf("    Saved: %s\n", basename(pdf_path)))
+  return(g)
+}
+
+# Circular network for common enriched
+g_enriched_circle <- build_circular_network(
+  common_enriched_table,
+  title = "Common RA-Enriched Proteins — Circular Network (RA02 & RA04)",
+  file_prefix = "RA_common_circular_enriched"
+)
+
+# Circular network for common depleted
+g_depleted_circle <- build_circular_network(
+  common_depleted_table,
+  title = "Common RA-Depleted Proteins — Circular Network (RA02 & RA04)",
+  file_prefix = "RA_common_circular_depleted"
+)
+
+# =====================================================================
+# STEP 7: GO enrichment analysis
+# =====================================================================
+cat("\n--- Step 7: GO enrichment analysis ---\n")
+
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(enrichplot)
+
+ONT_NAMES <- c("BP" = "Biological Process",
+               "CC" = "Cellular Component",
+               "MF" = "Molecular Function")
+
+# Universe = all proteins detected in RA02 experiment
+go_universe <- unique(df_ra02$gene[!is.na(df_ra02$gene)])
+cat(sprintf("  GO universe: %d proteins\n", length(go_universe)))
+
+run_common_go <- function(genes, set_label) {
+  cat(sprintf("\n  [%s] %d genes\n", set_label, length(genes)))
+
+  if (length(genes) < 5) {
+    cat("    Too few genes (<5). Skipping GO.\n")
+    return(NULL)
+  }
+
+  for (ont in c("BP", "CC", "MF")) {
+    cat(sprintf("    [%s] enrichGO... ", ont))
+
+    ego <- tryCatch({
+      enrichGO(
+        gene          = genes,
+        universe      = go_universe,
+        OrgDb         = org.Hs.eg.db,
+        keyType       = "SYMBOL",
+        ont           = ont,
+        pAdjustMethod = "BH",
+        pvalueCutoff  = 0.05,
+        qvalueCutoff  = 0.2,
+        minGSSize     = 2,
+        maxGSSize     = 5000
+      )
+    }, error = function(e) {
+      cat("ERROR: %s\n", conditionMessage(e))
+      return(NULL)
+    })
+
+    if (is.null(ego) || nrow(as.data.frame(ego)) == 0) {
+      cat("No enriched terms\n")
+      next
+    }
+
+    ego_simplified <- tryCatch({
+      simplify(ego, cutoff = 0.7)
+    }, error = function(e) ego)
+
+    res <- as.data.frame(ego_simplified)
+    cat(sprintf("%d terms\n", nrow(res)))
+
+    # Save table
+    save_table(res, sprintf("RA_common_GO_%s_%s", set_label, ont))
+
+    # Dotplot
+    n_show <- min(15, nrow(res))
+    fig_height <- max(6, n_show * 0.4)
+
+    p <- dotplot(ego_simplified, showCategory = n_show) +
+      ggplot2::labs(
+        title = sprintf("Common RA-%s — %s",
+                        set_label, ONT_NAMES[ont]),
+        x = "GeneRatio", color = "p.adjust"
+      ) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+
+    fig_name <- sprintf("RA_common_GO_%s_%s_dotplot", set_label, ont)
+    save_figure(p, fig_name, width = 10, height = fig_height)
+  }
+}
+
+# GO for common enriched
+run_common_go(common_enriched, "enriched")
+
+# GO for common depleted
+run_common_go(common_depleted, "depleted")
 cat("\n=========================================\n")
 cat(" RA Common Protein Analysis Complete!\n")
 cat("=========================================\n")
 cat(sprintf("  Common RA-enriched: %d proteins\n", length(common_enriched)))
 cat(sprintf("  Common RA-depleted: %d proteins\n", length(common_depleted)))
 cat("\nOutputs:\n")
-cat("  - Venn diagrams (enriched + depleted): output/figures/\n")
-cat("  - STRING network plots (enriched + depleted): output/figures/\n")
+cat("  - Venn diagrams: output/figures/\n")
+cat("  - STRING force-directed networks: output/figures/\n")
+cat("  - Circular networks (Lydia Panel C): output/figures/\n")
+cat("  - GO dotplots (BP, CC, MF): output/figures/\n")
 cat("  - Summary tables (CSV): output/tables/\n")
-cat("  - Gene lists (TXT for ShinyGO etc.): output/tables/\n")
+cat("  - Gene lists (TXT for ShinyGO): output/tables/\n")
 cat("\n")
