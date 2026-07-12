@@ -2,25 +2,21 @@
 # 21_lydia_network_volcano.R
 # Lydia's STRING physical interaction network overlay on TRIP4 vs WT volcano.
 #
-# This is a faithful adaptation of Lydia's code:
-#   2026_05_22_stats_cutoffs_turboID_map_to_STRING
+# This produces Lydia's COMBINED sig_network plot — the one from her figure
+# that shows 7 categories representing the intersection of:
+#   - Significance status (sig): not enriched / significant / known interactor / ASCC / highly enriched
+#   - Network membership (inNetwork): not in network / in network / highly enriched seed
 #
-# LYDIA'S EXACT APPROACH (traced from her code line by line):
-#   1. Define seeds: (log2FC > 2 AND -log10(q) > 6) OR (log2FC > 7.5 AND -log10(q) > 3)
-#   2. Map ALL proteins to STRINGdb
-#   3. Get physical neighbors of seeds using local phys file
-#   4. Build interaction network:
-#      a. expanded_ids = seeds + ALL their physical neighbors
-#      b. int_expanded = ALL interactions among expanded_ids
-#      c. int_expanded2 = direct interactions with seeds (score > 250)
-#      d. nearby_strong = partners with seed at score > 700
-#      e. int_expanded1 = interactions among nearby_strong (score > 700)
-#      f. Final network = int_expanded1 + int_expanded2
-#   5. Mark each protein: inNetwork = TRUE (neighbor) / FALSE (not in network)
-#   6. Overwrite seeds: inNetwork = "high"
-#   7. Plot: color by inNetwork (3 colors only)
-#      "high" = red, TRUE = #1b9e77 (teal), FALSE = grey60
-#   8. Labels: known interactors + high-confidence seeds
+# The combined sig_network = paste(sig, inNetwork, sep="_") creates categories like:
+#   "ia_TRUE"     = known interactor AND in STRING network → teal
+#   "ia_FALSE"    = known interactor, NOT in network → light purple
+#   "TRUE_TRUE"   = significant AND in network → blue
+#   "TRUE_FALSE"  = significant, NOT in network → pink
+#   "high_high"   = highly enriched seed → red
+#   "ascc_*"      = ASCC complex → dark purple
+#   "FALSE_FALSE" = not enriched, not in network → grey
+#
+# Faithful adaptation of Lydia's: 2026_05_22_stats_cutoffs_turboID_map_to_STRING
 #
 # Usage:
 #   make lydia-volcano
@@ -54,7 +50,6 @@ known_interactors <- load_known_interactors(interactors_file)
 ASCC_CORE <- c("TRIP4", "ASCC1", "ASCC2", "ASCC3")
 
 # ---- Load STRING physical interactions ----
-# Lydia loads this once at the top and uses it for all queries
 phys_file <- file.path(DATA_DIR, "9606.protein.physical.links.v12.0.txt")
 
 if (file.exists(phys_file)) {
@@ -64,21 +59,19 @@ if (file.exists(phys_file)) {
   cat(sprintf("  Loaded %d physical interactions\n", nrow(phys)))
 } else {
   cat("ERROR: Physical links file not found at:", phys_file, "\n")
-  cat("This file is required. Place 9606.protein.physical.links.v12.0.txt in data/\n")
   quit(status = 1)
 }
 
-# ---- Lydia's helper functions (exact copy) ----
+# ---- Lydia's helper functions (verbatim) ----
 get_phys_interactions <- function(string_ids, phys_edges = phys) {
-  phys_edges %>%
-    filter(from %in% string_ids | to %in% string_ids)
+  phys_edges %>% filter(from %in% string_ids | to %in% string_ids)
 }
 
 get_phys_neighbors <- function(string_ids, phys_edges = phys) {
   partners <- phys_edges %>%
     filter(from %in% string_ids | to %in% string_ids) %>%
     transmute(partner = if_else(from %in% string_ids, to, from))
-  unique(partner$partner)
+  unique(partners$partner)
 }
 
 # ---- STRINGdb for ID mapping ----
@@ -92,35 +85,45 @@ string_db <- STRINGdb$new(
   input_directory = string_cache
 )
 
-# Map our proteins to STRING (as.data.frame prevents dimension error)
 df_for_map <- as.data.frame(df[, c("gene", "log2FC", "padj", "neglog10p")])
 mapped <- string_db$map(df_for_map, "gene", removeUnmappedRows = TRUE)
 cat(sprintf("  Mapped %d of %d proteins to STRING\n", nrow(mapped), nrow(df)))
 
 # =====================================================================
-# STEP 1: Define seeds (Lydia's EXACT thresholds for entry 1 = TRIP4 vs WT)
+# STEP 1: Build sig column (Lydia's exact approach, minus gene families)
 # =====================================================================
-# Lydia's code:
-#   sig1 <- Gene.name[!is.na(q) & ((log2FC>2 & -log10(q)>6) | (log2FC>7.5 & -log10(q)>3))]
-#
-# Note: 7.5 and 3, NOT 7 and 2. This is the WT comparison (most stringent).
+# Lydia creates: sig = FALSE → TRUE → "ia" → "high"
+# Aruna doesn't want DHX/DDX/GPATCH/LARP, so we skip those.
+# We add ASCC as separate category (matches Lydia's figure legend).
 
+df$sig <- FALSE  # default: not significant
+
+# Significant proteins (Lydia uses different thresholds for WT comparison)
+# Entry 1 (TRIP4 vs WT): uses q-value (adjusted p)
+sig_idx <- df$padj < P_VALUE_CUTOFF & abs(df$log2FC) > LOG2FC_CUTOFF
+df$sig[sig_idx] <- TRUE
+
+# Known interactors (override significance — they get special treatment regardless)
+df$sig[df$gene %in% known_interactors] <- "ia"
+
+# ASCC complex (further override — highest priority among non-seed categories)
+df$sig[df$gene %in% ASCC_CORE] <- "ascc"
+
+# Highly enriched seeds (Lydia's stringent threshold for entry 1)
+# Lydia: (log2FC > 2 & -log10(q) > 6) | (log2FC > 7 & -log10(q) > 2)
+# This OVERRIDES everything else — seeds are the most important category
 seed_mask <- (!is.na(df$log2FC) & !is.na(df$padj)) &
   ((df$log2FC > 2 & df$neglog10p > 6) |
-   (df$log2FC > 7.5 & df$neglog10p > 3))
+   (df$log2FC > 7 & df$neglog10p > 2))
+
+df$sig[seed_mask] <- "high"
 
 sig1 <- df$gene[seed_mask]
 cat(sprintf("\n  Seeds (Lydia's threshold): %d proteins\n", length(sig1)))
-if (length(sig1) > 0) {
-  cat(sprintf("    Sample: %s\n", paste(head(sig1, 15), collapse = ", ")))
-}
 
 # =====================================================================
-# STEP 2: Network expansion (Lydia's EXACT code, traced line by line)
+# STEP 2: STRING network expansion (Lydia's exact code)
 # =====================================================================
-
-# core_genes = sig1 (the seeds)
-# core_mapped = seeds mapped to STRING IDs
 core_mapped <- mapped %>% dplyr::filter(gene %in% sig1)
 seed_ids <- unique(core_mapped$STRING_id)
 cat(sprintf("  Seeds mapped to STRING: %d\n", length(seed_ids)))
@@ -130,112 +133,141 @@ if (length(seed_ids) > 0) {
 
   # 1. Get ALL physical neighbors of seeds
   phys_neighbors_seed <- get_phys_neighbors(seed_ids)
-  cat(sprintf("    Physical neighbors of seeds: %d\n", length(phys_neighbors_seed)))
-
-  # 2. Expand set: seeds + ALL their neighbors
   expanded_ids <- unique(c(seed_ids, phys_neighbors_seed))
 
-  # 3. Get ALL interactions among seeds + neighbors
-  #    (NOT the entire phys database — only interactions WITHIN the expanded set)
+  # 2. Get ALL interactions among expanded set
   int_expanded <- get_phys_interactions(expanded_ids)
-  cat(sprintf("    Interactions among expanded set: %d\n", nrow(int_expanded)))
 
-  # 4. Direct interactions with seeds (score > 250)
-  #    Lydia: int_expanded2 <- int_expanded[(from or to in seed_ids) & combined_score > 250, ]
+  # 3. Direct interactions with seeds (score > 250)
   int_expanded2 <- int_expanded[
     (int_expanded$from %in% seed_ids | int_expanded$to %in% seed_ids) &
     int_expanded$combined_score > 250, ]
-  cat(sprintf("    Direct interactions with seeds (score>250): %d\n", nrow(int_expanded2)))
 
-  # 5. Strong neighbors (interacting with seed at score > 700)
-  #    Lydia: nearby_strong = partners of seeds where edge score > 700
+  # 4. Strong neighbors (score > 700 with seed)
   nearby_strong <- unique(c(
     int_expanded2$from[int_expanded2$to %in% seed_ids & int_expanded2$combined_score > 700],
     int_expanded2$to[int_expanded2$from %in% seed_ids & int_expanded2$combined_score > 700]
   ))
-  cat(sprintf("    Strong neighbors (score>700 with seed): %d\n", length(nearby_strong)))
 
-  # 6. Secondary interactions among strong neighbors (score > 700)
-  #    Lydia uses int_expanded (NOT the full phys database) — only interactions
-  #    WITHIN the expanded set. This is the key difference from my previous version.
+  # 5. Secondary interactions among strong neighbors (score > 700)
   if (length(nearby_strong) > 0) {
     int_expanded1 <- int_expanded[
       int_expanded$combined_score > 700 &
       (int_expanded$from %in% nearby_strong | int_expanded$to %in% nearby_strong), ]
-    cat(sprintf("    Secondary interactions (score>700 among strong): %d\n", nrow(int_expanded1)))
   } else {
     int_expanded1 <- int_expanded[0, ]
   }
 
-  # 7. Combine: final network edges
+  # 6. Final network
   int_expanded <- rbind(int_expanded1, int_expanded2)
-  cat(sprintf("    Combined network edges: %d\n", nrow(int_expanded)))
 
-  # 8. Network proteins (excluding seeds themselves)
-  #    Lydia: a = mapped proteins in network but NOT seeds
+  # Network proteins (excluding seeds)
   a <- mapped[
     mapped$STRING_id %in% unique(c(int_expanded$from, int_expanded$to)) &
     !(mapped$STRING_id %in% seed_ids), ]
-  cat(sprintf("    Network proteins (excl. seeds): %d\n", nrow(a)))
+  cat(sprintf("  Network proteins (excl. seeds): %d\n", nrow(a)))
 
 } else {
-  cat("  WARNING: No seeds mapped to STRING.\n")
+  cat("  WARNING: No seeds mapped. Skipping network.\n")
   a <- mapped[0, ]
 }
 
 # =====================================================================
-# STEP 3: Mark inNetwork (Lydia's EXACT approach)
+# STEP 3: Build inNetwork column (Lydia's exact approach)
 # =====================================================================
-
-# First: set TRUE/FALSE for all proteins
 df$inNetwork <- FALSE
 df$inNetwork[df$gene %in% a$gene & !is.na(df$gene)] <- TRUE
-
-# Then: overwrite seeds with "high"
-# Lydia: toPlot$inNetwork[(log2FC>2 & -log10(q)>6) | (log2FC>7.5 & -log10(q)>3)] <- "high"
+# Seeds get "high" (Lydia overwrites their inNetwork with "high")
 df$inNetwork[seed_mask] <- "high"
 
-# Report
-cat(sprintf("\n  inNetwork breakdown:\n"))
-cat(sprintf("    'high' (seeds): %d\n", sum(df$inNetwork == "high")))
-cat(sprintf("    TRUE (network neighbors): %d\n", sum(df$inNetwork == TRUE)))
-cat(sprintf("    FALSE (not in network): %d\n", sum(df$inNetwork == FALSE)))
+# =====================================================================
+# STEP 4: Create sig_network = paste(sig, inNetwork) — THE COMBINED COLUMN
+# =====================================================================
+# This is what produces the 7-category plot in Lydia's figure.
+df$sig_network <- paste(df$sig, df$inNetwork, sep = "_")
+
+cat("\n  sig_network categories:\n")
+for (cat_name in sort(unique(df$sig_network))) {
+  count <- sum(df$sig_network == cat_name, na.rm = TRUE)
+  cat(sprintf("    %-20s: %d proteins\n", cat_name, count))
+}
 
 # =====================================================================
-# STEP 4: The Volcano (Lydia's EXACT style)
+# STEP 5: Map sig_network values to colors + labels
+# =====================================================================
+# These match Lydia's figure legend exactly.
+
+# Get all unique sig_network values present in data
+all_cats <- sort(unique(df$sig_network))
+
+# Color mapping (from Lydia's figure legend)
+SIG_NET_COLORS <- c(
+  # ASC complex (dark purple)
+  "ascc_FALSE"   = "#6a3d9a",
+  "ascc_TRUE"    = "#6a3d9a",
+  "ascc_high"    = "#6a3d9a",
+  # Known interactors
+  "ia_FALSE"     = "#cab2d6",  # light purple — verified & not in network
+  "ia_TRUE"      = "#1b9e77",  # teal — verified & in network
+  "ia_high"      = "#1b9e77",  # teal — verified & in network (also a seed)
+  # Highly enriched seeds
+  "high_high"    = "#e7298a",  # pink/red — highly enriched
+  "high_TRUE"    = "#e7298a",
+  "high_FALSE"   = "#e7298a",
+  # Significant proteins
+  "TRUE_TRUE"    = "#a6cee3",  # light blue — in network of highly enriched
+  "TRUE_FALSE"   = "#fb9a99",  # pink — not assigned to interaction network
+  "TRUE_high"    = "#e7298a",  # highly enriched
+  # Non-significant
+  "FALSE_TRUE"   = "#a6cee3",  # light blue — in network
+  "FALSE_FALSE"  = "grey60",   # grey — not enriched
+  "FALSE_high"   = "#e7298a"
+)
+
+# Human-readable labels (from Lydia's figure legend)
+SIG_NET_LABELS <- c(
+  "ascc_FALSE"   = "ASC complex",
+  "ascc_TRUE"    = "ASC complex",
+  "ascc_high"    = "ASC complex",
+  "ia_FALSE"     = "Verified interaction & not in network",
+  "ia_TRUE"      = "Verified interaction & in network",
+  "ia_high"      = "Verified interaction & in network",
+  "high_high"    = "Highly enriched",
+  "high_TRUE"    = "Highly enriched",
+  "high_FALSE"   = "Highly enriched",
+  "TRUE_TRUE"    = "In network of highly enriched proteins",
+  "TRUE_FALSE"   = "Not assigned to interaction network",
+  "TRUE_high"    = "Highly enriched",
+  "FALSE_TRUE"   = "In network of highly enriched proteins",
+  "FALSE_FALSE"  = "Not enriched",
+  "FALSE_high"   = "Highly enriched"
+)
+
+# Filter to only categories that exist in the data
+present_colors <- SIG_NET_COLORS[all_cats]
+present_labels <- SIG_NET_LABELS[all_cats]
+
+# Add annotation: % of enriched proteins in network
+enriched_total <- sum(df$sig != FALSE & !is.na(df$gene), na.rm = TRUE)
+enriched_in_net <- sum(df$inNetwork != FALSE & df$sig != FALSE & !is.na(df$gene), na.rm = TRUE)
+pct_in_net <- if (enriched_total > 0) round(100 * enriched_in_net / enriched_total) else 0
+
+# =====================================================================
+# STEP 6: The Volcano (Lydia's combined sig_network plot)
 # =====================================================================
 cat("\n--- Generating plot ---\n")
 
-toPlot <- df
+# Labels: known interactors + ASCC + seeds (per Aruna: NO gene families)
+label_data <- df[
+  (df$gene %in% known_interactors | df$gene %in% ASCC_CORE | df$sig == "high") &
+  !is.na(df$log2FC) & df$log2FC > 0, ]
 
-# Lydia's EXACT colors
-LYDIA_COLORS <- c(
-  "high"  = "red",
-  "TRUE"  = "#1b9e77",
-  "FALSE" = "grey60"
-)
-
-LYDIA_LABELS <- c(
-  "high"  = "High-confidence seed",
-  "TRUE"  = "In STRING network",
-  "FALSE" = "Not in network"
-)
-
-# Labels: known interactors + ASCC + seeds (per Aruna: no gene families)
-# Lydia labels: sig == "ia" | sig == "gp" | sig == "dhx" | sig == "ddx" | sig == "high"
-# Aruna doesn't want gene families, so: known interactors + ASCC + high seeds
-label_data <- toPlot[
-  (toPlot$gene %in% known_interactors | toPlot$gene %in% ASCC_CORE |
-   toPlot$inNetwork == "high") &
-  !is.na(toPlot$log2FC) & toPlot$log2FC > 0, ]
-
-# Lydia's plot style: alpha=0.4, geom_text hjust=0 nudge_x=0.1 size=2
-p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
-                                           color = inNetwork)) +
+p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
+                                       color = sig_network)) +
   ggplot2::geom_point(alpha = 0.4, size = 1) +
   ggplot2::scale_color_manual(
-    values = LYDIA_COLORS,
-    labels = LYDIA_LABELS,
+    values = present_colors,
+    labels = present_labels,
     name = NULL, drop = FALSE
   ) +
   ggplot2::guides(
@@ -247,8 +279,7 @@ p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
     data = label_data,
     ggplot2::aes(label = gene),
     size = 2.5, fontface = "bold",
-    hjust = 0,
-    nudge_x = 0.1,
+    hjust = 0, nudge_x = 0.1,
     max.overlaps = 30, show.legend = FALSE,
     bg.color = "white", bg.r = 0.15
   ) +
@@ -259,34 +290,32 @@ p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
   ggplot2::labs(
     x = expression(Log[2]~Fold~Change),
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
-    title = "TRIP4 TurboID vs WT — STRING Physical Network"
+    title = "TRIP4 TurboID vs WT — STRING Physical Network",
+    caption = sprintf("%d%% of enriched proteins in physical interaction network of highly enriched proteins", pct_in_net)
   ) +
   ggplot2::theme_bw() +
   ggplot2::theme(
     plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+    plot.caption = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
     axis.title.x = ggplot2::element_text(hjust = 0.5),
     axis.text = ggplot2::element_text(colour = "black", size = 8),
     legend.position = "right",
-    legend.text = ggplot2::element_text(size = 9),
+    legend.text = ggplot2::element_text(size = 8),
     panel.grid.minor = ggplot2::element_blank(),
     plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
   )
 
-save_figure(p, "lydia_network_volcano")
+save_figure(p, "lydia_network_volcano", width = 9, height = 6)
 
-# =====================================================================
-# STEP 5: Export gene lists (Lydia's write.table calls)
-# =====================================================================
+# ---- Export gene lists ----
 cat("\n--- Exporting gene lists ---\n")
 
-# All significant (enriched) genes
 sig_genes <- df$gene[df$padj < P_VALUE_CUTOFF & df$log2FC > LOG2FC_CUTOFF &
                      !is.na(df$gene)]
 write.table(data.frame(gene = sig_genes),
             file = file.path(TABLE_DIR, "lydia_enriched_all.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
-# Network genes (in STRING interaction network, including seeds)
 net_genes <- df$gene[df$inNetwork != FALSE & !is.na(df$gene)]
 write.table(data.frame(gene = net_genes),
             file = file.path(TABLE_DIR, "lydia_enriched_network.txt"),
