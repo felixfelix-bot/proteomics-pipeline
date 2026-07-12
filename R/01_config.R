@@ -353,9 +353,9 @@ get_significant_genes <- function(df,
   # direction = "enriched" (default): only positive log2FC (experimental condition)
   # direction = "both": both directions (legacy behavior, use sparingly)
   if (direction == "enriched") {
-    sig <- df$gene[df$padj < padj_cutoff & df$log2FC > log2fc_cutoff]
+    sig <- df$gene[df$padj < padj_cutoff & df$log2FC >= log2fc_cutoff]
   } else {
-    sig <- df$gene[df$padj < padj_cutoff & abs(df$log2FC) > log2fc_cutoff]
+    sig <- df$gene[df$padj < padj_cutoff & abs(df$log2FC) >= log2fc_cutoff]
   }
   # Remove duplicates and missing values
   sig <- unique(sig[!is.na(sig)])
