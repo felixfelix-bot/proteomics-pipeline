@@ -573,6 +573,89 @@ for (ont in c("BP", "CC", "MF")) {
 }
 
 # =====================================================================
+# KEGG PATHWAY ENRICHMENT
+# =====================================================================
+# Run enrichKEGG on the enriched and depleted gene sets independently.
+# KEGG requires ENTREZID — convert from SYMBOL via bitr().
+
+cat("\n=========================================\n")
+cat(" KEGG Pathway Enrichment\n")
+cat("=========================================\n\n")
+
+run_chx_kegg <- function(genes, set_label, set_title, universe) {
+  cat(sprintf("\n--- KEGG: %s (%d genes) ---\n", set_title, length(genes)))
+
+  if (length(genes) < 5) {
+    cat("  Skipped: fewer than 5 genes\n")
+    return(invisible(NULL))
+  }
+
+  tryCatch({
+    # Convert SYMBOL to ENTREZID for KEGG
+    entrez_map <- bitr(genes, fromType = "SYMBOL", toType = "ENTREZID",
+                       OrgDb = org.Hs.eg.db)
+    entrez_genes <- unique(entrez_map$ENTREZID)
+    cat(sprintf("  Mapped %d/%d genes to ENTREZID\n",
+                length(entrez_genes), length(genes)))
+
+    # Convert universe SYMBOL to ENTREZID
+    universe_map <- bitr(universe, fromType = "SYMBOL", toType = "ENTREZID",
+                         OrgDb = org.Hs.eg.db)
+    universe_entrez <- unique(universe_map$ENTREZID)
+
+    ekegg <- enrichKEGG(
+      gene          = entrez_genes,
+      organism      = "hsa",
+      pAdjustMethod = "BH",
+      pvalueCutoff  = 0.05,
+      universe      = universe_entrez,
+      minGSSize     = 2,
+      maxGSSize     = 5000
+    )
+
+    if (is.null(ekegg) || nrow(as.data.frame(ekegg)) == 0) {
+      cat("  No enriched KEGG pathways found\n")
+      return(invisible(NULL))
+    }
+
+    # Convert ENTREZID back to readable gene symbols
+    ekegg <- setReadable(ekegg, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
+
+    kegg_df <- as.data.frame(ekegg)
+    cat(sprintf("  Found %d enriched KEGG pathways\n", nrow(kegg_df)))
+
+    prefix <- sanitize_filename(paste0("KEGG_chx_common_", set_label))
+    save_table(kegg_df, prefix)
+
+    # Dotplot
+    n_show <- min(20, nrow(kegg_df))
+    fig_h  <- max(7, n_show * 0.4)
+    kegg_title <- paste0("KEGG: ", set_title)
+
+    p_dot <- enrichplot::dotplot(ekegg, showCategory = n_show,
+                                 title = kegg_title) +
+      ggplot2::labs(x = "Gene Ratio", color = "p-adjusted value") +
+      ggplot2::theme(
+        plot.title  = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = fig_h)
+
+  }, error = function(e) {
+    cat(sprintf("  KEGG error (may need internet): %s\n",
+                conditionMessage(e)))
+  })
+}
+
+# KEGG on CHX-enriched set
+run_chx_kegg(enriched_genes, "enriched",
+             "CHX-Enriched Proteins", universe)
+
+# KEGG on CHX-depleted set
+run_chx_kegg(depleted_genes, "depleted",
+             "CHX-Depleted Proteins", universe)
+
+# =====================================================================
 # CIRCULAR NETWORKS (Lydia Panel C style) + STRING-STYLE BUBBLE
 # =====================================================================
 cat("\n=========================================\n")

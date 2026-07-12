@@ -785,6 +785,84 @@ for (ont in c("BP", "CC", "MF")) {
               height = max(6, nrow(combined) * 0.35))
   cat(sprintf("    Saved: %s\n", fig_name))
 }
+
+# =====================================================================
+# STEP 9: KEGG pathway enrichment
+# =====================================================================
+cat("\n--- Step 9: KEGG pathway enrichment ---\n")
+
+run_common_kegg <- function(genes, set_label) {
+  cat(sprintf("\n  [%s] %d genes\n", set_label, length(genes)))
+
+  if (length(genes) < 5) {
+    cat("    Too few genes (<5). Skipping KEGG.\n")
+    return(NULL)
+  }
+
+  tryCatch({
+    # Convert SYMBOL to ENTREZID for KEGG
+    entrez_map <- bitr(genes, fromType = "SYMBOL", toType = "ENTREZID",
+                       OrgDb = org.Hs.eg.db)
+    entrez_genes <- unique(entrez_map$ENTREZID)
+    cat(sprintf("    Mapped %d/%d genes to ENTREZID\n",
+                length(entrez_genes), length(genes)))
+
+    # Convert universe SYMBOL to ENTREZID
+    universe_map <- bitr(go_universe, fromType = "SYMBOL", toType = "ENTREZID",
+                         OrgDb = org.Hs.eg.db)
+    universe_entrez <- unique(universe_map$ENTREZID)
+
+    ekegg <- enrichKEGG(
+      gene          = entrez_genes,
+      organism      = "hsa",
+      pAdjustMethod = "BH",
+      pvalueCutoff  = 0.05,
+      universe      = universe_entrez,
+      minGSSize     = 2,
+      maxGSSize     = 5000
+    )
+
+    if (is.null(ekegg) || nrow(as.data.frame(ekegg)) == 0) {
+      cat("    No enriched KEGG pathways\n")
+      return(NULL)
+    }
+
+    # Convert ENTREZID back to readable gene symbols
+    ekegg <- setReadable(ekegg, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
+
+    kegg_df <- as.data.frame(ekegg)
+    cat(sprintf("    Found %d enriched KEGG pathways\n", nrow(kegg_df)))
+
+    save_table(kegg_df, sprintf("RA_common_KEGG_%s", set_label))
+
+    # Dotplot
+    n_show <- min(20, nrow(kegg_df))
+    fig_height <- max(7, n_show * 0.4)
+
+    p <- enrichplot::dotplot(ekegg, showCategory = n_show) +
+      ggplot2::labs(
+        title = sprintf("Common RA-%s — KEGG Pathways", set_label),
+        x = "GeneRatio", color = "p.adjust"
+      ) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p, sprintf("RA_common_KEGG_%s_dotplot", set_label),
+                width = 10, height = fig_height)
+
+  }, error = function(e) {
+    cat(sprintf("    KEGG error (may need internet): %s\n",
+                conditionMessage(e)))
+  })
+}
+
+# KEGG for common enriched
+run_common_kegg(common_enriched, "enriched")
+
+# KEGG for common depleted
+run_common_kegg(common_depleted, "depleted")
+
 cat("\n=========================================\n")
 cat(" RA Common Protein Analysis Complete!\n")
 cat("=========================================\n")

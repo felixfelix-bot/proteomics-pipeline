@@ -155,6 +155,75 @@ run_targeted_go <- function(genes, set_name, universe) {
   }
 }
 
+# ---- Helper: run KEGG pathway enrichment for one gene set ----
+run_targeted_kegg <- function(genes, set_name, universe) {
+  cat(sprintf("\n--- KEGG: %s (%d genes) ---\n", set_name, length(genes)))
+
+  if (length(genes) < 5) {
+    cat("  Skipped: fewer than 5 genes\n")
+    return(NULL)
+  }
+
+  tryCatch({
+    # Convert SYMBOL to ENTREZID for KEGG
+    entrez_map <- bitr(genes, fromType = "SYMBOL", toType = "ENTREZID",
+                       OrgDb = org.Hs.eg.db)
+    entrez_genes <- unique(entrez_map$ENTREZID)
+    cat(sprintf("  Mapped %d/%d genes to ENTREZID\n",
+                length(entrez_genes), length(genes)))
+
+    # Convert universe SYMBOL to ENTREZID
+    universe_map <- bitr(universe, fromType = "SYMBOL", toType = "ENTREZID",
+                         OrgDb = org.Hs.eg.db)
+    universe_entrez <- unique(universe_map$ENTREZID)
+
+    ekegg <- enrichKEGG(
+      gene          = entrez_genes,
+      organism      = "hsa",
+      pAdjustMethod = "BH",
+      pvalueCutoff  = 0.05,
+      universe      = universe_entrez,
+      minGSSize     = 2,
+      maxGSSize     = 5000
+    )
+
+    if (is.null(ekegg) || nrow(as.data.frame(ekegg)) == 0) {
+      cat("  No enriched KEGG pathways found\n")
+      return(NULL)
+    }
+
+    # Convert ENTREZID back to readable gene symbols
+    ekegg <- setReadable(ekegg, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
+
+    kegg_df <- as.data.frame(ekegg)
+    cat(sprintf("  Found %d enriched KEGG pathways\n", nrow(kegg_df)))
+
+    prefix <- sanitize_filename(paste0("targeted_KEGG_", set_name))
+    save_table(kegg_df, prefix)
+
+    # Dotplot
+    n_show <- min(20, nrow(kegg_df))
+    fig_height <- max(7, n_show * 0.4)
+
+    set_title <- SET_TITLES[[set_name]]
+    if (is.null(set_title)) set_title <- gsub("_", " ", set_name)
+
+    p_kegg <- enrichplot::dotplot(ekegg, showCategory = n_show,
+                                  title = paste0(set_title, " — KEGG Pathways")) +
+      ggplot2::labs(x = "Gene Ratio", color = "p-adjusted value") +
+      ggplot2::theme(
+        plot.title  = ggplot2::element_text(hjust = 0.5, face = "bold"),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p_kegg, paste0(prefix, "_dotplot"),
+                width = 10, height = fig_height)
+
+  }, error = function(e) {
+    cat(sprintf("  KEGG error (may need internet): %s\n",
+                conditionMessage(e)))
+  })
+}
+
 # =====================================================================
 # GENE SET 1: TurboID TRIP4 vs WT significant
 # =====================================================================
@@ -189,6 +258,7 @@ if (turbo_exp %in% names(experiments)) {
                   !is.na(df_turbo$gene), na.rm = TRUE)))
 
   run_targeted_go(turbo_sig, "TurboID_TRIP4_vs_WT", turbo_universe)
+  run_targeted_kegg(turbo_sig, "TurboID_TRIP4_vs_WT", turbo_universe)
 }
 
 # =====================================================================
@@ -212,6 +282,7 @@ if (exp_base %in% names(experiments) && exp_ra %in% names(experiments)) {
 
   shared   <- intersect(base_sig, ra_sig)
   run_targeted_go(shared, "RA_shared_core", ra_universe)
+  run_targeted_kegg(shared, "RA_shared_core", ra_universe)
 }
 
 # =====================================================================
@@ -221,6 +292,7 @@ cat("\n[3/3] RA-gained (RA-dependent)...\n")
 if (exp_base %in% names(experiments) && exp_ra %in% names(experiments)) {
   ra_gained <- setdiff(ra_sig, base_sig)
   run_targeted_go(ra_gained, "RA_gained", ra_universe)
+  run_targeted_kegg(ra_gained, "RA_gained", ra_universe)
 }
 
 cat("\n=========================================\n")
