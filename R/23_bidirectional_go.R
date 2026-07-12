@@ -67,6 +67,9 @@ run_bidir_go <- function(gene_set, direction, ont) {
 
   cat(sprintf("  Running enrichGO: %s, %s (%d genes)...\n", direction, ont, length(gene_set)))
 
+  # Universe = all genes detected in this experiment
+  exp_universe <- unique(df$gene[!is.na(df$gene)])
+
   ego <- enrichGO(
     gene         = gene_set,
     OrgDb        = org.Hs.eg.db,
@@ -74,7 +77,8 @@ run_bidir_go <- function(gene_set, direction, ont) {
     ont          = ont,
     pvalueCutoff = 0.05,
     pAdjustMethod = "BH",
-    qvalueCutoff = 0.2
+    qvalueCutoff = 0.2,
+    universe     = exp_universe
   )
 
   if (is.null(ego) || nrow(as.data.frame(ego)) == 0) {

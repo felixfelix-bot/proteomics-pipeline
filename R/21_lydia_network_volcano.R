@@ -2,21 +2,16 @@
 # 21_lydia_network_volcano.R
 # Lydia's STRING physical interaction network overlay on TRIP4 vs WT volcano.
 #
-# This produces Lydia's COMBINED sig_network plot — the one from her figure
-# that shows 7 categories representing the intersection of:
-#   - Significance status (sig): not enriched / significant / known interactor / ASCC / highly enriched
-#   - Network membership (inNetwork): not in network / in network / highly enriched seed
-#
-# The combined sig_network = paste(sig, inNetwork, sep="_") creates categories like:
-#   "ia_TRUE"     = known interactor AND in STRING network → teal
-#   "ia_FALSE"    = known interactor, NOT in network → light purple
-#   "TRUE_TRUE"   = significant AND in network → blue
-#   "TRUE_FALSE"  = significant, NOT in network → pink
-#   "high_high"   = highly enriched seed → red
-#   "ascc_*"      = ASCC complex → dark purple
-#   "FALSE_FALSE" = not enriched, not in network → grey
-#
-# Faithful adaptation of Lydia's: 2026_05_22_stats_cutoffs_turboID_map_to_STRING
+# Per Aruna's July 12 voice message:
+#   - Everything with log2FC < 1 = GREEN (background, ignored for analysis)
+#   - Only TRIP4-enriched proteins (log2FC >= 1) get categorized
+#   - Each category gets its own DISTINCT color:
+#       1. ASC complex (TRIP4, ASCC1-3)
+#       2. Verified interaction & in network
+#       3. Verified interaction & not in network
+#       4. Highly enriched (stringent seeds)
+#       5. In network of highly enriched proteins
+#       6. Not assigned to interaction network
 #
 # Usage:
 #   make lydia-volcano
@@ -90,41 +85,51 @@ mapped <- string_db$map(df_for_map, "gene", removeUnmappedRows = TRUE)
 cat(sprintf("  Mapped %d of %d proteins to STRING\n", nrow(mapped), nrow(df)))
 
 # =====================================================================
+# ARUNA'S THRESHOLDS (from voice message):
+#   Enriched = log2FC >= 1 AND -log10(padj) >= 1 (i.e., padj <= 0.1)
+#   Background = everything else = GREEN
+# =====================================================================
+FC_THRESHOLD <- 1      # log2FC >= 1 (fold change >= 2x)
+NEGLOG10P_THRESHOLD <- 1  # -log10(padj) >= 1 (padj <= 0.1)
+
+# =====================================================================
 # STEP 1: Build sig column
 # =====================================================================
-# Categories: FALSE (not enriched) → TRUE (significant, TRIP4-enriched) → "ia" → "ascc"
-# NO "high" category — Aruna doesn't want it colored or labeled.
-# Seeds still drive the network expansion but appear as whatever their
-# significance category says (TRUE, ia, or ascc).
+# Priority order (highest wins):
+#   ascc > ia > high > TRUE > FALSE
+#
+# Only applies to TRIP4-enriched proteins (log2FC >= 1).
+# Everything with log2FC < 1 stays FALSE = green background.
 
-df$sig <- FALSE  # default: not significant
+df$sig <- FALSE  # default: background (green)
 
-# Significant AND TRIP4-enriched (positive log2FC only)
-# Per Aruna: WT-enriched (negative log2FC) proteins = all grey, no network coloring
-sig_idx <- df$padj < P_VALUE_CUTOFF & df$log2FC > LOG2FC_CUTOFF
+# Highly enriched seeds (Lydia's stringent threshold)
+df$sig[!is.na(df$log2FC) & !is.na(df$neglog10p) &
+       df$log2FC >= FC_THRESHOLD &
+       ((df$log2FC > 7.5 & df$neglog10p > 3) |
+        (df$log2FC > 2 & df$neglog10p > 6))] <- "high"
+
+# Significant AND TRIP4-enriched (log2FC >= 1, padj <= 0.1)
+sig_idx <- df$padj <= 0.1 & df$log2FC >= FC_THRESHOLD & df$sig == FALSE
 df$sig[sig_idx] <- TRUE
 
-# Known interactors (override — but only if TRIP4-enriched, per Aruna)
+# Known interactors (override — only if TRIP4-enriched)
 df$sig[df$gene %in% known_interactors &
-       df$log2FC > 0] <- "ia"
+       df$log2FC >= FC_THRESHOLD &
+       df$sig %in% c("TRUE", "high")] <- "ia"
 
-# ASCC complex (further override — highest priority)
+# ASCC complex (highest priority)
 df$sig[df$gene %in% ASCC_CORE &
-       df$log2FC > 0] <- "ascc"
+       df$log2FC >= FC_THRESHOLD] <- "ascc"
 
-# Seed definition still used for network expansion (Lydia's thresholds)
-# But NOT shown as separate color/label
-seed_mask <- (!is.na(df$log2FC) & !is.na(df$padj)) &
-  ((df$log2FC > 2 & df$neglog10p > 6) |
-   (df$log2FC > 7 & df$neglog10p > 2))
-
-sig1 <- df$gene[seed_mask]
-cat(sprintf("\n  Seeds (for network expansion): %d proteins\n", length(sig1)))
+# Seeds for network expansion (same as sig == "high")
+sig1_genes <- df$gene[df$sig == "high"]
+cat(sprintf("\n  Highly enriched seeds: %d proteins\n", length(sig1_genes)))
 
 # =====================================================================
 # STEP 2: STRING network expansion (Lydia's exact code)
 # =====================================================================
-core_mapped <- mapped %>% dplyr::filter(gene %in% sig1)
+core_mapped <- mapped %>% dplyr::filter(gene %in% sig1_genes)
 seed_ids <- unique(core_mapped$STRING_id)
 cat(sprintf("  Seeds mapped to STRING: %d\n", length(seed_ids)))
 
@@ -175,22 +180,21 @@ if (length(seed_ids) > 0) {
 # =====================================================================
 # STEP 3: Build inNetwork column
 # =====================================================================
-# Per Aruna: ONLY TRIP4-enriched proteins (positive log2FC) get network coloring.
-# Everything else (WT-enriched, not significant) = FALSE = grey regardless.
+# Only TRIP4-enriched proteins (log2FC >= 1) get network membership.
+# Seeds = "high", network neighbors = TRUE, everything else = FALSE.
 df$inNetwork <- FALSE
 
-# Only mark network membership for TRIP4-enriched proteins
+# Network neighbors (proteins in STRING network of seeds)
 df$inNetwork[df$gene %in% a$gene &
              !is.na(df$gene) &
-             df$log2FC > 0] <- TRUE
+             df$log2FC >= FC_THRESHOLD] <- TRUE
 
-# Seeds: still TRUE (in network) — no special "high" treatment anymore
-# (seeds are already included in the network expansion)
+# Seeds get "high" inNetwork status
+df$inNetwork[df$sig == "high"] <- "high"
 
 # =====================================================================
 # STEP 4: Create sig_network = paste(sig, inNetwork) — THE COMBINED COLUMN
 # =====================================================================
-# This is what produces the 7-category plot in Lydia's figure.
 df$sig_network <- paste(df$sig, df$inNetwork, sep = "_")
 
 cat("\n  sig_network categories:\n")
@@ -200,64 +204,95 @@ for (cat_name in sort(unique(df$sig_network))) {
 }
 
 # =====================================================================
-# STEP 5: Map sig_network values to colors + labels
+# STEP 5: Map sig_network values to DISTINCT colors + labels
 # =====================================================================
-# These match Lydia's figure legend exactly.
+# Per Aruna: each enriched category gets its own distinct color.
+# Background (log2FC < 1) = green.
 
-# Get all unique sig_network values present in data
-all_cats <- sort(unique(df$sig_network))
-
-# Color mapping — simplified per Aruna's feedback
-# No "high" category. All non-TRIP4-enriched = grey.
 SIG_NET_COLORS <- c(
-  # ASC complex (dark purple) — only if TRIP4-enriched
-  "ascc_FALSE"   = "#6a3d9a",
-  "ascc_TRUE"    = "#6a3d9a",
-  # Known interactors
-  "ia_FALSE"     = "#cab2d6",  # light purple — verified & not in network
-  "ia_TRUE"      = "#1b9e77",  # teal — verified & in network
-  # Significant TRIP4-enriched proteins
-  "TRUE_TRUE"    = "#a6cee3",  # light blue — in network of highly enriched
-  "TRUE_FALSE"   = "#fb9a99",  # pink — not assigned to interaction network
-  # Non-significant / WT-enriched — ALL grey
-  "FALSE_TRUE"   = "grey60",
-  "FALSE_FALSE"  = "grey60"
+  # ASC complex (only if TRIP4-enriched) — purple
+  "ascc_FALSE"   = "#6A3D9A",
+  "ascc_TRUE"    = "#6A3D9A",
+  "ascc_high"    = "#6A3D9A",
+
+  # Known interactors — light purple (not in net) / teal (in net)
+  "ia_FALSE"     = "#CAB2D6",
+  "ia_TRUE"      = "#1B9E77",
+  "ia_high"      = "#1B9E77",
+
+  # Highly enriched seeds — red
+  "high_high"    = "#E41A1C",
+  "high_TRUE"    = "#E41A1C",
+  "high_FALSE"   = "#E41A1C",
+
+  # Significant in network — blue
+  "TRUE_TRUE"    = "#377EB8",
+  "TRUE_high"    = "#377EB8",
+
+  # Significant not in network — orange
+  "TRUE_FALSE"   = "#FF7F00",
+
+  # Background (not enriched, log2FC < 1) — GREEN
+  "FALSE_FALSE"  = "#66C2A4",
+  "FALSE_TRUE"   = "#66C2A4",
+  "FALSE_high"   = "#66C2A4"
 )
 
-# Human-readable labels
+# Human-readable labels — only show unique categories
 SIG_NET_LABELS <- c(
   "ascc_FALSE"   = "ASC complex",
   "ascc_TRUE"    = "ASC complex",
+  "ascc_high"    = "ASC complex",
+
   "ia_FALSE"     = "Verified interaction & not in network",
   "ia_TRUE"      = "Verified interaction & in network",
+  "ia_high"      = "Verified interaction & in network",
+
+  "high_high"    = "Highly enriched",
+  "high_TRUE"    = "Highly enriched",
+  "high_FALSE"   = "Highly enriched",
+
   "TRUE_TRUE"    = "In network of highly enriched proteins",
+  "TRUE_high"    = "In network of highly enriched proteins",
+
   "TRUE_FALSE"   = "Not assigned to interaction network",
-  "FALSE_TRUE"   = "Not enriched",
-  "FALSE_FALSE"  = "Not enriched"
+
+  "FALSE_FALSE"  = "Not enriched (background)",
+  "FALSE_TRUE"   = "Not enriched (background)",
+  "FALSE_high"   = "Not enriched (background)"
 )
 
-# Filter to only categories that exist in the data
+# Get all unique sig_network values present in data
+all_cats <- sort(unique(df$sig_network))
 present_colors <- SIG_NET_COLORS[all_cats]
 present_labels <- SIG_NET_LABELS[all_cats]
 
+# Deduplicate: if multiple sig_network values map to same label+color,
+# only show one legend entry. Build a deduped color/label set.
+deduped <- !duplicated(present_labels)
+legend_colors <- present_colors[deduped]
+legend_labels <- present_labels[deduped]
+
 # Add annotation: % of enriched proteins in network
-enriched_total <- sum(df$sig != FALSE & !is.na(df$gene), na.rm = TRUE)
-enriched_in_net <- sum(df$inNetwork != FALSE & df$sig != FALSE & !is.na(df$gene), na.rm = TRUE)
+enriched_total <- sum(df$sig != FALSE & !is.na(df$gene) & df$log2FC >= FC_THRESHOLD, na.rm = TRUE)
+enriched_in_net <- sum(df$inNetwork != FALSE & df$sig != FALSE &
+                       !is.na(df$gene) & df$log2FC >= FC_THRESHOLD, na.rm = TRUE)
 pct_in_net <- if (enriched_total > 0) round(100 * enriched_in_net / enriched_total) else 0
 
 # =====================================================================
-# STEP 6: The Volcano (Lydia's combined sig_network plot)
+# STEP 6: The Volcano
 # =====================================================================
 cat("\n--- Generating plot ---\n")
 
-# Labels: known interactors + ASCC only (NO seeds, NO gene families)
+# Labels: known interactors + ASCC + highly enriched seeds
 label_data <- df[
-  (df$gene %in% known_interactors | df$gene %in% ASCC_CORE) &
-  !is.na(df$log2FC) & df$log2FC > 0, ]
+  (df$gene %in% known_interactors | df$gene %in% ASCC_CORE |
+   df$sig == "high") &
+  !is.na(df$log2FC) & df$log2FC >= FC_THRESHOLD, ]
 
 p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
                                        color = sig_network)) +
-  ggplot2::geom_point(alpha = 0.4, size = 1) +
+  ggplot2::geom_point(alpha = 0.5, size = 1) +
   ggplot2::scale_color_manual(
     values = present_colors,
     labels = present_labels,
@@ -276,9 +311,10 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
     max.overlaps = 30, show.legend = FALSE,
     bg.color = "white", bg.r = 0.15
   ) +
-  ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF),
+  # Aruna's thresholds: log2FC = 1, -log10(padj) = 1
+  ggplot2::geom_hline(yintercept = NEGLOG10P_THRESHOLD,
                       linetype = "dashed", color = "grey50", linewidth = 0.3) +
-  ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF),
+  ggplot2::geom_vline(xintercept = c(-FC_THRESHOLD, FC_THRESHOLD),
                       linetype = "dashed", color = "grey50", linewidth = 0.3) +
   ggplot2::labs(
     x = expression(Log[2]~Fold~Change),
@@ -303,13 +339,15 @@ save_figure(p, "lydia_network_volcano", width = 9, height = 6)
 # ---- Export gene lists ----
 cat("\n--- Exporting gene lists ---\n")
 
-sig_genes <- df$gene[df$padj < P_VALUE_CUTOFF & df$log2FC > LOG2FC_CUTOFF &
+# Foreground: TRIP4-enriched proteins (log2FC >= 1 AND padj <= 0.1)
+sig_genes <- df$gene[df$padj <= 0.1 & df$log2FC >= FC_THRESHOLD &
                      !is.na(df$gene)]
 write.table(data.frame(gene = sig_genes),
             file = file.path(TABLE_DIR, "lydia_enriched_all.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
 
-net_genes <- df$gene[df$inNetwork != FALSE & !is.na(df$gene)]
+net_genes <- df$gene[df$inNetwork != FALSE & !is.na(df$gene) &
+                     df$log2FC >= FC_THRESHOLD]
 write.table(data.frame(gene = net_genes),
             file = file.path(TABLE_DIR, "lydia_enriched_network.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)

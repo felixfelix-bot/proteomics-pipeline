@@ -158,11 +158,37 @@ run_targeted_go <- function(genes, set_name, universe) {
 # =====================================================================
 # GENE SET 1: TurboID TRIP4 vs WT significant
 # =====================================================================
+# CRITICAL FIX (per Aruna, July 12 voice message):
+#   The old code used get_significant_genes() which calls abs(log2FC),
+#   including WT-enriched proteins (negative log2FC) in the GO analysis.
+#   That's why mitochondrial proteins appeared — they're enriched in WT!
+#
+#   CORRECT approach:
+#     Foreground = TRIP4-enriched ONLY: log2FC >= 1 AND padj <= 0.1
+#     Background = ALL genes detected in THIS experiment (not all experiments)
+#
 cat("[1/3] TurboID TRIP4 vs WT...\n")
 turbo_exp <- "BK467_TRIP4_vs_BK467_WT"
 if (turbo_exp %in% names(experiments)) {
-  turbo_sig <- get_significant_genes(experiments[[turbo_exp]])
-  run_targeted_go(turbo_sig, "TurboID_TRIP4_vs_WT", universe)
+  df_turbo <- experiments[[turbo_exp]]
+
+  # Universe = ALL proteins in this experiment (the proper background)
+  turbo_universe <- unique(df_turbo$gene[!is.na(df_turbo$gene)])
+  cat(sprintf("  Universe for this experiment: %d genes\n", length(turbo_universe)))
+
+  # Foreground = TRIP4-enriched ONLY (positive log2FC >= 1, padj <= 0.1)
+  turbo_sig <- df_turbo$gene[df_turbo$log2FC >= 1 &
+                              df_turbo$padj <= 0.1 &
+                              !is.na(df_turbo$gene)]
+  turbo_sig <- unique(turbo_sig)
+  cat(sprintf("  TRIP4-enriched (log2FC>=1, padj<=0.1): %d genes\n", length(turbo_sig)))
+  cat(sprintf("  (Previous bug included %d WT-enriched genes)\n",
+              sum(df_turbo$gene %in% turbo_sig == FALSE &
+                  df_turbo$padj < P_VALUE_CUTOFF &
+                  df_turbo$log2FC <= -LOG2FC_CUTOFF &
+                  !is.na(df_turbo$gene), na.rm = TRUE)))
+
+  run_targeted_go(turbo_sig, "TurboID_TRIP4_vs_WT", turbo_universe)
 }
 
 # =====================================================================
@@ -172,10 +198,20 @@ cat("\n[2/3] RA shared (core interactome)...\n")
 exp_base <- "BK467_TRIP4_vs_BK467_WT"
 exp_ra   <- "BK467_TRIP4_RA02_vs_BK467_WT"
 if (exp_base %in% names(experiments) && exp_ra %in% names(experiments)) {
-  base_sig <- get_significant_genes(experiments[[exp_base]])
-  ra_sig   <- get_significant_genes(experiments[[exp_ra]])
+  # Fix: only TRIP4-enriched (positive log2FC >= 1, padj <= 0.1)
+  df_base <- experiments[[exp_base]]
+  df_ra   <- experiments[[exp_ra]]
+
+  ra_universe <- unique(c(df_base$gene, df_ra$gene))
+  ra_universe <- unique(ra_universe[!is.na(ra_universe)])
+
+  base_sig <- df_base$gene[df_base$log2FC >= 1 & df_base$padj <= 0.1 & !is.na(df_base$gene)]
+  ra_sig   <- df_ra$gene[df_ra$log2FC >= 1 & df_ra$padj <= 0.1 & !is.na(df_ra$gene)]
+  base_sig <- unique(base_sig)
+  ra_sig   <- unique(ra_sig)
+
   shared   <- intersect(base_sig, ra_sig)
-  run_targeted_go(shared, "RA_shared_core", universe)
+  run_targeted_go(shared, "RA_shared_core", ra_universe)
 }
 
 # =====================================================================
@@ -184,7 +220,7 @@ if (exp_base %in% names(experiments) && exp_ra %in% names(experiments)) {
 cat("\n[3/3] RA-gained (RA-dependent)...\n")
 if (exp_base %in% names(experiments) && exp_ra %in% names(experiments)) {
   ra_gained <- setdiff(ra_sig, base_sig)
-  run_targeted_go(ra_gained, "RA_gained", universe)
+  run_targeted_go(ra_gained, "RA_gained", ra_universe)
 }
 
 cat("\n=========================================\n")
