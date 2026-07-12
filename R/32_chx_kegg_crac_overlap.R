@@ -118,6 +118,133 @@ run_kegg_chx(chx_enriched_genes, "enriched")
 run_kegg_chx(chx_depleted_genes, "depleted")
 
 # =====================================================================
+# Section 1b: GO enrichment (BP, MF, CC) on CHX-enriched and CHX-depleted
+# =====================================================================
+cat("\n--- Section 1b: GO on CHX data ---\n\n")
+
+ONT_LABELS <- c("BP" = "Biological Process",
+                "MF" = "Molecular Function",
+                "CC" = "Cellular Component")
+
+run_go_chx <- function(genes, set_label) {
+  if (length(genes) < 5) {
+    cat(sprintf("\n  [%s] Too few genes (%d). Skipping GO.\n", set_label, length(genes)))
+    return(NULL)
+  }
+
+  for (ont in c("BP", "MF", "CC")) {
+    cat(sprintf("  [%s] [%s] enrichGO... ", set_label, ont))
+    ego <- tryCatch({
+      enrichGO(gene = genes, universe = universe_genes,
+               OrgDb = org.Hs.eg.db, keyType = "SYMBOL",
+               ont = ont, pAdjustMethod = "BH",
+               pvalueCutoff = GO_PVALUE_CUTOFF, qvalueCutoff = GO_QVALUE_CUTOFF,
+               minGSSize = 2, maxGSSize = 5000)
+    }, error = function(e) NULL)
+
+    if (is.null(ego) || nrow(as.data.frame(ego)) == 0) {
+      cat("No terms\n"); next
+    }
+
+    ego_s <- tryCatch(simplify(ego, cutoff = 0.7), error = function(e) ego)
+    res <- as.data.frame(ego_s)
+    cat(sprintf("%d terms\n", nrow(res)))
+
+    prefix <- sanitize_filename(paste0("GO_CHX_", set_label, "_", ont))
+    save_table(res, prefix)
+
+    n_show <- min(20, nrow(res))
+    go_title <- sprintf("CHX %s — %s", gsub("_", " ", set_label), ONT_LABELS[ont])
+    p_dot <- dotplot(ego_s, showCategory = n_show) +
+      ggplot2::labs(title = go_title, x = "GeneRatio") +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = max(6, n_show * 0.4))
+
+    n_bar <- min(15, nrow(res))
+    p_bar <- barplot(ego_s, showCategory = n_bar, orderBy = "Count") +
+      ggplot2::labs(title = go_title) +
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+        axis.text.y = ggplot2::element_text(size = 7)
+      )
+    save_figure(p_bar, paste0(prefix, "_barplot"), width = 10, height = max(6, n_bar * 0.5))
+  }
+}
+
+run_go_chx(chx_enriched_genes, "enriched")
+run_go_chx(chx_depleted_genes, "depleted")
+
+# =====================================================================
+# Section 1c: CHX vs DMSO volcano (top 30 per side labeled)
+# =====================================================================
+cat("\n--- Section 1c: CHX vs DMSO volcano (top 30 per side) ---\n\n")
+
+chx_vol <- df_chx
+chx_vol$neglog10p <- -log10(chx_vol$padj)
+chx_vol$category <- "nonsig"
+chx_vol$category[chx_vol$padj < P_VALUE_CUTOFF & chx_vol$log2FC >= LOG2FC_CUTOFF]  <- "enriched"
+chx_vol$category[chx_vol$padj < P_VALUE_CUTOFF & chx_vol$log2FC <= -LOG2FC_CUTOFF] <- "depleted"
+
+# Top 30 by combined significance score on each side
+sig_only <- chx_vol[chx_vol$category %in% c("enriched", "depleted") &
+                     !is.na(chx_vol$log2FC) & !is.na(chx_vol$neglog10p), ]
+sig_only$combined_score <- abs(sig_only$log2FC) * sig_only$neglog10p
+
+top_up <- head(sig_only[sig_only$log2FC > 0, ][order(-sig_only[sig_only$log2FC > 0, ]$combined_score), ], 30)
+top_dn <- head(sig_only[sig_only$log2FC < 0, ][order(-sig_only[sig_only$log2FC < 0, ]$combined_score), ], 30)
+label_data_chx <- rbind(top_up, top_dn)
+cat(sprintf("  Labeling %d enriched + %d depleted (top 30 each)\n",
+            nrow(top_up), nrow(top_dn)))
+
+CHX_VOL_COLORS <- c(
+  "enriched" = GLOBAL_COLORS[["chx_enriched"]],
+  "depleted" = GLOBAL_COLORS[["dmso_enriched"]],
+  "nonsig"   = GLOBAL_COLORS[["nonsig"]]
+)
+CHX_VOL_LABELS <- c(
+  "enriched" = "Enriched in CHX",
+  "depleted" = "Enriched in DMSO",
+  "nonsig"   = "Not significant"
+)
+
+p_chx_volcano <- ggplot2::ggplot(chx_vol,
+  ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
+  ggplot2::geom_point(alpha = 0.5, size = 0.8) +
+  ggplot2::scale_color_manual(
+    values = CHX_VOL_COLORS, labels = CHX_VOL_LABELS,
+    name = NULL, drop = FALSE
+  ) +
+  ggrepel::geom_text_repel(
+    data = label_data_chx, ggplot2::aes(label = gene),
+    size = 2.5, fontface = "bold", max.overlaps = 60,
+    show.legend = FALSE, bg.color = "white", bg.r = 0.15,
+    segment.color = "grey40", segment.size = 0.3,
+    min.segment.length = 0.2
+  ) +
+  ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF),
+                      linetype = "dashed", color = "grey50", linewidth = 0.3) +
+  ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF),
+                      linetype = "dashed", color = "grey50", linewidth = 0.3) +
+  ggplot2::labs(
+    x = expression(Log[2]~Fold~Change),
+    y = expression(-Log[10]~(adjusted~italic(p)~value)),
+    title = "TRIP4 TurboID: CHX vs DMSO (top 30 per side)"
+  ) +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+    axis.text = ggplot2::element_text(colour = "black", size = 8),
+    legend.position = "right",
+    panel.grid.minor = ggplot2::element_blank()
+  )
+
+save_figure(p_chx_volcano, "volcano_chx_vs_dmso_top30", width = 8, height = 6)
+cat("  Saved volcano_chx_vs_dmso_top30\n")
+
+# =====================================================================
 # Section 2: Export enriched/depleted protein lists to CSV
 # =====================================================================
 cat("\n--- Section 2: Export enriched/depleted CSVs ---\n\n")
