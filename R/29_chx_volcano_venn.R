@@ -33,8 +33,8 @@ cat(sprintf("  Loaded %s: %d proteins\n", CHX_EXP, nrow(df)))
 
 # ---- Classification ----
 df$category <- "Not significant"
-df$category[df$padj < P_VALUE_CUTOFF & df$log2FC >= LOG2FC_CUTOFF] <- "Enriched in CHX"
-df$category[df$padj < P_VALUE_CUTOFF & df$log2FC <= -LOG2FC_CUTOFF] <- "Enriched in DMSO"
+df$category[df$padj < P_VALUE_CUTOFF & df$log2FC >= 1] <- "Enriched in CHX"
+df$category[df$padj < P_VALUE_CUTOFF & df$log2FC <= -1] <- "Enriched in DMSO"
 
 cat(sprintf("  Enriched in CHX:  %d\n", sum(df$category == "Enriched in CHX")))
 cat(sprintf("  Enriched in DMSO: %d\n", sum(df$category == "Enriched in DMSO")))
@@ -76,7 +76,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
   ) +
   ggplot2::geom_hline(yintercept = -log10(P_VALUE_CUTOFF),
                       linetype = "dashed", color = "grey50", linewidth = 0.3) +
-  ggplot2::geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF),
+  ggplot2::geom_vline(xintercept = c(-1, 1),
                       linetype = "dashed", color = "grey50", linewidth = 0.3) +
   ggplot2::labs(
     x = expression(Log[2]~Fold~Change),
@@ -158,6 +158,12 @@ cat(sprintf("  Saved: %s\n", basename(pdf_path)))
 # Export gene lists
 save_table(data.frame(gene = chx_genes, category = "CHX_enriched"), "chx_volcano_enriched")
 save_table(data.frame(gene = dmso_genes, category = "DMSO_enriched"), "chx_volcano_dmso_enriched")
-save_table(data.frame(gene = intersect(chx_genes, dmso_genes), category = "CHX_DMSO_overlap"), "chx_dmso_overlap")
+
+overlap_genes <- intersect(chx_genes, dmso_genes)
+if (length(overlap_genes) > 0) {
+  save_table(data.frame(gene = overlap_genes, category = "CHX_DMSO_overlap"), "chx_dmso_overlap")
+} else {
+  cat("  No overlap between CHX and DMSO enriched sets.\n")
+}
 
 cat("\nDone. Output saved to output/figures/.\n")
