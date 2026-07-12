@@ -93,17 +93,38 @@ if (length(seed_genes) > 0) {
 
 # ---- STRING network integration ----
 cat("\n--- STRING Network Analysis ---\n")
-cat("Connecting to STRINGdb (may download ~100MB on first run)...\n")
 
-string_cache <- file.path(OUTPUT_DIR, "string_cache")
-dir.create(string_cache, recursive = TRUE, showWarnings = FALSE)
+# Use local physical links file if available (provided by researcher).
+# This avoids the ~100MB STRINGdb download that fails on Windows/OneDrive.
+phys_file <- file.path(DATA_DIR, "9606.protein.physical.links.v12.0.txt")
 
-string_db <- STRINGdb$new(
-  version = "12.0",
-  species = STRING_TAXON,
-  score_threshold = 400,
-  input_directory = string_cache
-)
+if (file.exists(phys_file)) {
+  cat("Loading local STRING physical interactions file...\n")
+  phys <- read.table(phys_file, header = TRUE, stringsAsFactors = FALSE)
+  names(phys) <- c("from", "to", "combined_score")
+  cat(sprintf("  Loaded %d physical interactions\n", nrow(phys)))
+
+  # Still need STRINGdb for ID mapping (gene name → STRING_id)
+  string_cache <- file.path(OUTPUT_DIR, "string_cache")
+  dir.create(string_cache, recursive = TRUE, showWarnings = FALSE)
+  string_db <- STRINGdb$new(
+    version = "12.0",
+    species = STRING_TAXON,
+    score_threshold = 400,
+    input_directory = string_cache
+  )
+} else {
+  cat("No local physical links file found. Using STRINGdb online...\n")
+  cat("(Place 9606.protein.physical.links.v12.0.txt in data/ for offline use)\n")
+  string_cache <- file.path(OUTPUT_DIR, "string_cache")
+  dir.create(string_cache, recursive = TRUE, showWarnings = FALSE)
+  string_db <- STRINGdb$new(
+    version = "12.0",
+    species = STRING_TAXON,
+    score_threshold = 400,
+    input_directory = string_cache
+  )
+}
 
 # Map our proteins to STRING
 # as.data.frame() prevents the "incorrect dimensions" error with tibbles
@@ -125,17 +146,17 @@ cat(sprintf("  Seeds mapped to STRING: %d\n", length(seed_ids)))
 if (length(seed_ids) > 0) {
   cat("  Expanding network via physical interactions...\n")
 
-  # Get ALL interactions (STRINGdb loads them lazily)
-  # We use string_db$get_interactions() which returns a data frame
-  all_interactions <- string_db$get_interactions()
-
-  # Filter to physical interactions (score >= 400 already set in constructor)
-  # STRINGdb interactions have 'combined_score' column
-  if (!"combined_score" %in% names(all_interactions)) {
-    # Some STRINGdb versions name it differently
-    score_col <- grep("score", names(all_interactions), ignore.case = TRUE, value = TRUE)
-    if (length(score_col) > 0) {
-      names(all_interactions)[names(all_interactions) == score_col[1]] <- "combined_score"
+  # Use local physical links file if loaded, otherwise query STRINGdb
+  if (exists("phys")) {
+    all_interactions <- phys
+    cat(sprintf("  Using local physical links: %d edges\n", nrow(all_interactions)))
+  } else {
+    all_interactions <- string_db$get_interactions()
+    if (!"combined_score" %in% names(all_interactions)) {
+      score_col <- grep("score", names(all_interactions), ignore.case = TRUE, value = TRUE)
+      if (length(score_col) > 0) {
+        names(all_interactions)[names(all_interactions) == score_col[1]] <- "combined_score"
+      }
     }
   }
 
