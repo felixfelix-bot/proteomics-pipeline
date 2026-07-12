@@ -488,6 +488,17 @@ build_circular_network <- function(common_table, title, file_prefix) {
     g <- delete_vertices(g, isolated_names)
   }
 
+  # Keep only the LARGEST connected component (Lydia Panel C style — one circle)
+  comps <- decompose(g)
+  if (length(comps) > 1) {
+    comp_sizes <- sapply(comps, vcount)
+    largest_idx <- which.max(comp_sizes)
+    cat(sprintf("    %d separate clusters found (sizes: %s)\n",
+                length(comps), paste(comp_sizes, collapse=", ")))
+    cat(sprintf("    Keeping largest: %d proteins\n", comp_sizes[largest_idx]))
+    g <- comps[[largest_idx]]
+  }
+
   if (vcount(g) < 2) {
     cat("    Fewer than 2 connected proteins — skipping circular plot.\n")
     return(NULL)
