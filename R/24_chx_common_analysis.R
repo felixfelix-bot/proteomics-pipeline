@@ -486,6 +486,217 @@ run_bidirectional_go(enriched_genes, "enriched",
 run_bidirectional_go(depleted_genes, "depleted",
                      "CHX-Depleted Proteins", universe)
 
+# =====================================================================
+# BIDIRECTIONAL GO DOT PLOT (enriched RIGHT vs depleted LEFT)
+# =====================================================================
+cat("\n=========================================\n")
+cat(" Bidirectional GO Dot Plot (Enriched vs Depleted)\n")
+cat("=========================================\n\n")
+
+run_chx_bidir_go <- function(genes, direction, ont) {
+  if (length(genes) < 5) return(NULL)
+
+  cat(sprintf("  Running enrichGO: %s, %s (%d genes)...\n", direction, ont, length(genes)))
+  ego <- enrichGO(
+    gene = genes, universe = universe,
+    OrgDb = org.Hs.eg.db, keyType = "SYMBOL",
+    ont = ont, pAdjustMethod = "BH",
+    pvalueCutoff = 0.05, qvalueCutoff = 0.2,
+    minGSSize = 2, maxGSSize = 5000
+  )
+  if (is.null(ego) || nrow(as.data.frame(ego)) == 0) return(NULL)
+
+  ego_s <- tryCatch(simplify(ego, cutoff = 0.7), error = function(e) ego)
+  res <- as.data.frame(ego_s)
+  if (nrow(res) == 0) return(NULL)
+
+  res <- res[order(res$p.adjust), ]
+  res <- head(res, 15)
+  res$GeneRatioNum <- sapply(res$GeneRatio, function(x) {
+    p <- strsplit(as.character(x), "/")[[1]]
+    if (length(p) == 2) as.numeric(p[1]) / as.numeric(p[2]) else NA
+  })
+  res$signed_GeneRatio <- if (direction == "enriched") res$GeneRatioNum else -res$GeneRatioNum
+  res$direction <- direction
+  res$neg_log10_padj <- -log10(res$p.adjust)
+  res$short_Description <- sapply(res$Description, function(x) {
+    if (nchar(x) > 55) paste0(substr(x, 1, 52), "...") else x
+  })
+  return(res)
+}
+
+ONT_NAMES <- c("BP" = "Biological Process", "CC" = "Cellular Component", "MF" = "Molecular Function")
+
+for (ont in c("BP", "CC", "MF")) {
+  cat(sprintf("\n  [%s] bidirectional...\n", ont))
+  en_res <- run_chx_bidir_go(enriched_genes, "enriched", ont)
+  de_res <- run_chx_bidir_go(depleted_genes, "depleted", ont)
+  combined <- rbind(en_res, de_res)
+  if (is.null(combined) || nrow(combined) == 0) { cat("    No terms. Skipping.\n"); next }
+
+  combined <- combined[order(combined$signed_GeneRatio, decreasing = TRUE), ]
+  combined$short_Description <- factor(combined$short_Description, levels = rev(combined$short_Description))
+
+  p <- ggplot2::ggplot(combined, ggplot2::aes(x = signed_GeneRatio, y = short_Description,
+                                               color = neg_log10_padj, size = Count)) +
+    ggplot2::geom_point(alpha = 0.85) +
+    ggplot2::scale_color_gradientn(colors = c("#0072B2", "#56B4E9", "#F0E442", "#E69F00", "#D55E00"),
+                                   name = expression(-Log[10]~(adjusted~italic(p)~value))) +
+    ggplot2::scale_size_continuous(name = "Gene Count", range = c(2, 8)) +
+    ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "grey50", linewidth = 0.3) +
+    ggplot2::labs(
+      x = expression(Signed~Gene~Ratio~(left~"="-~depleted~"|"~right~"="+~enriched)),
+      y = NULL,
+      title = sprintf("CHX Proteins — Bidirectional GO (%s)", ONT_NAMES[ont]),
+      subtitle = sprintf("Enriched: %d genes | Depleted: %d genes", length(enriched_genes), length(depleted_genes))
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
+      axis.text.y = ggplot2::element_text(size = 7),
+      legend.position = "right", legend.text = ggplot2::element_text(size = 8),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+    )
+  p <- p +
+    ggplot2::annotate("text", x = max(combined$signed_GeneRatio, na.rm = TRUE) * 0.8,
+                      y = 0.5, label = "ENRICHED", color = "#D55E00", fontface = "bold", size = 4, vjust = 0) +
+    ggplot2::annotate("text", x = min(combined$signed_GeneRatio, na.rm = TRUE) * 0.8,
+                      y = 0.5, label = "DEPLETED", color = "#0072B2", fontface = "bold", size = 4, vjust = 0)
+
+  save_figure(p, sprintf("chx_common_bidirectional_GO_%s", ont),
+              width = 10, height = max(6, nrow(combined) * 0.35))
+  cat(sprintf("    Saved: chx_common_bidirectional_GO_%s\n", ont))
+}
+
+# =====================================================================
+# CIRCULAR NETWORKS (Lydia Panel C style) + STRING-STYLE BUBBLE
+# =====================================================================
+cat("\n=========================================\n")
+cat(" Circular Networks (Lydia Panel C Style)\n")
+cat("=========================================\n\n")
+
+# Reuse STRING mapping if available
+if (exists("phys") && exists("string_db")) {
+
+  build_chx_circular <- function(gene_df, set_label, set_title, node_color) {
+    genes <- unique(gene_df$gene)
+    if (length(genes) < 3) { cat(sprintf("  [%s] Too few. Skipping.\n", set_label)); return(NULL) }
+
+    map_input <- as.data.frame(gene_df[, c("gene", "log2FC")])
+    map_input <- map_input[!is.na(map_input$gene) & map_input$gene != "", ]
+    mapped <- tryCatch(string_db$map(map_input, "gene", removeUnmappedRows = TRUE), error = function(e) NULL)
+    if (is.null(mapped) || nrow(mapped) < 2) { cat("    Too few mapped.\n"); return(NULL) }
+
+    mapped_ids <- unique(mapped$STRING_id)
+    edges <- phys[phys$from %in% mapped_ids & phys$to %in% mapped_ids, ]
+    if (nrow(edges) < 1) { cat("    No interactions.\n"); return(NULL) }
+
+    # Check column names
+    from_col <- if ("from" %in% names(edges)) "from" else "protein1"
+    to_col   <- if ("to" %in% names(edges)) "to" else "protein2"
+
+    vertex_df <- data.frame(name = mapped_ids, stringsAsFactors = FALSE)
+    g <- graph_from_data_frame(edges[, c(from_col, to_col)], directed = FALSE, vertices = vertex_df)
+    g <- simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
+
+    # Keep largest connected component
+    comps <- decompose(g)
+    if (length(comps) > 1) {
+      comp_sizes <- sapply(comps, vcount)
+      g <- comps[[which.max(comp_sizes)]]
+      cat(sprintf("    Largest component: %d proteins\n", vcount(g)))
+    }
+
+    if (vcount(g) < 2) { cat("    Too few connected.\n"); return(NULL) }
+
+    # Annotate
+    string_to_gene <- setNames(mapped$gene, mapped$STRING_id)
+    string_to_fc   <- setNames(mapped$log2FC, mapped$STRING_id)
+    V(g)$gene_name <- sapply(V(g)$name, function(id) { gn <- string_to_gene[id]; if (is.na(gn)) id else gn })
+    V(g)$log2FC <- as.numeric(string_to_fc[match(V(g)$name, names(string_to_fc))])
+    V(g)$color <- node_color
+    V(g)$size <- 6
+    V(g)$label <- V(g)$gene_name
+    V(g)$frame.color <- NA
+
+    cat(sprintf("    Network: %d nodes, %d edges\n", vcount(g), ecount(g)))
+
+    set.seed(42)
+    layout_circle <- layout_in_circle(g, order = order(V(g)$gene_name))
+    angles <- atan2(layout_circle[,2], layout_circle[,1])
+    label_degrees <- -angles
+
+    commit_hash <- get_git_hash()
+    safe_name <- sanitize_filename(paste0("chx_common_circular_", set_label))
+    versioned <- paste0(safe_name, "_", commit_hash)
+
+    plot_it <- function() {
+      plot(g, layout = layout_circle, vertex.label.cex = 0.55, vertex.label.font = 2,
+           vertex.label.color = "black", vertex.label.dist = 0,
+           vertex.label.degree = label_degrees,
+           edge.color = "grey80", edge.width = 0.4, main = set_title)
+      legend("bottomright", legend = set_label, col = node_color,
+             pch = 19, pt.cex = 2, cex = 0.9, bty = "n")
+    }
+
+    png_path <- safe_filepath(FIGURE_DIR, versioned, ".png")
+    pdf_path <- safe_filepath(FIGURE_DIR, versioned, ".pdf")
+    grDevices::png(png_path, width = 12, height = 12, units = "in", res = FIG_DPI)
+    plot_it()
+    grDevices::dev.off()
+    grDevices::pdf(pdf_path, width = 12, height = 12)
+    plot_it()
+    grDevices::dev.off()
+    cat(sprintf("    Saved: %s\n", basename(png_path)))
+
+    # ---- STRING-style bubble (force-directed) ----
+    set.seed(42)
+    layout_fr <- layout_with_fr(g, niter = 1000)
+    layout_scaled <- scale(layout_fr, center = colMeans(layout_fr))
+
+    V(g)$color <- adjustcolor(node_color, 0.5)
+    E(g)$weight <- edges$combined_score[match(paste(ends(g, E(g))[,1], ends(g, E(g))[,2], sep="-"),
+                                               paste(edges[[from_col]], edges[[to_col]], sep="-"))]
+    E(g)$weight[is.na(E(g)$weight)] <- median(E(g)$weight, na.rm = TRUE)
+    E(g)$confidence <- E(g)$weight / 1000
+
+    bubble_name <- paste0("chx_common_STRING_style_", set_label, "_", commit_hash)
+    bubble_png <- safe_filepath(FIGURE_DIR, bubble_name, ".png")
+    bubble_pdf <- safe_filepath(FIGURE_DIR, bubble_name, ".pdf")
+
+    plot_bubble <- function() {
+      par(mar = c(1, 1, 3, 1))
+      plot(g, layout = layout_scaled, vertex.shape = "circle", vertex.size = 22,
+           vertex.color = V(g)$color, vertex.frame.color = NA,
+           vertex.label = V(g)$gene_name, vertex.label.cex = 0.65,
+           vertex.label.font = 2, vertex.label.color = "black", vertex.label.family = "sans",
+           edge.color = rgb(0.5, 0.5, 0.5, 0.3 + 0.5 * E(g)$confidence),
+           edge.width = 0.5 + 2.5 * E(g)$confidence, edge.curved = 0.1,
+           main = paste0(set_title, " — STRING Style"), asp = 0)
+    }
+
+    grDevices::png(bubble_png, width = 14, height = 12, units = "in", res = FIG_DPI)
+    plot_bubble()
+    grDevices::dev.off()
+    grDevices::pdf(bubble_pdf, width = 14, height = 12)
+    plot_bubble()
+    grDevices::dev.off()
+    cat(sprintf("    Saved: %s\n", basename(bubble_png)))
+  }
+
+  if (nrow(enriched_df) >= 3) {
+    cat("\n--- CHX-Enriched Circular + STRING Style ---\n")
+    build_chx_circular(enriched_df, "enriched", "CHX-Enriched Proteins (CHX vs DMSO)", "#D55E00")
+  }
+
+  if (nrow(depleted_df) >= 3) {
+    cat("\n--- CHX-Depleted Circular + STRING Style ---\n")
+    build_chx_circular(depleted_df, "depleted", "CHX-Depleted Proteins (CHX vs DMSO)", "#0072B2")
+  }
+}
+
 cat("\n=========================================\n")
 cat(" CHX/DMSO common analysis complete!\n")
 cat("=========================================\n")
@@ -494,4 +705,7 @@ cat("  - Gene lists: output/tables/chx_common_*_genes.{csv,txt}\n")
 cat("  - STRING networks: output/figures/chx_common_string_{enriched,depleted}_*\n")
 cat("  - Candidate tables: output/tables/chx_common_string_*_candidates_*.csv\n")
 cat("  - GO enrichment: output/figures/GO_chx_common_* + output/tables/GO_chx_common_*\n")
+cat("  - Circular networks: output/figures/chx_common_circular_*\n")
+cat("  - Bidirectional GO: output/figures/chx_common_bidirectional_GO_*\n")
+cat("  - STRING-style bubble: output/figures/chx_common_STRING_style_*\n")
 cat("\nRun: make open-chx-common\n")
