@@ -277,7 +277,7 @@ for (ont in c("BP", "CC", "MF")) {
         plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 10),
         axis.text.y = ggplot2::element_text(size = 7)
       )
-    plots$in <- p_in
+    plots[["in"]] <- p_in
   }
 
   # Not-in-network plot
@@ -306,8 +306,8 @@ for (ont in c("BP", "CC", "MF")) {
           plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9, color = "grey30")
         )
       )
-  } else if (!is.null(plots$in)) {
-    combined <- plots$in
+  } else if (!is.null(plots[["in"]])) {
+    combined <- plots[["in"]]
   } else {
     combined <- plots$not
   }
