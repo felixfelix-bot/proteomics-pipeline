@@ -12,6 +12,9 @@ current_hash <- tryCatch({
 
 cat(sprintf("  Cleaning old outputs (keeping hash: %s)...\n", current_hash))
 
+# Hashes to NEVER delete (snapshot checkpoints for comparison)
+preserve_hashes <- c("9d125a3")
+
 # Directories to clean
 dirs_to_clean <- c(
   file.path("output", "figures"),
@@ -32,6 +35,8 @@ for (dir_path in dirs_to_clean) {
 
   for (f in files) {
     if (grepl(current_hash, f, fixed = TRUE)) {
+      kept <- kept + 1
+    } else if (any(sapply(preserve_hashes, function(h) grepl(h, f, fixed = TRUE)))) {
       kept <- kept + 1
     } else {
       file.remove(f)
