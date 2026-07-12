@@ -210,10 +210,10 @@ for (cat_name in sort(unique(df$sig_network))) {
 # Background (log2FC < 1) = green.
 
 SIG_NET_COLORS <- c(
-  # ASC complex (only if TRIP4-enriched) — purple
-  "ascc_FALSE"   = "#6A3D9A",
-  "ascc_TRUE"    = "#6A3D9A",
-  "ascc_high"    = "#6A3D9A",
+  # ASCC complex (only if TRIP4-enriched) — BLUE per Aruna
+  "ascc_FALSE"   = "#0072B2",
+  "ascc_TRUE"    = "#0072B2",
+  "ascc_high"    = "#0072B2",
 
   # Known interactors — light purple (not in net) / teal (in net)
   "ia_FALSE"     = "#CAB2D6",
@@ -225,9 +225,9 @@ SIG_NET_COLORS <- c(
   "high_TRUE"    = "#E41A1C",
   "high_FALSE"   = "#E41A1C",
 
-  # Significant in network — blue
-  "TRUE_TRUE"    = "#377EB8",
-  "TRUE_high"    = "#377EB8",
+  # Significant in network — PURPLE (changed from blue, since ASCC is now blue)
+  "TRUE_TRUE"    = "#984EA3",
+  "TRUE_high"    = "#984EA3",
 
   # Significant not in network — orange
   "TRUE_FALSE"   = "#FF7F00",
@@ -238,11 +238,11 @@ SIG_NET_COLORS <- c(
   "FALSE_high"   = "grey60"
 )
 
-# Human-readable labels — only show unique categories
+# Human-readable labels
 SIG_NET_LABELS <- c(
-  "ascc_FALSE"   = "ASC complex",
-  "ascc_TRUE"    = "ASC complex",
-  "ascc_high"    = "ASC complex",
+  "ascc_FALSE"   = "ASCC complex",
+  "ascc_TRUE"    = "ASCC complex",
+  "ascc_high"    = "ASCC complex",
 
   "ia_FALSE"     = "Verified interaction & not in network",
   "ia_TRUE"      = "Verified interaction & in network",
@@ -266,17 +266,9 @@ SIG_NET_LABELS <- c(
 all_cats <- sort(unique(df$sig_network))
 present_colors <- SIG_NET_COLORS[all_cats]
 
-# Build legend: one entry per visible category.
-# - "Highly enriched" EXCLUDED from legend (red dots stay, label removed)
-# - Duplicate greys consolidated to one entry
-# - Use breaks to control which categories appear
-legend_breaks <- c()
-for (cat_name in all_cats) {
-  # Skip "high_*" categories — they get red color but no legend entry
-  if (grepl("^high_", cat_name)) next
-  legend_breaks <- c(legend_breaks, cat_name)
-}
-# Deduplicate by label (removes duplicate grey entries, etc.)
+# Build legend: deduplicate by label.
+# All categories visible including "Highly enriched".
+legend_breaks <- all_cats
 legend_labels <- SIG_NET_LABELS[legend_breaks]
 dedup_mask <- !duplicated(legend_labels)
 legend_breaks <- legend_breaks[dedup_mask]
@@ -293,11 +285,12 @@ pct_in_net <- if (enriched_total > 0) round(100 * enriched_in_net / enriched_tot
 # =====================================================================
 cat("\n--- Generating plot ---\n")
 
-# Labels: known interactors + ASCC + highly enriched seeds
+# Labels: ASCC complex + verified interactors (including in-network).
+# NOT highly enriched (Aruna: don't label those).
 label_data <- df[
-  (df$gene %in% known_interactors | df$gene %in% ASCC_CORE |
-   df$sig == "high") &
-  !is.na(df$log2FC) & df$log2FC >= FC_THRESHOLD, ]
+  ((df$gene %in% known_interactors & df$log2FC >= FC_THRESHOLD) |
+   (df$gene %in% ASCC_CORE & df$log2FC >= FC_THRESHOLD)) &
+  !is.na(df$log2FC), ]
 
 p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
                                        color = sig_network)) +
