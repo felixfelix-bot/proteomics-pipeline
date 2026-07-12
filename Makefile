@@ -103,6 +103,7 @@ help:
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
+	@echo "  make aruna-all         Run EVERYTHING (all volcanos, GO, networks, RA, CHX, GSEA)"
 	@echo "  make all-venn          All Venn diagrams"
 	@echo "  make all-targeted      All targeted analysis"
 	@echo "  make targeted-plots    Alias for make all-targeted"
@@ -241,6 +242,14 @@ all-venn: venn targeted-venn ## All Venn diagram targets
 all-targeted: targeted-volcano flagip-volcano targeted-venn targeted-go ## All targeted plots
 	@echo ""
 	@echo "All targeted analysis complete."
+
+# ---- Run EVERYTHING from Aruna's July 12 feedback ----
+aruna-all: all-volcano all-venn targeted-go string-network crac-network \
+           ra-common bidirectional-go chx-common gsea
+	@echo ""
+	@echo "================================================"
+	@echo " ALL ANALYSIS COMPLETE — check output/figures/"
+	@echo "================================================"
 
 # ---- Convenience alias ----
 targeted-plots: all-targeted ## Run all targeted plots (volcano + flagIP + venn + GO)
