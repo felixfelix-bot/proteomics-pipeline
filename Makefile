@@ -59,7 +59,8 @@ TABLE_DIR  := output/tables
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
-        open-targeted-plots open-all
+        open-targeted-plots open-all \
+        chx-kegg-crac
 
 # ---- Help ----
 help:
@@ -101,6 +102,7 @@ help:
 	@echo "  make ra-common        RA common analysis across both concentrations"
 	@echo "  make bidirectional-go Bidirectional GO dot plot (up=right, down=left)"
 	@echo "  make shinygo-compare  Compare ShinyGO export with our STRING results"
+	@echo "  make chx-kegg-crac   KEGG on CHX + CRAC/TurboID overlap + labeled volcano"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
@@ -264,6 +266,9 @@ poster: aruna-fast poster-figures ## Generate ALL poster figures + compile LaTeX
 		echo "  Figures are ready in poster/figures/."; \
 		echo "  To compile manually: cd poster && pdflatex poster_simple.tex"; \
 	fi
+
+chx-kegg-crac: check clean-old ## KEGG on CHX data + CRAC/TurboID overlap + volcano
+	$(RSCRIPT) R/run_step.R chx_kegg_crac_overlap
 
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
 	$(RSCRIPT) R/run_step.R string_style_network
