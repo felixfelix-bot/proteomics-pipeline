@@ -226,6 +226,9 @@ diagnostics: ## Print structural data summary (counts/ranges only, safe to share
 	@echo "Running diagnostics..."
 	@Rscript R/run_step.R diagnostics
 
+string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
+	$(RSCRIPT) R/run_step.R string_style_network
+
 bidirectional-go-ra: check clean-old ## Bidirectional GO: -RA (left) vs +RA (right)
 	$(RSCRIPT) R/run_step.R bidirectional_go_ra
 
