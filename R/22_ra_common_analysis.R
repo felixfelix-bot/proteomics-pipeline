@@ -507,9 +507,14 @@ build_circular_network <- function(common_table, title, file_prefix) {
 
   cat(sprintf("    Network: %d nodes, %d edges\n", vcount(g), ecount(g)))
 
-  # Circular layout (Lydia Panel C style)
+  # Circular layout (Lydia Panel C style) — labels OUTSIDE circle
   set.seed(42)
   layout_circle <- layout_in_circle(g, order = order(V(g)$gene_name))
+
+  # Compute radial angles so labels point outward from center
+  angles <- atan2(layout_circle[,2], layout_circle[,1])
+  # Place labels radially outside: degree = -angle (igraph convention)
+  label_degrees <- -angles
 
   commit_hash <- get_git_hash()
   safe_name <- sanitize_filename(file_prefix)
@@ -523,7 +528,8 @@ build_circular_network <- function(common_table, title, file_prefix) {
          vertex.label.cex   = 0.55,
          vertex.label.font  = 2,
          vertex.label.color = "black",
-         vertex.label.dist  = 1.2,
+         vertex.label.dist  = 0,      # distance from node (0 = on edge)
+         vertex.label.degree = label_degrees,  # radially outward
          edge.color         = "grey80",
          edge.width         = 0.4,
          main               = title)
@@ -646,6 +652,121 @@ run_common_go(common_enriched, "enriched")
 
 # GO for common depleted
 run_common_go(common_depleted, "depleted")
+
+# =====================================================================
+# STEP 8: Bidirectional GO plot — common enriched (right) vs depleted (left)
+# =====================================================================
+cat("\n--- Step 8: Bidirectional GO (enriched vs depleted) ---\n")
+
+run_bidir_common_go <- function(genes, direction, ont) {
+  if (length(genes) < 5) {
+    cat(sprintf("  Skipping %s %s: too few genes (%d)\n", direction, ont, length(genes)))
+    return(NULL)
+  }
+
+  cat(sprintf("  Running enrichGO: %s, %s (%d genes)...\n", direction, ont, length(genes)))
+
+  ego <- enrichGO(
+    gene          = genes,
+    universe      = go_universe,
+    OrgDb         = org.Hs.eg.db,
+    keyType       = "SYMBOL",
+    ont           = ont,
+    pAdjustMethod = "BH",
+    pvalueCutoff  = 0.05,
+    qvalueCutoff  = 0.2,
+    minGSSize     = 2,
+    maxGSSize     = 5000
+  )
+
+  if (is.null(ego) || nrow(as.data.frame(ego)) == 0) return(NULL)
+
+  ego_s <- tryCatch(simplify(ego, cutoff = 0.7), error = function(e) ego)
+  res <- as.data.frame(ego_s)
+  if (nrow(res) == 0) return(NULL)
+
+  res <- res[order(res$p.adjust), ]
+  res <- head(res, 15)
+
+  res$GeneRatioNum <- sapply(res$GeneRatio, function(x) {
+    p <- strsplit(as.character(x), "/")[[1]]
+    if (length(p) == 2) as.numeric(p[1]) / as.numeric(p[2]) else NA
+  })
+
+  res$signed_GeneRatio <- if (direction == "enriched") res$GeneRatioNum else -res$GeneRatioNum
+  res$direction <- direction
+  res$neg_log10_padj <- -log10(res$p.adjust)
+  res$short_Description <- sapply(res$Description, function(x) {
+    if (nchar(x) > 55) paste0(substr(x, 1, 52), "...") else x
+  })
+  return(res)
+}
+
+for (ont in c("BP", "CC", "MF")) {
+  cat(sprintf("\n  [%s] bidirectional...\n", ont))
+
+  en_res <- run_bidir_common_go(common_enriched, "enriched", ont)
+  de_res <- run_bidir_common_go(common_depleted, "depleted", ont)
+
+  combined <- rbind(en_res, de_res)
+  if (is.null(combined) || nrow(combined) == 0) {
+    cat("    No terms. Skipping.\n")
+    next
+  }
+
+  combined <- combined[order(combined$signed_GeneRatio, decreasing = TRUE), ]
+  combined$short_Description <- factor(combined$short_Description,
+                                        levels = rev(combined$short_Description))
+
+  p <- ggplot2::ggplot(combined,
+                        ggplot2::aes(x = signed_GeneRatio,
+                                     y = short_Description,
+                                     color = neg_log10_padj,
+                                     size = Count)) +
+    ggplot2::geom_point(alpha = 0.85) +
+    ggplot2::scale_color_gradientn(
+      colors = c("#0072B2", "#56B4E9", "#F0E442", "#E69F00", "#D55E00"),
+      name = expression(-Log[10]~(adjusted~italic(p)~value))
+    ) +
+    ggplot2::scale_size_continuous(name = "Gene Count", range = c(2, 8)) +
+    ggplot2::geom_vline(xintercept = 0, linetype = "solid",
+                        color = "grey50", linewidth = 0.3) +
+    ggplot2::labs(
+      x = expression(Signed~Gene~Ratio~(left~"="-~depleted~"|"~right~"="+~enriched)),
+      y = NULL,
+      title = sprintf("Common RA Proteins — Bidirectional GO (%s)", ONT_NAMES[ont]),
+      subtitle = sprintf("Enriched: %d genes → %d terms | Depleted: %d genes → %d terms",
+                         length(common_enriched),
+                         sum(combined$direction == "enriched"),
+                         length(common_depleted),
+                         sum(combined$direction == "depleted"))
+    ) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
+      axis.text.y = ggplot2::element_text(size = 7),
+      legend.position = "right",
+      legend.text = ggplot2::element_text(size = 8),
+      panel.grid.minor = ggplot2::element_blank(),
+      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+    )
+
+  p <- p +
+    ggplot2::annotate("text",
+                      x = max(combined$signed_GeneRatio, na.rm = TRUE) * 0.8,
+                      y = 0.5, label = "ENRICHED", color = "#D55E00",
+                      fontface = "bold", size = 4, vjust = 0) +
+    ggplot2::annotate("text",
+                      x = min(combined$signed_GeneRatio, na.rm = TRUE) * 0.8,
+                      y = 0.5, label = "DEPLETED", color = "#0072B2",
+                      fontface = "bold", size = 4, vjust = 0)
+
+  fig_name <- sprintf("RA_common_bidirectional_GO_%s", ont)
+  save_figure(p, fig_name, width = 10,
+              height = max(6, nrow(combined) * 0.35))
+  cat(sprintf("    Saved: %s\n", fig_name))
+}
 cat("\n=========================================\n")
 cat(" RA Common Protein Analysis Complete!\n")
 cat("=========================================\n")
