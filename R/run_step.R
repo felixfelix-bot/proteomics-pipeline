@@ -27,7 +27,7 @@ main <- function() {
                    "crac_string_network", "venn_overflow_examples", "gsea",
                    "pathway_network", "lydia_network_volcano",
                    "ra_common", "bidirectional_go",
-                   "chx_common_analysis")
+                   "chx_common_analysis", "shinygo_comparison")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -57,7 +57,8 @@ main <- function() {
     lydia_network_volcano  = "R/21_lydia_network_volcano.R",
     ra_common              = "R/22_ra_common_analysis.R",
     bidirectional_go       = "R/23_bidirectional_go.R",
-    chx_common_analysis    = "R/24_chx_common_analysis.R"
+    chx_common_analysis    = "R/24_chx_common_analysis.R",
+    shinygo_comparison     = "R/25_shinygo_comparison.R"
   )
 
   # Set up logging (captures all output to file + console)

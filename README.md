@@ -51,6 +51,35 @@ micromamba run -n r-env Rscript run_all.R
 | `05_string_network.R` | STRING network mapping, candidate interactor identification |
 | `06_gene_families.R` | GPATCH/DHX/DDX/LARP family highlighting on volcanos |
 | `07_overlap_analysis.R` | Cross-experiment overlap (Flag IP on TurboID, CRAC, RA effects) |
+| `08_targeted_volcanos.R` | Custom volcanos: TRIP4 vs WT (ASCC+interactors labeled), RA effect (orange/blue) |
+| `09_flagip_volcano.R` | Flag IP validation volcano (C-Flag/N-Flag/both categories) |
+| `13_chx_crac_analysis.R` | CHX/DMSO + CRAC analysis |
+| `16_string_network_targeted.R` | Lydia-style direct PPI STRING network (seeds + neighbors) |
+| `17_crac_string_network.R` | CRAC RNA interactome STRING network |
+| `19_gsea.R` | GSEA enrichment (ranked gene list, all experiments) |
+| `20_pathway_network.R` | STRING network maps for enriched GO pathways |
+| `21_lydia_network_volcano.R` | Lydia volcano w/ STRING physical network overlay + gene families |
+| `22_ra_common_analysis.R` | Common RA-enriched/depleted across RA02+RA04 concentrations |
+| `23_bidirectional_go.R` | Bidirectional GO dot plot (up=right, down=left, single figure) |
+| `24_chx_common_analysis.R` | CHX-enriched/depleted sets + STRING networks + GO |
+| `25_shinygo_comparison.R` | Compare ShinyGO exports with our STRING pipeline results |
+
+## Key Make Targets
+
+| Command | What it produces |
+|---------|-----------------|
+| `make all` | Full pipeline |
+| `make targeted-volcano` | TRIP4 vs WT + RA effect volcanos |
+| `make flagip-volcano` | Flag IP validation volcano |
+| `make lydia-volcano` | STRING network overlay volcano (Lydia's method) |
+| `make ra-common` | Common RA proteins across both concentrations + networks + Venn |
+| `make bidirectional-go` | Up-right/down-left GO dot plot |
+| `make chx-common` | CHX-enriched/depleted + STRING + GO |
+| `make crac-network` | CRAC RNA interactome STRING network |
+| `make gsea` | GSEA enrichment on all experiments |
+| `make string-network` | Lydia-style direct PPI STRING network |
+| `make shinygo-compare` | Compare ShinyGO export with our STRING results |
+| `make all-volcano` | All volcano plots in one go |
 
 **Full architecture with flowcharts, timing diagrams, and verification checklist:**
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

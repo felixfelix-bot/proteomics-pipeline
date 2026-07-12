@@ -99,6 +99,7 @@ help:
 	@echo "  make chx-common      CHX/DMSO common analysis (enriched/depleted + STRING + GO)"
 	@echo "  make ra-common        RA common analysis across both concentrations"
 	@echo "  make bidirectional-go Bidirectional GO dot plot (up=right, down=left)"
+	@echo "  make shinygo-compare  Compare ShinyGO export with our STRING results"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
@@ -224,6 +225,9 @@ ra-common-network: ra-common ## Alias — same as ra-common
 
 bidirectional-go: check ## Bidirectional GO dot plot — up right, down left
 	$(RSCRIPT) R/run_step.R bidirectional_go
+
+shinygo-compare: check ## Compare ShinyGO export with STRING pipeline
+	$(RSCRIPT) R/run_step.R shinygo_comparison
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano lydia-volcano ## All volcano plot targets

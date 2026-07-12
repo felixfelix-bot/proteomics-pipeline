@@ -56,13 +56,12 @@ ASCC_CORE <- c("TRIP4", "ASCC1", "ASCC2", "ASCC3")
 known_ia_excl_core <- setdiff(known_interactors, ASCC_CORE)
 
 # ---- Define Lydia's categories ----
-# Priority order (last assignment wins in Lydia's code):
-# FALSE → TRUE → high → ddx → dhx → gp → ia
+# Priority order (last assignment wins, matching Lydia's code):
+# nonsig → sig → wt_enriched → dhx → ddx → gpatch → larp → ia → ascc → high
 
 df$lydia_cat <- "nonsig"
 
-# Significant proteins (Lydia uses p-value for RA comparisons, q-value for WT comparison)
-# We use adj.P.Val (padj) consistently — more conservative
+# Significant proteins
 sig_idx <- df$padj < P_VALUE_CUTOFF & abs(df$log2FC) > LOG2FC_CUTOFF
 df$lydia_cat[sig_idx] <- "sig"
 
@@ -70,7 +69,13 @@ df$lydia_cat[sig_idx] <- "sig"
 wt_idx <- df$padj < P_VALUE_CUTOFF & df$log2FC < -LOG2FC_CUTOFF
 df$lydia_cat[wt_idx] <- "wt_enriched"
 
-# Known interactors (overwrites sig/wt regardless of significance)
+# Gene families (Lydia highlights these — RNA-binding helicases)
+df$lydia_cat[grepl("^DHX", df$gene)] <- "dhx"
+df$lydia_cat[grepl("^DDX", df$gene)] <- "ddx"
+df$lydia_cat[grepl("^GPATCH", df$gene)] <- "gpatch"
+df$lydia_cat[grepl("^LARP", df$gene)] <- "larp"
+
+# Known interactors (overwrites sig/wt/families regardless of significance)
 df$lydia_cat[df$gene %in% known_ia_excl_core] <- "ia"
 
 # ASCC complex (highest priority)
@@ -235,24 +240,37 @@ toPlot$net_cat <- "not_in_network"
 toPlot$net_cat[toPlot$inNetwork & toPlot$lydia_cat != "high"] <- "in_network"
 toPlot$net_cat[toPlot$lydia_cat == "high"] <- "seed_high"
 
-# Ensure known interactors still visible even if in network
+# Ensure known interactors + gene families visible even if in network
 toPlot$net_cat[toPlot$lydia_cat == "ia"] <- "known_ia"
 toPlot$net_cat[toPlot$lydia_cat == "ascc"] <- "ascc"
+toPlot$net_cat[toPlot$lydia_cat == "dhx"] <- "dhx"
+toPlot$net_cat[toPlot$lydia_cat == "ddx"] <- "ddx"
+toPlot$net_cat[toPlot$lydia_cat == "gpatch"] <- "gpatch"
+toPlot$net_cat[toPlot$lydia_cat == "larp"] <- "larp"
 
 toPlot$net_cat <- factor(toPlot$net_cat,
-  levels = c("ascc", "known_ia", "seed_high", "in_network", "not_in_network"))
+  levels = c("ascc", "known_ia", "dhx", "ddx", "gpatch", "larp",
+             "seed_high", "in_network", "not_in_network"))
 
 NET_COLORS <- c(
-  "ascc"            = "#0072B2",   # Navy
-  "known_ia"        = "#009E73",   # Green
-  "seed_high"       = "#D55E00",   # Vermillion
-  "in_network"      = "#1b9e77",   # Teal
+  "ascc"            = "#0072B2",   # Navy — ASCC complex
+  "known_ia"        = "#009E73",   # Green — known interactors
+  "dhx"             = "#66a61e",   # Green-brown — DHX helicases
+  "ddx"             = "#1f78b4",   # Blue — DDX helicases
+  "gpatch"          = "#e6ab02",   # Gold — GPATCH family
+  "larp"            = "#a6761d",   # Bronze — LARP family
+  "seed_high"       = "#D55E00",   # Vermillion — high-confidence seed
+  "in_network"      = "#1b9e77",   # Teal — in STRING network
   "not_in_network"  = "#D0D0D0"    # Light grey
 )
 
 NET_LABELS <- c(
   "ascc"            = "ASCC complex",
   "known_ia"        = "Known interactors",
+  "dhx"             = "DHX helicases",
+  "ddx"             = "DDX helicases",
+  "gpatch"          = "GPATCH family",
+  "larp"            = "LARP family",
   "seed_high"       = "High-confidence (STRING seed)",
   "in_network"      = "In STRING network",
   "not_in_network"  = "Not in network"

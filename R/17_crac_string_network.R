@@ -138,8 +138,20 @@ if (n_mapped < 3) {
 mapped_genes <- string_hits$STRING_id[!is.na(string_hits$STRING_id)]
 
 # ---- Get STRING interactions ----
-cat("Querying STRING for protein interactions...\n")
-interactions <- string_map$get_interactions(mapped_genes)
+# Use local physical links file if available (avoids 100MB download on Windows)
+phys_file <- file.path(DATA_DIR, "9606.protein.physical.links.v12.0.txt")
+
+if (file.exists(phys_file)) {
+  cat("Loading local STRING physical interactions file...\n")
+  phys <- read.table(phys_file, header = TRUE, stringsAsFactors = FALSE)
+  names(phys) <- c("from", "to", "combined_score")
+  cat(sprintf("  Loaded %d physical interactions\n", nrow(phys)))
+  # Filter to interactions involving our mapped genes
+  interactions <- phys[phys$from %in% mapped_genes | phys$to %in% mapped_genes, ]
+} else {
+  cat("Querying STRING for protein interactions (online)...\n")
+  interactions <- string_map$get_interactions(mapped_genes)
+}
 cat(sprintf("  Found %d interactions\n", nrow(interactions)))
 
 if (nrow(interactions) == 0) {
