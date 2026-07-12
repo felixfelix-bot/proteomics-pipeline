@@ -96,7 +96,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
     ) +
     ggplot2::guides(
       color = ggplot2::guide_legend(
-        override.aes = list(size = 5, alpha = 1)  # BIG dots for poster visibility
+        override.aes = list(size = 3, alpha = 1)  # Legend dot size
       )
     ) +
     ggrepel::geom_text_repel(
@@ -191,7 +191,7 @@ make_main_volcano <- function(df, title) {
     ) +
     ggplot2::guides(
       color = ggplot2::guide_legend(
-        override.aes = list(size = 5, alpha = 1)  # BIG dots for poster visibility
+        override.aes = list(size = 3, alpha = 1)  # Legend dot size
       )
     ) +
     ggrepel::geom_text_repel(

@@ -145,9 +145,8 @@ for (ont in ONT_TO_RUN) {
                                      color = neg_log10_padj,
                                      size = Count)) +
     ggplot2::geom_point(alpha = 0.85) +
-    ggplot2::scale_color_gradient(
-      low = "#F0E442",     # Warm Yellow (low significance)
-      high = "#0072B2",    # Deep Navy (high significance)
+    ggplot2::scale_color_gradientn(
+      colors = c("#0072B2", "#56B4E9", "#F0E442", "#E69F00", "#D55E00"),
       name = expression(-Log[10]~(adjusted~italic(p)~value))
     ) +
     ggplot2::scale_size_continuous(
@@ -177,7 +176,7 @@ for (ont in ONT_TO_RUN) {
       plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
     )
 
-  # Add direction annotations
+  # Add direction annotations with Aruna's colors
   p <- p +
     ggplot2::annotate("text", x = max(combined$signed_GeneRatio, na.rm = TRUE) * 0.8,
                       y = 0.5, label = "UP", color = "#D55E00",

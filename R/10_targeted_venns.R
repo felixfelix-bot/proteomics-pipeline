@@ -30,21 +30,23 @@ gene_sets <- lapply(experiments, function(df) {
 # Uses VennDiagram::draw.pairwise.venn for clean, standard Venns.
 # Two circles get distinct fill colors; the overlap is alpha-blended.
 # Colors come from GLOBAL_COLORS for cross-plot consistency.
-make_two_set_venn <- function(set_a, set_b, label_a, label_b, title, file_prefix) {
+make_two_set_venn <- function(set_a, set_b, label_a, label_b, title, file_prefix,
+                               fill_a = NULL, fill_b = NULL) {
   cat(sprintf("  %s: %d significant proteins\n", label_a, length(set_a)))
   cat(sprintf("  %s: %d significant proteins\n", label_b, length(set_b)))
   overlap_count <- length(intersect(set_a, set_b))
   cat(sprintf("  Overlap: %d proteins\n", overlap_count))
 
-  # Build the Venn using VennDiagram (base R grid graphics)
-  # fill: two colors for the circles; alpha = 0.5 blends them in overlap
-  # col = "transparent": no circle borders (clean modern look)
+  # Default colors from GLOBAL_COLORS; override with fill_a/fill_b if provided
+  color_a <- if (!is.null(fill_a)) fill_a else GLOBAL_COLORS[["venn_a_only"]]
+  color_b <- if (!is.null(fill_b)) fill_b else GLOBAL_COLORS[["venn_b_only"]]
+
   vp <- draw.pairwise.venn(
     area1     = length(set_a),
     area2     = length(set_b),
     cross.area = overlap_count,
     category  = c(label_a, label_b),
-    fill      = c(GLOBAL_COLORS[["venn_a_only"]], GLOBAL_COLORS[["venn_b_only"]]),
+    fill      = c(color_a, color_b),
     alpha     = rep(0.5, 2),
     cat.cex   = 1.6,
     cex       = 2.0,
@@ -107,7 +109,9 @@ if (exp_base %in% names(gene_sets) && exp_ra %in% names(gene_sets)) {
     label_a = "- RA",
     label_b = "+ RA",
     title = "TRIP4 without vs with Retinoic Acid",
-    file_prefix = "targeted_venn_RA_effect_BK467"
+    file_prefix = "targeted_venn_RA_effect_BK467",
+    fill_a = "#0072B2",   # Blue — same as volcano "Enriched without RA"
+    fill_b = "#D55E00"    # Orange — same as volcano "Enriched with RA"
   )
 
   ra_gained <- setdiff(set_b, set_a)
@@ -154,7 +158,9 @@ if (exp_turbo %in% names(gene_sets)) {
       label_a = "TurboID",
       label_b = "Flag IP",
       title = "TurboID vs Flag IP Overlap",
-      file_prefix = "targeted_venn_turboid_flagip"
+      file_prefix = "targeted_venn_turboid_flagip",
+      fill_a = "#D55E00",   # Orange — same as volcano TRIP4-enriched
+      fill_b = "#009E73"    # Green — same as "validated by both C+N Flag"
     )
 
     cat(sprintf("  Common to both: %d proteins\n", overlap))
