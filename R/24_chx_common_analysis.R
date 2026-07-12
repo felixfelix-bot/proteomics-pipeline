@@ -535,6 +535,8 @@ for (ont in c("BP", "CC", "MF")) {
   if (is.null(combined) || nrow(combined) == 0) { cat("    No terms. Skipping.\n"); next }
 
   combined <- combined[order(combined$signed_GeneRatio, decreasing = TRUE), ]
+  # Fix: make descriptions unique (same GO term can appear in both directions)
+  combined$short_Description <- make.unique(combined$short_Description)
   combined$short_Description <- factor(combined$short_Description, levels = rev(combined$short_Description))
 
   p <- ggplot2::ggplot(combined, ggplot2::aes(x = signed_GeneRatio, y = short_Description,

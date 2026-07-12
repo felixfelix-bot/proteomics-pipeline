@@ -135,6 +135,7 @@ for (ont in ONT_TO_RUN) {
   combined <- combined[order(combined$signed_GeneRatio, decreasing = TRUE), ]
 
   # Factor Description to preserve order
+  combined$short_Description <- make.unique(combined$short_Description)
   combined$short_Description <- factor(combined$short_Description,
                                         levels = rev(combined$short_Description))
 
