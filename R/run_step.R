@@ -29,7 +29,7 @@ main <- function() {
                    "ra_common", "bidirectional_go",
                    "chx_common_analysis", "shinygo_comparison",
                    "diagnostics", "network_go", "bidirectional_go_ra",
-                   "string_style_network")
+                   "string_style_network", "chx_volcano_venn")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -64,7 +64,8 @@ main <- function() {
     diagnostics            = "R/diagnostics.R",
     network_go             = "R/26_network_go_comparison.R",
     bidirectional_go_ra    = "R/27_bidirectional_go_ra.R",
-    string_style_network   = "R/28_string_style_network.R"
+    string_style_network   = "R/28_string_style_network.R",
+    chx_volcano_venn       = "R/29_chx_volcano_venn.R"
   )
 
   # Set up logging (captures all output to file + console)

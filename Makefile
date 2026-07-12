@@ -226,6 +226,9 @@ diagnostics: ## Print structural data summary (counts/ranges only, safe to share
 	@echo "Running diagnostics..."
 	@Rscript R/run_step.R diagnostics
 
+chx-volcano-venn: check clean-old ## CHX vs DMSO volcano plot + Venn diagram
+	$(RSCRIPT) R/run_step.R chx_volcano_venn
+
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
 	$(RSCRIPT) R/run_step.R string_style_network
 
