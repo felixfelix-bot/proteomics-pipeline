@@ -25,7 +25,8 @@ main <- function() {
                    "targeted_go", "go_network_volcano", "chx_crac_analysis",
                    "venn_examples", "venn_label_examples", "string_network",
                    "crac_string_network", "venn_overflow_examples", "gsea",
-                   "pathway_network")
+                   "pathway_network", "lydia_network_volcano",
+                   "chx_common_analysis")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -51,7 +52,9 @@ main <- function() {
     crac_string_network = "R/17_crac_string_network.R",
     venn_overflow_examples = "R/18_venn_overflow_examples.R",
     gsea                   = "R/19_gsea.R",
-    pathway_network        = "R/20_pathway_network.R"
+    pathway_network        = "R/20_pathway_network.R",
+    lydia_network_volcano  = "R/21_lydia_network_volcano.R",
+    chx_common_analysis    = "R/24_chx_common_analysis.R"
   )
 
   # Set up logging (captures all output to file + console)

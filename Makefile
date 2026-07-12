@@ -55,7 +55,7 @@ TABLE_DIR  := output/tables
 
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
-        string-network crac-network venn-overflow-examples gsea pathway-network \
+        string-network crac-network venn-overflow-examples gsea pathway-network lydia-volcano chx-common \
         all-volcano all-venn all-targeted targeted-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
@@ -96,6 +96,7 @@ help:
 	@echo "  make gsea             GSEA (ranked gene list, Lydia style)"
 	@echo "  make pathway-network  STRING network maps for enriched pathways"
 	@echo "  make lydia-volcano   Lydia-style volcano w/ STRING network overlay"
+	@echo "  make chx-common      CHX/DMSO common analysis (enriched/depleted + STRING + GO)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
@@ -209,6 +210,9 @@ pathway-network: check ## STRING network maps for enriched GO pathways
 
 lydia-volcano: check ## Lydia-style volcano with STRING network overlay
 	$(RSCRIPT) R/run_step.R lydia_network_volcano
+
+chx-common: check ## CHX/DMSO common analysis — enriched/depleted + STRING + GO
+	$(RSCRIPT) R/run_step.R chx_common_analysis
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano lydia-volcano ## All volcano plot targets
