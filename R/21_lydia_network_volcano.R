@@ -232,10 +232,10 @@ SIG_NET_COLORS <- c(
   # Significant not in network — orange
   "TRUE_FALSE"   = "#FF7F00",
 
-  # Background (not enriched, log2FC < 1) — GREEN
-  "FALSE_FALSE"  = "#66C2A4",
-  "FALSE_TRUE"   = "#66C2A4",
-  "FALSE_high"   = "#66C2A4"
+  # Background (not enriched, log2FC < 1) — grey
+  "FALSE_FALSE"  = "grey60",
+  "FALSE_TRUE"   = "grey60",
+  "FALSE_high"   = "grey60"
 )
 
 # Human-readable labels — only show unique categories
@@ -257,9 +257,9 @@ SIG_NET_LABELS <- c(
 
   "TRUE_FALSE"   = "Not assigned to interaction network",
 
-  "FALSE_FALSE"  = "Not enriched (background)",
-  "FALSE_TRUE"   = "Not enriched (background)",
-  "FALSE_high"   = "Not enriched (background)"
+  "FALSE_FALSE"  = "Not enriched",
+  "FALSE_TRUE"   = "Not enriched",
+  "FALSE_high"   = "Not enriched"
 )
 
 # Get all unique sig_network values present in data
