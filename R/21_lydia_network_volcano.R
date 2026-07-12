@@ -90,36 +90,36 @@ mapped <- string_db$map(df_for_map, "gene", removeUnmappedRows = TRUE)
 cat(sprintf("  Mapped %d of %d proteins to STRING\n", nrow(mapped), nrow(df)))
 
 # =====================================================================
-# STEP 1: Build sig column (Lydia's exact approach, minus gene families)
+# STEP 1: Build sig column
 # =====================================================================
-# Lydia creates: sig = FALSE → TRUE → "ia" → "high"
-# Aruna doesn't want DHX/DDX/GPATCH/LARP, so we skip those.
-# We add ASCC as separate category (matches Lydia's figure legend).
+# Categories: FALSE (not enriched) → TRUE (significant, TRIP4-enriched) → "ia" → "ascc"
+# NO "high" category — Aruna doesn't want it colored or labeled.
+# Seeds still drive the network expansion but appear as whatever their
+# significance category says (TRUE, ia, or ascc).
 
 df$sig <- FALSE  # default: not significant
 
-# Significant proteins (Lydia uses different thresholds for WT comparison)
-# Entry 1 (TRIP4 vs WT): uses q-value (adjusted p)
-sig_idx <- df$padj < P_VALUE_CUTOFF & abs(df$log2FC) > LOG2FC_CUTOFF
+# Significant AND TRIP4-enriched (positive log2FC only)
+# Per Aruna: WT-enriched (negative log2FC) proteins = all grey, no network coloring
+sig_idx <- df$padj < P_VALUE_CUTOFF & df$log2FC > LOG2FC_CUTOFF
 df$sig[sig_idx] <- TRUE
 
-# Known interactors (override significance — they get special treatment regardless)
-df$sig[df$gene %in% known_interactors] <- "ia"
+# Known interactors (override — but only if TRIP4-enriched, per Aruna)
+df$sig[df$gene %in% known_interactors &
+       df$log2FC > 0] <- "ia"
 
-# ASCC complex (further override — highest priority among non-seed categories)
-df$sig[df$gene %in% ASCC_CORE] <- "ascc"
+# ASCC complex (further override — highest priority)
+df$sig[df$gene %in% ASCC_CORE &
+       df$log2FC > 0] <- "ascc"
 
-# Highly enriched seeds (Lydia's stringent threshold for entry 1)
-# Lydia: (log2FC > 2 & -log10(q) > 6) | (log2FC > 7 & -log10(q) > 2)
-# This OVERRIDES everything else — seeds are the most important category
+# Seed definition still used for network expansion (Lydia's thresholds)
+# But NOT shown as separate color/label
 seed_mask <- (!is.na(df$log2FC) & !is.na(df$padj)) &
   ((df$log2FC > 2 & df$neglog10p > 6) |
    (df$log2FC > 7 & df$neglog10p > 2))
 
-df$sig[seed_mask] <- "high"
-
 sig1 <- df$gene[seed_mask]
-cat(sprintf("\n  Seeds (Lydia's threshold): %d proteins\n", length(sig1)))
+cat(sprintf("\n  Seeds (for network expansion): %d proteins\n", length(sig1)))
 
 # =====================================================================
 # STEP 2: STRING network expansion (Lydia's exact code)
@@ -173,12 +173,19 @@ if (length(seed_ids) > 0) {
 }
 
 # =====================================================================
-# STEP 3: Build inNetwork column (Lydia's exact approach)
+# STEP 3: Build inNetwork column
 # =====================================================================
+# Per Aruna: ONLY TRIP4-enriched proteins (positive log2FC) get network coloring.
+# Everything else (WT-enriched, not significant) = FALSE = grey regardless.
 df$inNetwork <- FALSE
-df$inNetwork[df$gene %in% a$gene & !is.na(df$gene)] <- TRUE
-# Seeds get "high" (Lydia overwrites their inNetwork with "high")
-df$inNetwork[seed_mask] <- "high"
+
+# Only mark network membership for TRIP4-enriched proteins
+df$inNetwork[df$gene %in% a$gene &
+             !is.na(df$gene) &
+             df$log2FC > 0] <- TRUE
+
+# Seeds: still TRUE (in network) — no special "high" treatment anymore
+# (seeds are already included in the network expansion)
 
 # =====================================================================
 # STEP 4: Create sig_network = paste(sig, inNetwork) — THE COMBINED COLUMN
@@ -200,47 +207,33 @@ for (cat_name in sort(unique(df$sig_network))) {
 # Get all unique sig_network values present in data
 all_cats <- sort(unique(df$sig_network))
 
-# Color mapping (from Lydia's figure legend)
+# Color mapping — simplified per Aruna's feedback
+# No "high" category. All non-TRIP4-enriched = grey.
 SIG_NET_COLORS <- c(
-  # ASC complex (dark purple)
+  # ASC complex (dark purple) — only if TRIP4-enriched
   "ascc_FALSE"   = "#6a3d9a",
   "ascc_TRUE"    = "#6a3d9a",
-  "ascc_high"    = "#6a3d9a",
   # Known interactors
   "ia_FALSE"     = "#cab2d6",  # light purple — verified & not in network
   "ia_TRUE"      = "#1b9e77",  # teal — verified & in network
-  "ia_high"      = "#1b9e77",  # teal — verified & in network (also a seed)
-  # Highly enriched seeds
-  "high_high"    = "#e7298a",  # pink/red — highly enriched
-  "high_TRUE"    = "#e7298a",
-  "high_FALSE"   = "#e7298a",
-  # Significant proteins
+  # Significant TRIP4-enriched proteins
   "TRUE_TRUE"    = "#a6cee3",  # light blue — in network of highly enriched
   "TRUE_FALSE"   = "#fb9a99",  # pink — not assigned to interaction network
-  "TRUE_high"    = "#e7298a",  # highly enriched
-  # Non-significant
-  "FALSE_TRUE"   = "#a6cee3",  # light blue — in network
-  "FALSE_FALSE"  = "grey60",   # grey — not enriched
-  "FALSE_high"   = "#e7298a"
+  # Non-significant / WT-enriched — ALL grey
+  "FALSE_TRUE"   = "grey60",
+  "FALSE_FALSE"  = "grey60"
 )
 
-# Human-readable labels (from Lydia's figure legend)
+# Human-readable labels
 SIG_NET_LABELS <- c(
   "ascc_FALSE"   = "ASC complex",
   "ascc_TRUE"    = "ASC complex",
-  "ascc_high"    = "ASC complex",
   "ia_FALSE"     = "Verified interaction & not in network",
   "ia_TRUE"      = "Verified interaction & in network",
-  "ia_high"      = "Verified interaction & in network",
-  "high_high"    = "Highly enriched",
-  "high_TRUE"    = "Highly enriched",
-  "high_FALSE"   = "Highly enriched",
   "TRUE_TRUE"    = "In network of highly enriched proteins",
   "TRUE_FALSE"   = "Not assigned to interaction network",
-  "TRUE_high"    = "Highly enriched",
-  "FALSE_TRUE"   = "In network of highly enriched proteins",
-  "FALSE_FALSE"  = "Not enriched",
-  "FALSE_high"   = "Highly enriched"
+  "FALSE_TRUE"   = "Not enriched",
+  "FALSE_FALSE"  = "Not enriched"
 )
 
 # Filter to only categories that exist in the data
@@ -257,9 +250,9 @@ pct_in_net <- if (enriched_total > 0) round(100 * enriched_in_net / enriched_tot
 # =====================================================================
 cat("\n--- Generating plot ---\n")
 
-# Labels: known interactors + ASCC + seeds (per Aruna: NO gene families)
+# Labels: known interactors + ASCC only (NO seeds, NO gene families)
 label_data <- df[
-  (df$gene %in% known_interactors | df$gene %in% ASCC_CORE | df$sig == "high") &
+  (df$gene %in% known_interactors | df$gene %in% ASCC_CORE) &
   !is.na(df$log2FC) & df$log2FC > 0, ]
 
 p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
