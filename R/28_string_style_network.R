@@ -21,7 +21,6 @@ cat("=========================================\n\n")
 library(STRINGdb)
 library(igraph)
 library(ggplot2)
-library(ggraph)
 
 # ---- Load data ----
 experiments <- load_all_experiments()
