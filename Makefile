@@ -222,6 +222,10 @@ gsea: check clean-old ## GSEA enrichment analysis (ranked gene list via clusterP
 pathway-network: check clean-old ## STRING network maps for enriched GO pathways
 	$(RSCRIPT) R/run_step.R pathway_network
 
+diagnostics: ## Print structural data summary (counts/ranges only, safe to share)
+	@echo "Running diagnostics..."
+	@Rscript R/run_step.R diagnostics
+
 lydia-volcano: check clean-old ## Lydia-style volcano with STRING network overlay
 	$(RSCRIPT) R/run_step.R lydia_network_volcano
 
