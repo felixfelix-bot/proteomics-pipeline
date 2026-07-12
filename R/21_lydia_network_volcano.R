@@ -215,8 +215,9 @@ SIG_NET_COLORS <- c(
   "ascc_TRUE"    = "#0072B2",
   "ascc_high"    = "#0072B2",
 
-  # Known interactors — light purple (not in net) / teal (in net)
-  "ia_FALSE"     = "#CAB2D6",
+  # Known interactors — GOLD (not in net) / teal (in net)
+  # Changed from light purple — too close to dark purple
+  "ia_FALSE"     = "#FFD92F",
   "ia_TRUE"      = "#1B9E77",
   "ia_high"      = "#1B9E77",
 
@@ -266,9 +267,25 @@ SIG_NET_LABELS <- c(
 all_cats <- sort(unique(df$sig_network))
 present_colors <- SIG_NET_COLORS[all_cats]
 
-# Build legend: deduplicate by label.
-# All categories visible including "Highly enriched".
-legend_breaks <- all_cats
+# Build legend in Aruna's specified order:
+# 1. ASCC complex (blue)
+# 2. Verified interaction & in network (teal)
+# 3. Verified interaction & not in network (gold)
+# 4. Highly enriched (red)
+# 5. In network of highly enriched proteins (dark purple)
+# 6. Not assigned to interaction network (orange)
+# 7. Not enriched (grey)
+legend_order <- c(
+  "ascc_FALSE", "ascc_TRUE", "ascc_high",          # 1. ASCC
+  "ia_TRUE", "ia_high",                              # 2. Verified & in network
+  "ia_FALSE",                                        # 3. Verified & not in network
+  "high_high", "high_TRUE", "high_FALSE",            # 4. Highly enriched
+  "TRUE_TRUE", "TRUE_high",                          # 5. In network of highly enriched
+  "TRUE_FALSE",                                      # 6. Not assigned
+  "FALSE_FALSE", "FALSE_TRUE", "FALSE_high"          # 7. Not enriched
+)
+# Keep only categories present in data, deduplicate by label
+legend_breaks <- legend_order[legend_order %in% all_cats]
 legend_labels <- SIG_NET_LABELS[legend_breaks]
 dedup_mask <- !duplicated(legend_labels)
 legend_breaks <- legend_breaks[dedup_mask]
