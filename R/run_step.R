@@ -65,7 +65,8 @@ main <- function() {
     network_go             = "R/26_network_go_comparison.R",
     bidirectional_go_ra    = "R/27_bidirectional_go_ra.R",
     string_style_network   = "R/28_string_style_network.R",
-    chx_volcano_venn       = "R/29_chx_volcano_venn.R"
+    chx_volcano_venn       = "R/29_chx_volcano_venn.R",
+    flagip_validated_go    = "R/30_flagip_validated_go.R"
   )
 
   # Set up logging (captures all output to file + console)

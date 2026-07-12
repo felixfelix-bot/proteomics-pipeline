@@ -84,6 +84,7 @@ help:
 	@echo "Targeted plots (researcher-specified):"
 	@echo "  make targeted-volcano  3 custom volcanos: TRIP4 vs WT, RA effects"
 	@echo "  make flagip-volcano    TurboID volcano with common C/N-Flag hits"
+	@echo "  make flagip-validated-go  GO+KEGG on proteins validated by BOTH C+N Flag"
 	@echo "  make targeted-venn     RA effect Venn + TurboID vs C/N-Flag Venn"
 	@echo "  make targeted-go       GO enrichment on 3 targeted gene sets"
 	@echo "  make context          Print data context (file info, overlaps, gene names)"
@@ -229,6 +230,9 @@ diagnostics: ## Print structural data summary (counts/ranges only, safe to share
 chx-volcano-venn: check clean-old ## CHX vs DMSO volcano plot + Venn diagram
 	$(RSCRIPT) R/run_step.R chx_volcano_venn
 
+flagip-validated-go: check clean-old ## GO + KEGG on proteins validated by BOTH C-Flag and N-Flag IP
+	$(RSCRIPT) R/run_step.R flagip_validated_go
+
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
 	$(RSCRIPT) R/run_step.R string_style_network
 
@@ -286,7 +290,7 @@ timed-target:
 # These run in under a minute each. Bundle them so Aruna can review
 # outputs quickly while slower network analyses are still running.
 aruna-fast: targeted-volcano flagip-volcano targeted-venn targeted-go \
-            venn bidirectional-go
+            venn bidirectional-go flagip-validated-go
 	@echo ""
 	@echo "================================================"
 	@echo " FAST ANALYSIS COMPLETE — review output/figures/"

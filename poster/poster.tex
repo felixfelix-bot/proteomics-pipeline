@@ -1,0 +1,162 @@
+% =========================================================================
+% TRIP4/ASCC Proteomics Poster — LaTeX Template
+% =========================================================================
+% This template ensures UNIFORM FONT SIZES across all figures.
+%
+% HOW IT WORKS:
+% 1. R generates figures as PDF (vector format) via save_poster_figure()
+% 2. LaTeX includes them via \includegraphics
+% 3. When LaTeX resizes a figure, the TEXT INSIDE the figure scales
+%    proportionally with the figure — so relative font sizes stay consistent
+% 4. For TRUE pixel-identical fonts: generate figures at the EXACT size
+%    they appear in the poster (see width values below)
+%
+% REQUIREMENTS:
+%   - TeX Live or MiKTeX with beamerposter package
+%   - Install: tlmgr install beamerposter (TeX Live)
+%   Or on Windows MiKTeX: it auto-installs on first compile
+%
+% USAGE:
+%   1. Run R pipeline: make aruna-all (generates PDFs in output/figures/)
+%   2. Copy desired PDFs to poster/figures/ (or update paths below)
+%   3. Compile: pdflatex poster.tex (run 2-3x for layout)
+%
+% ALTERNATIVE (no beamerposter):
+%   Use the standalone article-based version (poster_simple.tex)
+% =========================================================================
+
+\documentclass[final]{beamer}
+\usepackage[size=custom,width=120,height=90,scale=1.0]{beamerposter}
+% 120cm x 90cm = standard portrait poster size
+% Change to custom,width=180,height=100 for landscape
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}              % Clean Latin Modern fonts
+\usepackage{graphicx}             % Include figures
+\usepackage{booktabs}             % Nice tables
+\usepackage{tikz}                 % Diagrams
+\usepackage{enumitem}             % List formatting
+\usepackage{xcolor}
+
+% ---- Color scheme (match R GLOBAL_COLORS) ----
+\definecolor{asccblue}{HTML}{0072B2}
+\definecolor{interactorgreen}{HTML}{009E73}
+\definecolor{enrichedred}{HTML}{D55E00}
+\definecolor{bglight}{HTML}{F5F5F5}
+
+% ---- Beamer theme ----
+\usetheme{default}
+\setbeamertemplate{navigation symbols}{}  % Remove nav arrows
+\setbeamercolor{block title}{fg=white, bg=asccblue}
+\setbeamercolor{block body}{fg=black, bg=bglight}
+\setbeamerfont{block title}{size=\large, series=\bfseries}
+
+% ---- Block margins ----
+\setbeamertemplate{block begin}{
+  \vskip0.5em
+  \begin{beamercolorbox}[ht=2.8em, leftskip=1em, colsep*=.75ex]{block title}
+    \usebeamerfont{block title}\insertblocktitle
+  \end{beamercolorbox}
+  {\parskip0pt\par}
+  \ifbeamercolorempty[bg]{block body}{}{\nointerlineskip\vskip-0.5pt}
+  \usebeamerfont{block body}
+  \begin{beamercolorbox}[colsep*=.75ex, sep=.75ex, vmode]{block body}
+}
+\setbeamertemplate{block end}{
+  \end{beamercolorbox}
+  \vskip0.5em
+}
+
+% =========================================================================
+% POSTER CONTENT — EDIT BELOW
+% =========================================================================
+
+\title{TRIP4/ASCC Complex: Proximity Labeling and Interaction Proteomics}
+\author{A.\,S.\,[Your Name] \quad F.\,[Collaborators]}
+\institute{[Your Institute]}
+\date{}
+
+\begin{document}
+
+\begin{frame}[t]
+
+% ---- Title bar ----
+\vskip1cm
+\begin{center}
+  {\veryHuge\bfseries\color{asccblue} TRIP4/ASCC Complex: Proximity Labeling and Interaction Proteomics\par}
+  \vskip0.5cm
+  {\Large [Your Name] $\cdot$ [Institute] $\cdot$ [Year]\par}
+\end{center}
+\vskip1cm
+
+% ---- Two-column layout ----
+\begin{columns}[t]
+
+% ==================== LEFT COLUMN ====================
+\begin{column}{0.48\textwidth}
+
+\begin{block}{Introduction}
+\small
+TRIP4 (Transcription Intermediary Factor 4) is the core subunit of the ASCC
+complex, involved in RNA processing and stress response. We use TurboID
+proximity labeling and Flag IP to map the TRIP4 interaction network.
+\end{block}
+
+\begin{block}{Results 1: TurboID Volcano}
+% Include figure as PDF (vector). Width controls scaling.
+% Font sizes inside figure scale proportionally — consistent across all panels.
+\centering
+\includegraphics[width=0.95\linewidth]{figures/lydia_volcano_network.pdf}
+\end{block}
+
+\begin{block}{Results 2: GO Enrichment (Biological Process)}
+\centering
+\includegraphics[width=0.95\linewidth]{figures/targeted_GO_turbo_BP_dotplot.pdf}
+\end{block}
+
+\begin{block}{Results 3: STRING Network}
+\centering
+\includegraphics[width=0.95\linewidth]{figures/ra_string_style_network.pdf}
+\end{block}
+
+\end{column}
+
+% ==================== RIGHT COLUMN ====================
+\begin{column}{0.48\textwidth}
+
+\begin{block}{Flag IP Validation}
+% NOTE: Both figures use SAME width (0.95\linewidth).
+% This ensures fonts are the SAME SIZE in both panels.
+\centering
+\includegraphics[width=0.95\linewidth]{figures/flagip_volcano_overlap.pdf}
+\vskip0.3cm
+\includegraphics[width=0.95\linewidth]{figures/targeted_venn_turbo_vs_flag.pdf}
+\end{block}
+
+\begin{block}{KEGG Pathway Enrichment}
+\centering
+\includegraphics[width=0.95\linewidth]{figures/targeted_KEGG_turbo_dotplot.pdf}
+\end{block}
+
+\begin{block}{Validated Interactors (C-Flag + N-Flag)}
+\centering
+\includegraphics[width=0.95\linewidth]{figures/flagip_GO_validated_both_BP_dotplot.pdf}
+\end{block}
+
+\begin{block}{Conclusions}
+\small
+\begin{itemize}[leftmargin=1em, itemsep=0.3em]
+  \item TRIP4 proximity labeling identifies ASCC complex and RNA-binding proteins
+  \item Flag IP (C-Flag and N-Flag) validates key interactors
+  \item GO/KEGG enrichment reveals RNA processing pathways
+  \item Retinoic acid treatment reshapes the interaction network
+\end{itemize}
+\end{block}
+
+\end{column}
+\end{columns}
+
+\end{frame}
+
+\end{document}

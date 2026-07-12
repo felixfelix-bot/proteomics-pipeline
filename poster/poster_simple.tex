@@ -1,0 +1,74 @@
+% =========================================================================
+% Simple poster — works with ANY LaTeX installation (no beamerposter needed)
+% Uses standard article class. Compile: pdflatex poster_simple.tex
+% =========================================================================
+
+\documentclass[11pt, a4paper, landscape]{article}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{multicol}
+
+\definecolor{asccblue}{HTML}{0072B2}
+\definecolor{bglight}{HTML}{F5F5F5}
+
+\pagestyle{empty}
+
+% ---- Consistent font for ALL figure captions ----
+\newcommand{\figcap}[1]{{\centering\small\textbf{#1}\par\vspace{0.3cm}}}
+
+\begin{document}
+
+% ---- Title ----
+\begin{center}
+  {\LARGE\bfseries\color{asccblue} TRIP4/ASCC Complex: Proximity Labeling and Interaction Proteomics}\\[0.3cm]
+  {\large [Your Name] $\cdot$ [Institute] $\cdot$ [Year]}
+\end{center}
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+% ---- Two-column layout ----
+\begin{multicols}{2}
+
+\section*{\color{asccblue} Introduction}
+\small
+TRIP4 is the core subunit of the ASCC complex. We use TurboID proximity
+labeling and Flag IP to map the TRIP4 interaction network in HeLa and HEK293
+cells.
+
+\section*{\color{asccblue} TurboID Volcano Plot}
+% ALL figures use \linewidth. In multicols, \linewidth is the column width.
+% Since all figures get the same width, ALL FONTS are the same size.
+\includegraphics[width=\linewidth]{figures/lydia_volcano_network.pdf}
+\figcap{TurboID TRIP4 vs WT — STRING network volcano}
+
+\section*{\color{asccblue} GO Enrichment}
+\includegraphics[width=\linewidth]{figures/targeted_GO_turbo_BP_dotplot.pdf}
+\figcap{GO Biological Process enrichment}
+
+\section*{\color{asccblue} STRING Network}
+\includegraphics[width=\linewidth]{figures/ra_string_style_network.pdf}
+\figcap{RA common proteins — STRING network}
+
+\section*{\color{asccblue} Flag IP Validation}
+\includegraphics[width=\linewidth]{figures/flagip_volcano_overlap.pdf}
+\figcap{Flag IP overlap volcano}
+
+\section*{\color{asccblue} KEGG Pathways}
+\includegraphics[width=\linewidth]{figures/targeted_KEGG_turbo_dotplot.pdf}
+\figcap{KEGG pathway enrichment}
+
+\section*{\color{asccblue} Conclusions}
+\begin{itemize}[leftmargin=1em, itemsep=0.2em]
+  \item TRIP4 proximity labeling identifies ASCC complex members
+  \item Flag IP validates key interactors
+  \item GO/KEGG reveals RNA processing pathways
+\end{itemize}
+
+\end{multicols}
+
+\end{document}
