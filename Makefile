@@ -142,11 +142,10 @@ check: ## Verify all packages can be loaded
 	$(RSCRIPT) R/check_packages.R
 
 # ---- Clean old output files ----
-# Deletes any output file that doesn't contain the CURRENT git commit hash.
-# Files without a hash, or with an older hash, are removed.
-# This keeps output/ tidy — only the latest version of each plot survives.
+# DISABLED: output files now persist across commits (no hash-based deletion).
+# To re-enable, uncomment the Rscript line below.
 clean-old:
-	@$(RSCRIPT) R/clean_old_outputs.R
+	@echo "  clean-old: skipped (output persistence enabled)"
 
 # Most analysis targets depend on both check + clean-old
 # (clean-old removes stale files from previous runs before generating fresh ones)
