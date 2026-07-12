@@ -31,6 +31,10 @@
 #   make lydia-volcano
 ###############################################################################
 
+library(STRINGdb)
+library(igraph)
+library(dplyr)
+
 cat("\n=========================================\n")
 cat(" Lydia-Style Network Volcano\n")
 cat("=========================================\n\n")
