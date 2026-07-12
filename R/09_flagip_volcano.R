@@ -256,7 +256,9 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
   ggplot2::theme(
     plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
     axis.text = ggplot2::element_text(colour = "black", size = 8),
-    legend.position = "right",
+    legend.position = c(0.02, 0.98),
+    legend.justification = c(0, 1),
+    legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
     panel.grid.minor = ggplot2::element_blank()
   )
 

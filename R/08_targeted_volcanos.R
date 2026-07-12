@@ -124,7 +124,9 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
       axis.title.x = ggplot2::element_text(hjust = 0.5),
       axis.text = ggplot2::element_text(colour = "black", size = 8),
-      legend.position = "right",
+      legend.position = c(0.02, 0.98),
+      legend.justification = c(0, 1),
+      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
     )
@@ -219,7 +221,9 @@ make_main_volcano <- function(df, title) {
       plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
       axis.title.x = ggplot2::element_text(hjust = 0.5),
       axis.text = ggplot2::element_text(colour = "black", size = 8),
-      legend.position = "right",
+      legend.position = c(0.02, 0.98),
+      legend.justification = c(0, 1),
+      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       legend.text = ggplot2::element_text(size = 9),
       panel.grid.minor = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
