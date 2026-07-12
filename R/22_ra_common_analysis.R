@@ -477,14 +477,20 @@ build_circular_network <- function(common_table, title, file_prefix) {
                                vertices = vertex_df)
     g <- simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
   } else {
-    g <- make_graph("empty", n = length(mapped_ids))
-    V(g)$name <- mapped_ids
+    cat("    No interactions — skipping circular plot.\n")
+    return(NULL)
   }
 
-  # Add isolated vertices that have no edges
-  isolated <- mapped_ids[!mapped_ids %in% c(edges$from, edges$to)]
-  for (id in isolated) {
-    g <- g + vertices(id)
+  # Remove isolated vertices (no edges) — only keep connected proteins
+  isolated_names <- V(g)$name[degree(g) == 0]
+  if (length(isolated_names) > 0) {
+    cat(sprintf("    Removing %d isolated proteins (no connections)\n", length(isolated_names)))
+    g <- delete_vertices(g, isolated_names)
+  }
+
+  if (vcount(g) < 2) {
+    cat("    Fewer than 2 connected proteins — skipping circular plot.\n")
+    return(NULL)
   }
 
   # Annotate
