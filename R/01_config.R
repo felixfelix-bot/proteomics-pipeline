@@ -344,11 +344,19 @@ load_proteomics_csv <- function(filepath,
 # STRING network all need to know "which proteins are significant?"
 get_significant_genes <- function(df,
                                   padj_cutoff = P_VALUE_CUTOFF,
-                                  log2fc_cutoff = LOG2FC_CUTOFF) {
-  # df$gene[condition] selects gene names where the condition is TRUE.
-  # The condition: padj < cutoff AND absolute value of log2FC > cutoff.
-  # abs() = absolute value (handles both up- and down-regulation).
-  sig <- df$gene[df$padj < padj_cutoff & abs(df$log2FC) > log2fc_cutoff]
+                                  log2fc_cutoff = LOG2FC_CUTOFF,
+                                  direction = "enriched") {
+  # FIX (July 12): Previously used abs(log2FC) which included WT-enriched
+  # proteins (negative log2FC). This caused mitochondrial enrichment artifacts
+  # in GO analysis and inflated Venn diagram sets.
+  #
+  # direction = "enriched" (default): only positive log2FC (experimental condition)
+  # direction = "both": both directions (legacy behavior, use sparingly)
+  if (direction == "enriched") {
+    sig <- df$gene[df$padj < padj_cutoff & df$log2FC > log2fc_cutoff]
+  } else {
+    sig <- df$gene[df$padj < padj_cutoff & abs(df$log2FC) > log2fc_cutoff]
+  }
   # Remove duplicates and missing values
   sig <- unique(sig[!is.na(sig)])
   return(sig)
