@@ -105,6 +105,8 @@ help:
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
 	@echo "  make aruna-all         Run EVERYTHING (fast then slow)"
+	@echo "  make poster            Generate ALL figures + compile LaTeX poster"
+	@echo "  make poster-figures    Generate poster-styled figures only (no LaTeX)"
 	@echo "  make aruna-fast        Quick targets only (volcanos, Venns, GO)"
 	@echo "  make aruna-slow        Slow targets only (STRING networks, GSEA)"
 	@echo "  make all-venn          All Venn diagrams"
@@ -232,6 +234,37 @@ chx-volcano-venn: check clean-old ## CHX vs DMSO volcano plot + Venn diagram
 
 flagip-validated-go: check clean-old ## GO + KEGG on proteins validated by BOTH C-Flag and N-Flag IP
 	$(RSCRIPT) R/run_step.R flagip_validated_go
+
+poster-figures: ## Generate poster-styled figures (standardized fonts) in poster/figures/
+	$(RSCRIPT) R/run_step.R poster_figures
+
+poster: aruna-fast poster-figures ## Generate ALL poster figures + compile LaTeX poster
+	@echo ""
+	@echo "========================================="
+	@echo " Figures generated. Building poster..."
+	@echo "========================================="
+	@# Copy any non-ggplot figures (STRING networks) from output/ to poster/
+	@for f in output/figures/*string_style*.pdf output/figures/*lydia_volcano*.pdf; do \
+		if [ -f "$$f" ]; then \
+			cp "$$f" poster/figures/ 2>/dev/null || true; \
+			echo "  Copied: $$f"; \
+		fi; \
+	done
+	@# Try to compile LaTeX poster (simple version first — no beamerposter needed)
+	@if command -v pdflatex >/dev/null 2>&1; then \
+		echo "  Compiling poster_simple.tex..."; \
+		cd poster && pdflatex -interaction=nonstopmode poster_simple.tex && \
+			pdflatex -interaction=nonstopmode poster_simple.tex; \
+		echo ""; \
+		echo "========================================="; \
+		echo " POSTER COMPLETE: poster/poster_simple.pdf"; \
+		echo "========================================="; \
+	else \
+		echo ""; \
+		echo "  NOTE: pdflatex not found. Install MiKTeX (Windows) or TeX Live (Linux/Mac)."; \
+		echo "  Figures are ready in poster/figures/."; \
+		echo "  To compile manually: cd poster && pdflatex poster_simple.tex"; \
+	fi
 
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
 	$(RSCRIPT) R/run_step.R string_style_network

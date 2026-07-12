@@ -22,6 +22,16 @@ Rplots.pdf
 output/
 figures/
 
+# Poster build artifacts (generated, not committed)
+poster/figures/*
+!poster/figures/.gitkeep
+poster/*.aux
+poster/*.log
+poster/*.out
+poster/*.fdb_latexmk
+poster/*.fls
+poster/*.synctex.gz
+
 # Ansible
 *.retry
 ansible/vault_pass*
