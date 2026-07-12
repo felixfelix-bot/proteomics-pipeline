@@ -138,8 +138,16 @@ install: ## Install all required R packages
 check: ## Verify all packages can be loaded
 	$(RSCRIPT) R/check_packages.R
 
-# ---- Full pipeline ----
-all: check ## Run full pipeline on real data
+# ---- Clean old output files ----
+# Deletes any output file that doesn't contain the CURRENT git commit hash.
+# Files without a hash, or with an older hash, are removed.
+# This keeps output/ tidy — only the latest version of each plot survives.
+clean-old:
+	@$(RSCRIPT) R/clean_old_outputs.R
+
+# Most analysis targets depend on both check + clean-old
+# (clean-old removes stale files from previous runs before generating fresh ones)
+all: check clean-old ## Run full pipeline on real data
 	$(RSCRIPT) run_all.R
 
 test: ## Run pipeline on synthetic test data
@@ -147,44 +155,44 @@ test: ## Run pipeline on synthetic test data
 
 # ---- Individual analysis steps ----
 # Each runs that single module with full logging
-volcano: check ## Generate volcano plots
+volcano: check clean-old ## Generate volcano plots
 	$(RSCRIPT) R/run_step.R volcano
 
-venn: check ## Generate Venn diagrams
+venn: check clean-old ## Generate Venn diagrams
 	$(RSCRIPT) R/run_step.R venn
 
-go: check ## GO enrichment analysis
+go: check clean-old ## GO enrichment analysis
 	$(RSCRIPT) R/run_step.R go
 
-string: check ## STRING network analysis
+string: check clean-old ## STRING network analysis
 	$(RSCRIPT) R/run_step.R string
 
-families: check ## Gene family highlighting
+families: check clean-old ## Gene family highlighting
 	$(RSCRIPT) R/run_step.R families
 
-overlap: check ## Cross-experiment overlap
+overlap: check clean-old ## Cross-experiment overlap
 	$(RSCRIPT) R/run_step.R overlap
 
 # ---- Targeted plots (researcher-specified) ----
-targeted-volcano: check ## 3 custom volcano plots: BK467 TRIP4 vs WT, RA effects
+targeted-volcano: check clean-old ## 3 custom volcano plots: BK467 TRIP4 vs WT, RA effects
 	$(RSCRIPT) R/run_step.R targeted_volcanos
 
-flagip-volcano: check ## TurboID volcano with common C-Flag/N-Flag hits labeled
+flagip-volcano: check clean-old ## TurboID volcano with common C-Flag/N-Flag hits labeled
 	$(RSCRIPT) R/run_step.R flagip_volcano
 
-targeted-venn: check ## 2 Venn diagrams: RA effect + TurboID vs C/N-Flag
+targeted-venn: check clean-old ## 2 Venn diagrams: RA effect + TurboID vs C/N-Flag
 	$(RSCRIPT) R/run_step.R targeted_venns
 
-targeted-go: check ## GO enrichment on 3 targeted gene sets
+targeted-go: check clean-old ## GO enrichment on 3 targeted gene sets
 	$(RSCRIPT) R/run_step.R targeted_go
 
-go-network-volcano: check ## Volcano highlighting GO network proteins (no labels)
+go-network-volcano: check clean-old ## Volcano highlighting GO network proteins (no labels)
 	$(RSCRIPT) R/run_step.R go_network_volcano
 
-context: check ## Print data context (file structure, overlaps, gene names)
+context: check clean-old ## Print data context (file structure, overlaps, gene names)
 	$(RSCRIPT) R/print_context.R
 
-chx-crac-analysis: check ## CHX/DMSO volcanos + GO, CRAC volcano + GO
+chx-crac-analysis: check clean-old ## CHX/DMSO volcanos + GO, CRAC volcano + GO
 	$(RSCRIPT) R/run_step.R chx_crac_analysis
 
 list-data: ## List ALL CSV files (paths, sizes, headers — no data values)
@@ -193,43 +201,43 @@ list-data: ## List ALL CSV files (paths, sizes, headers — no data values)
 headers: ## Print column names of every CSV file
 	$(RSCRIPT) R/print_headers.R
 
-venn-examples: check ## Generate 3 Venn diagram style examples (choose your favorite)
+venn-examples: check clean-old ## Generate 3 Venn diagram style examples (choose your favorite)
 	$(RSCRIPT) R/run_step.R venn_examples
 
-venn-label-examples: check ## Generate 3 Venn label position variants
+venn-label-examples: check clean-old ## Generate 3 Venn label position variants
 	$(RSCRIPT) R/run_step.R venn_label_examples
 
-string-network: check ## STRING network analysis + GO by network membership
+string-network: check clean-old ## STRING network analysis + GO by network membership
 	$(RSCRIPT) R/run_step.R string_network
 
-crac-network: check ## STRING network for CRAC RNA interactome data
+crac-network: check clean-old ## STRING network for CRAC RNA interactome data
 	$(RSCRIPT) R/run_step.R crac_string_network
 
-venn-overflow-examples: check ## 3 Venn overflow solutions (ext.text, equal circles, boxed labels)
+venn-overflow-examples: check clean-old ## 3 Venn overflow solutions (ext.text, equal circles, boxed labels)
 	$(RSCRIPT) R/run_step.R venn_overflow_examples
 
-gsea: check ## GSEA enrichment analysis (ranked gene list via clusterProfiler)
+gsea: check clean-old ## GSEA enrichment analysis (ranked gene list via clusterProfiler)
 	$(RSCRIPT) R/run_step.R gsea
 
-pathway-network: check ## STRING network maps for enriched GO pathways
+pathway-network: check clean-old ## STRING network maps for enriched GO pathways
 	$(RSCRIPT) R/run_step.R pathway_network
 
-lydia-volcano: check ## Lydia-style volcano with STRING network overlay
+lydia-volcano: check clean-old ## Lydia-style volcano with STRING network overlay
 	$(RSCRIPT) R/run_step.R lydia_network_volcano
 
-chx-common: check ## CHX/DMSO common analysis — enriched/depleted + STRING + GO
+chx-common: check clean-old ## CHX/DMSO common analysis — enriched/depleted + STRING + GO
 	$(RSCRIPT) R/run_step.R chx_common_analysis
 
-ra-common: check ## RA common protein analysis — enriched/depleted across RA02+RA04
+ra-common: check clean-old ## RA common protein analysis — enriched/depleted across RA02+RA04
 	$(RSCRIPT) R/run_step.R ra_common
 
 ra-common-network: ra-common ## Alias — same as ra-common
 	@echo "RA common analysis complete (includes STRING networks)."
 
-bidirectional-go: check ## Bidirectional GO dot plot — up right, down left
+bidirectional-go: check clean-old ## Bidirectional GO dot plot — up right, down left
 	$(RSCRIPT) R/run_step.R bidirectional_go
 
-shinygo-compare: check ## Compare ShinyGO export with STRING pipeline
+shinygo-compare: check clean-old ## Compare ShinyGO export with STRING pipeline
 	$(RSCRIPT) R/run_step.R shinygo_comparison
 
 # ---- Group targets (run multiple steps at once) ----
