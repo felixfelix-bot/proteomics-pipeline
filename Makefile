@@ -107,6 +107,7 @@ help:
 	@echo "Group targets:"
 	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
 	@echo "  make aruna-all         Run EVERYTHING (fast then slow)"
+	@echo "  make all-plots         Run everything + poster figures (ONE COMMAND)"
 	@echo "  make poster            Generate ALL figures + compile LaTeX poster"
 	@echo "  make poster-figures    Generate poster-styled figures only (no LaTeX)"
 	@echo "  make aruna-fast        Quick targets only (volcanos, Venns, GO)"
@@ -343,10 +344,21 @@ aruna-slow: lydia-volcano string-network crac-network \
 	@echo "================================================"
 
 # ---- Run EVERYTHING (fast first, then slow) ----
-aruna-all: aruna-fast aruna-slow
+aruna-all: aruna-fast aruna-slow chx-kegg-crac chx-volcano-venn
 	@echo ""
 	@echo "================================================"
 	@echo " ALL ANALYSIS COMPLETE — check output/figures/"
+	@echo " Now run: make poster-figures"
+	@echo "================================================"
+
+# ---- Generate ALL plots including poster figures (one command) ----
+all-plots: aruna-all poster-figures
+	@echo ""
+	@echo "================================================"
+	@echo " ALL PLOTS GENERATED"
+	@echo " output/figures/  — pipeline figures (PNG+PDF)"
+	@echo " poster/figures/  — poster figures (Arial 24, PDF+PNG)"
+	@echo " output/tables/   — all result tables (CSV)"
 	@echo "================================================"
 
 # ---- Convenience alias ----
