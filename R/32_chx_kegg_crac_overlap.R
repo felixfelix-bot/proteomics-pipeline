@@ -346,9 +346,23 @@ if (!file.exists(crac_path)) {
   toPlot$category <- factor(toPlot$category,
     levels = c("enriched_up", "enriched_dn", "nonsig"))
 
-  # Label data = only the CRAC-TurboID common genes
-  label_data <- toPlot[toPlot$gene %in% common_genes &
-                         !is.na(toPlot$gene), ]
+  # Label data = top 25 enriched + top 25 depleted by combined significance score
+  sig_turbo <- toPlot[toPlot$category %in% c("enriched_up", "enriched_dn") &
+                       !is.na(toPlot$log2FC) & !is.na(toPlot$neglog10p), ]
+  sig_turbo$combined_score <- abs(sig_turbo$log2FC) * sig_turbo$neglog10p
+
+  top_up <- head(sig_turbo[sig_turbo$log2FC > 0, ][order(-sig_turbo[sig_turbo$log2FC > 0, ]$combined_score), ], 25)
+  top_dn <- head(sig_turbo[sig_turbo$log2FC < 0, ][order(-sig_turbo[sig_turbo$log2FC < 0, ]$combined_score), ], 25)
+  label_data <- rbind(top_up, top_dn)
+  cat(sprintf("  Labeling top %d enriched + %d depleted (by combined score)\n",
+              nrow(top_up), nrow(top_dn)))
+
+  # Mark CRAC-TurboID common genes among the top 50 with bold + different colour
+  label_data$is_crac_overlap <- label_data$gene %in% common_genes
+  if (sum(label_data$is_crac_overlap) > 0) {
+    cat(sprintf("    Of these, %d are CRAC ∩ TurboID common genes (bold red label)\n",
+                sum(label_data$is_crac_overlap)))
+  }
 
   PLOT_COLORS <- c(
     "enriched_up" = GLOBAL_COLORS[["enriched_up"]],
@@ -372,7 +386,7 @@ if (!file.exists(crac_path)) {
     ) +
     ggrepel::geom_text_repel(
       data = label_data, ggplot2::aes(label = gene),
-      size = 2.8, fontface = "bold", max.overlaps = 50,
+      size = 2.8, fontface = "bold", max.overlaps = 60,
       show.legend = FALSE, bg.color = "white", bg.r = 0.15,
       segment.color = "grey40", segment.size = 0.3,
       min.segment.length = 0.2,
@@ -385,7 +399,7 @@ if (!file.exists(crac_path)) {
     ggplot2::labs(
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
-      title = "TurboID TRIP4 vs WT — CRAC↔TurboID common genes labeled"
+      title = "TurboID TRIP4 vs WT (top 50 labeled, CRAC overlap in bold)"
     ) +
     ggplot2::theme_bw() +
     ggplot2::theme(

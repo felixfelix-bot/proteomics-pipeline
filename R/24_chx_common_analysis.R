@@ -57,9 +57,9 @@ cat(sprintf("  Loaded %s: %d proteins\n\n", CHX_EXP_NAME, nrow(chx_df)))
 # Depleted = significantly LESS abundant with CHX (negative fold change)
 chx_df$direction <- "nonsig"
 chx_df$direction[chx_df$padj < P_VALUE_CUTOFF &
-                   chx_df$log2FC >=  1] <- "enriched"
+                   chx_df$log2FC >=  LOG2FC_CUTOFF] <- "enriched"
 chx_df$direction[chx_df$padj < P_VALUE_CUTOFF &
-                   chx_df$log2FC <= -1] <- "depleted"
+                   chx_df$log2FC <= -LOG2FC_CUTOFF] <- "depleted"
 
 enriched_df <- chx_df[chx_df$direction == "enriched" &
                         !is.na(chx_df$gene), ]
