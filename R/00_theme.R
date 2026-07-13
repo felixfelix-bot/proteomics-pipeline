@@ -23,14 +23,14 @@
 # These are the ONLY font size values used across the entire pipeline.
 # Changing a number here changes it EVERYWHERE.
 POSTER_FONTS <- list(
-  title       = 14,   # Plot titles
-  subtitle    = 11,   # Subtitles
-  axis_title  = 12,   # Axis titles (xlab, ylab)
-  axis_text   = 10,   # Axis tick labels
-  legend_title = 11,  # Legend titles
-  legend_text  = 9,   # Legend entries
-  facet_title  = 12,  # Facet strip text
-  annotate    = 8     # In-plot annotations/labels
+  title       = 24,
+  subtitle    = 24,
+  axis_title  = 24,
+  axis_text   = 24,
+  legend_title = 24,
+  legend_text  = 24,
+  facet_title  = 24,
+  annotate    = 24
 )
 
 # Publication fonts (slightly smaller for journal figures)
@@ -48,27 +48,36 @@ PUBLICATION_FONTS <- list(
 # ---- Poster theme (for all poster figures) ----
 # Applies consistent font sizes to every ggplot element.
 # Usage: my_plot + theme_poster()
-theme_poster <- function(base_family = "sans") {
+theme_poster <- function(base_family = "Arial") {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
       # Titles
       plot.title    = ggplot2::element_text(face = "bold", size = POSTER_FONTS$title,
-                                             hjust = 0.5, margin = ggplot2::margin(b = 8)),
+                                             hjust = 0.5, margin = ggplot2::margin(b = 8),
+                                             color = "black"),
       plot.subtitle = ggplot2::element_text(size = POSTER_FONTS$subtitle,
-                                             hjust = 0.5, margin = ggplot2::margin(b = 6)),
+                                             hjust = 0.5, margin = ggplot2::margin(b = 6),
+                                             color = "black"),
       # Axes
-      axis.title.x  = ggplot2::element_text(size = POSTER_FONTS$axis_title, margin = ggplot2::margin(t = 6)),
-      axis.title.y  = ggplot2::element_text(size = POSTER_FONTS$axis_title, margin = ggplot2::margin(r = 6)),
+      axis.title.x  = ggplot2::element_text(size = POSTER_FONTS$axis_title,
+                                             margin = ggplot2::margin(t = 6),
+                                             color = "black"),
+      axis.title.y  = ggplot2::element_text(size = POSTER_FONTS$axis_title,
+                                             margin = ggplot2::margin(r = 6),
+                                             color = "black"),
       axis.text.x   = ggplot2::element_text(size = POSTER_FONTS$axis_text, color = "black"),
       axis.text.y   = ggplot2::element_text(size = POSTER_FONTS$axis_text, color = "black"),
       # Legend
-      legend.title  = ggplot2::element_text(size = POSTER_FONTS$legend_title, face = "bold"),
-      legend.text   = ggplot2::element_text(size = POSTER_FONTS$legend_text),
+      legend.title  = ggplot2::element_text(size = POSTER_FONTS$legend_title, face = "bold",
+                                            color = "black"),
+      legend.text   = ggplot2::element_text(size = POSTER_FONTS$legend_text,
+                                            color = "black"),
       legend.position  = "right",
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       legend.key       = ggplot2::element_rect(fill = "white", color = NA),
       # Facets
-      strip.text    = ggplot2::element_text(size = POSTER_FONTS$facet_title, face = "bold"),
+      strip.text    = ggplot2::element_text(size = POSTER_FONTS$facet_title, face = "bold",
+                                            color = "black"),
       strip.background = ggplot2::element_rect(fill = "grey95", color = "grey80"),
       # Panel
       panel.grid.major = ggplot2::element_line(color = "grey92"),

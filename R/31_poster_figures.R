@@ -6,7 +6,7 @@
 #   1. Sources R/00_theme.R (defines theme_poster with uniform fonts)
 #   2. Loads experiment data
 #   3. For GO/KEGG: reads result tables from output/tables/ (already computed
-#      by targeted-go, etc.) and re-creates dotplots with theme_poster()
+#      by targeted-go, etc.) and re-creates dotplots/barplots with theme_poster()
 #   4. For volcano/Venn: regenerates from raw data with theme_poster()
 #   5. Saves ALL figures as PDF to poster/figures/ (vector format for LaTeX)
 #
@@ -17,7 +17,7 @@
 #   make poster-figures  (runs this script only)
 ###############################################################################
 cat("\n=========================================\n")
-cat(" Poster Figures — Standardized Fonts\n")
+cat(" Poster Figures — Arial 24, Black, GO-dot/bar, synced legends\n")
 cat("=========================================\n\n")
 
 # ---- Source theme (must come BEFORE any plotting) ----
@@ -40,6 +40,16 @@ save_poster <- function(plot, name, width = 8, height = 6) {
   ggsave(png_path, plot = plot, width = width, height = height,
          dpi = 300, bg = "white")
   cat(sprintf("  [POSTER] %s.pdf (%.0f x %.0f in)\n", name, width, height))
+}
+
+# ---- Helper: capitalize the first letter of each GO term ----
+# clusterProfiler returns terms like "negative regulation of..."
+# We just uppercase the very first character.
+capitalize_first <- function(x) {
+  sapply(x, function(s) {
+    s <- as.character(s)
+    if (nchar(s) > 0) paste0(toupper(substr(s, 1, 1)), substr(s, 2, nchar(s))) else s
+  })
 }
 
 # ---- Load experiments ----
@@ -66,33 +76,34 @@ FC_THRESH <- 0.999
 cat("\n--- Generating poster figures ---\n\n")
 
 #=============================================================================
-# 1. VOLCANO PLOT — TurboID TRIP4 vs WT
+# SECTION A — VOLCANO PLOTS (5 total)
 #=============================================================================
-cat("[1/6] Volcano plot...\n")
+
+#---------------------------------------------------------------------------
+# A1. VOLCANO PLOT — TurboID TRIP4 vs WT (existing, updated fonts)
+#---------------------------------------------------------------------------
+cat("[A1] TurboID TRIP4 vs WT volcano...\n")
 
 df_volcano <- df_turbo
 df_volcano$category <- "Not enriched"
 df_volcano$category[!is.na(df_volcano$log2FC) &
   df_volcano$log2FC >= FC_THRESH &
-  df_volcano$padj < 0.05] <- "Enriched"
+  df_volcano$padj < P_VALUE_CUTOFF] <- "Enriched"
 df_volcano$category[df_volcano$gene %in% ASCC_CORE &
   df_volcano$log2FC >= FC_THRESH] <- "ASCC complex"
 df_volcano$category[df_volcano$gene %in% known_interactors &
   df_volcano$log2FC >= FC_THRESH] <- "Known interactor"
 
-# Factor with consistent ordering
 df_volcano$category <- factor(df_volcano$category,
   levels = c("ASCC complex", "Known interactor", "Enriched", "Not enriched"))
 
-# Colors matching pipeline
 volcano_colors <- c(
-  "ASCC complex" = "#0072B2",
+  "ASCC complex"    = "#0072B2",
   "Known interactor" = "#009E73",
-  "Enriched" = "#D55E00",
-  "Not enriched" = "grey80"
+  "Enriched"        = "#D55E00",
+  "Not enriched"    = "grey80"
 )
 
-# Label ASCC + known interactors that are enriched
 label_genes <- unique(c(ASCC_CORE,
   intersect(known_interactors,
     df_volcano$gene[df_volcano$category != "Not enriched"])))
@@ -101,8 +112,8 @@ p_volcano <- ggplot(df_volcano,
     aes(x = log2FC, y = neglog10p, color = category)) +
   geom_point(alpha = 0.6, size = 1.5) +
   scale_color_manual(values = volcano_colors, name = NULL) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50") +
+  geom_vline(xintercept = LOG2FC_CUTOFF, linetype = "dashed", color = "grey50") +
   labs(
     x = expression(Log[2]~Fold~Change),
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
@@ -111,7 +122,7 @@ p_volcano <- ggplot(df_volcano,
   geom_text_repel(
     data = df_volcano[df_volcano$gene %in% label_genes &
       !is.na(df_volcano$log2FC), ],
-    aes(label = gene), size = 2.5, fontface = "bold",
+    aes(label = gene), size = 4, fontface = "bold",
     max.overlaps = 20, show.legend = FALSE, color = "black"
   ) +
   theme_poster() +
@@ -121,10 +132,10 @@ p_volcano <- ggplot(df_volcano,
 
 save_poster(p_volcano, "volcano_turbo", width = 7, height = 6)
 
-#=============================================================================
-# 2. FLAG IP OVERLAP VOLCANO
-#=============================================================================
-cat("[2/6] Flag IP overlap volcano...\n")
+#---------------------------------------------------------------------------
+# A2. FLAG IP OVERLAY VOLCANO (existing, updated fonts)
+#---------------------------------------------------------------------------
+cat("[A2] Flag IP overlap volcano...\n")
 
 cflag_exp <- find_experiment(experiments, "BK516_Cflag_vs_BK516_Ctrl")
 nflag_exp <- find_experiment(experiments, "BK516_Nflag_vs_BK516_Ctrl")
@@ -134,7 +145,7 @@ nflag_sig <- if (!is.null(nflag_exp)) get_significant_genes(nflag_exp) else char
 
 df_flag <- df_turbo
 df_flag$flag_cat <- "TRIP4 only"
-turbo_sig <- df_flag$gene[df_flag$padj < 0.05 & df_flag$log2FC >= FC_THRESH]
+turbo_sig <- df_flag$gene[df_flag$padj < P_VALUE_CUTOFF & df_flag$log2FC >= FC_THRESH]
 df_flag$flag_cat[df_flag$gene %in% intersect(cflag_sig, nflag_sig) &
   df_flag$gene %in% turbo_sig] <- "Both C+N Flag"
 df_flag$flag_cat[df_flag$gene %in% setdiff(cflag_sig, nflag_sig) &
@@ -149,21 +160,20 @@ df_flag$flag_cat <- factor(df_flag$flag_cat,
 
 flag_colors <- c(
   "Both C+N Flag" = "#009E73",
-  "C-Flag only" = "#0072B2",
-  "N-Flag only" = "#CC79A7",
-  "TRIP4 only" = "#D55E00",
+  "C-Flag only"  = "#0072B2",
+  "N-Flag only"  = "#CC79A7",
+  "TRIP4 only"   = "#D55E00",
   "Not enriched" = "grey80"
 )
 
-# Label validated proteins (both C+N)
 label_flag <- intersect(intersect(cflag_sig, nflag_sig), turbo_sig)
 
 p_flag <- ggplot(df_flag,
     aes(x = log2FC, y = neglog10p, color = flag_cat)) +
   geom_point(alpha = 0.6, size = 1.5) +
   scale_color_manual(values = flag_colors, name = NULL) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50") +
+  geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50") +
+  geom_vline(xintercept = LOG2FC_CUTOFF, linetype = "dashed", color = "grey50") +
   labs(
     x = expression(Log[2]~Fold~Change),
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
@@ -171,7 +181,7 @@ p_flag <- ggplot(df_flag,
   ) +
   geom_text_repel(
     data = df_flag[df_flag$gene %in% label_flag & !is.na(df_flag$log2FC), ],
-    aes(label = gene), size = 2.5, fontface = "bold",
+    aes(label = gene), size = 4, fontface = "bold",
     max.overlaps = 15, show.legend = FALSE, color = "black"
   ) +
   theme_poster() +
@@ -181,19 +191,105 @@ p_flag <- ggplot(df_flag,
 
 save_poster(p_flag, "volcano_flagip", width = 7, height = 6)
 
-#=============================================================================
-# 3. VENN DIAGRAM — TurboID vs C-Flag vs N-Flag
-#=============================================================================
-cat("[3/6] Venn diagram...\n")
+#---------------------------------------------------------------------------
+# A3-A5. CHX/DMSO VOLCANO PLOTS (new)
+# Generic helper: produce a colored volcano for a CHX/DMSO comparison.
+#   - enriched (CHX-side, log2FC > 0) in chx_enriched color
+#   - depleted (DMSO/WT-side, log2FC < 0) in dmso_enriched color
+#   - label top 15 per side by combined significance score
+#---------------------------------------------------------------------------
 
-# Use VennDiagram package if available, otherwise ggVennDiagram
+# Internal helper: build one CHX/DMSO volcano from a single experiment data frame.
+make_chx_volcano <- function(df, experiment_name, plot_title, out_name) {
+  if (is.null(df)) {
+    cat(sprintf("  SKIP (experiment not loaded): %s\n", experiment_name))
+    return(invisible(NULL))
+  }
+  cat(sprintf("[CHX] Building volcano for %s ...\n", experiment_name))
+
+  df <- df[!is.na(df$log2FC) & !is.na(df$padj), ]
+  df$neglog10p <- -log10(df$padj)
+
+  df$category <- "Not significant"
+  df$category[df$padj < P_VALUE_CUTOFF & df$log2FC >= LOG2FC_CUTOFF]  <- "Enriched (CHX side)"
+  df$category[df$padj < P_VALUE_CUTOFF & df$log2FC <= -LOG2FC_CUTOFF] <- "Depleted (DMSO side)"
+
+  df$category <- factor(df$category,
+    levels = c("Enriched (CHX side)", "Depleted (DMSO side)", "Not significant"))
+
+  chx_colors <- c(
+    "Enriched (CHX side)"   = GLOBAL_COLORS["chx_enriched"],
+    "Depleted (DMSO side)"  = GLOBAL_COLORS["dmso_enriched"],
+    "Not significant"       = "grey80"
+  )
+
+  # Combined significance score for top-N labeling
+  df$score <- abs(df$log2FC) * df$neglog10p
+  top_up   <- head(df$gene[df$category == "Enriched (CHX side)"][
+    order(df$score[df$category == "Enriched (CHX side)"], decreasing = TRUE)], 15)
+  top_dn   <- head(df$gene[df$category == "Depleted (DMSO side)"][
+    order(df$score[df$category == "Depleted (DMSO side)"], decreasing = TRUE)], 15)
+  top_genes <- unique(c(top_up, top_dn))
+
+  p <- ggplot(df, aes(x = log2FC, y = neglog10p, color = category)) +
+    geom_point(alpha = 0.6, size = 1.5) +
+    scale_color_manual(values = chx_colors, name = NULL) +
+    geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50") +
+    geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF),
+               linetype = "dashed", color = "grey50") +
+    labs(
+      x = expression(Log[2]~Fold~Change),
+      y = expression(-Log[10]~(adjusted~italic(p)~value)),
+      title = plot_title
+    ) +
+    geom_text_repel(
+      data = df[df$gene %in% top_genes, ],
+      aes(label = gene), size = 4, fontface = "bold",
+      max.overlaps = 20, show.legend = FALSE, color = "black"
+    ) +
+    theme_poster() +
+    theme(legend.position = c(0.98, 0.98),
+          legend.justification = c(1, 1),
+          legend.background = element_rect(fill = "white", color = "grey80"))
+
+  save_poster(p, out_name, width = 7, height = 6)
+}
+
+# A3. CHX vs DMSO
+make_chx_volcano(
+  df             = find_experiment(experiments, "TRIP4_CHX_vs_TRIP4_DMSO"),
+  experiment_name = "TRIP4_CHX_vs_TRIP4_DMSO",
+  plot_title      = "CHX vs DMSO (TRIP4)",
+  out_name        = "volcano_chx_vs_dmso"
+)
+
+# A4. CHX vs WT
+make_chx_volcano(
+  df             = find_experiment(experiments, "TRIP4_CHX_vs_WT"),
+  experiment_name = "TRIP4_CHX_vs_WT",
+  plot_title      = "CHX vs Wild Type",
+  out_name        = "volcano_chx_vs_wt"
+)
+
+# A5. DMSO vs WT
+make_chx_volcano(
+  df             = find_experiment(experiments, "TRIP4_DMSO_vs_WT"),
+  experiment_name = "TRIP4_DMSO_vs_WT",
+  plot_title      = "DMSO vs Wild Type",
+  out_name        = "volcano_dmso_vs_wt"
+)
+
+#=============================================================================
+# VENN DIAGRAM — TurboID vs C-Flag vs N-Flag (existing, fonts updated)
+#=============================================================================
+cat("[VENN] TurboID vs C-Flag vs N-Flag...\n")
+
 venn_data <- list(
   "TurboID TRIP4" = turbo_sig,
   "C-Flag IP" = cflag_sig,
   "N-Flag IP" = nflag_sig
 )
 
-# Try ggVennDiagram (cleaner, ggplot-based, theme-compatible)
 p_venn <- tryCatch({
   library(ggVennDiagram)
   p <- ggVennDiagram(venn_data,
@@ -207,7 +303,6 @@ p_venn <- tryCatch({
   p
 }, error = function(e) {
   cat("  ggVennDiagram not available, trying VennDiagram...\n")
-  # Fallback: static VennDiagram
   library(VennDiagram)
   venn_file <- file.path(POSTER_FIG_DIR, "venn_overlap.pdf")
   venn.plot <- venn.diagram(
@@ -218,13 +313,13 @@ p_venn <- tryCatch({
     alpha = 0.5,
     cat.cex = 1.2,
     cex = 1.5,
-    fontfamily = "sans",
-    cat.fontfamily = "sans",
+    fontfamily = "Arial",
+    cat.fontfamily = "Arial",
     main = "TurboID vs Flag IP Overlap",
     main.cex = 1.5,
-    main.fontfamily = "sans"
+    main.fontfamily = "Arial"
   )
-  NULL  # Return NULL — figure already saved by venn.diagram
+  NULL
 })
 
 if (!is.null(p_venn)) {
@@ -232,14 +327,22 @@ if (!is.null(p_venn)) {
 }
 
 #=============================================================================
-# 4-6. GO + KEGG DOTPLOTS — read from saved tables, re-plot with theme_poster
+# SECTION B — GO DOT PLOTS AND BAR PLOTS
+# Reads GO/KEGG result CSVs from output/tables/, creates BOTH a dotplot
+# and a barplot for each table found.
 #=============================================================================
-# This reads the CSV tables generated by targeted-go (R/11) and
-# flagip-validated-go (R/30) and creates clean dotplots.
-#
-# If tables don't exist yet, prints a warning.
 
-# Helper: create a standardized dotplot from a GO/KEGG result table
+# Find the most recent table file matching a pattern
+find_latest_table <- function(pattern) {
+  files <- list.files(TABLE_DIR, pattern = pattern, full.names = TRUE)
+  if (length(files) == 0) return(NULL)
+  files[order(file.info(files)$mtime, decreasing = TRUE)][1]
+}
+
+# ---- Helper: standardized dotplot from a GO/KEGG result table ----
+#  - Capitalizes first letter of each GO term
+#  - BIG dots: size range c(4, 10)
+#  - Synced legends: size override matches actual dot range
 make_poster_dotplot <- function(table_path, title_text, max_terms = 15) {
   if (!file.exists(table_path)) {
     cat(sprintf("  SKIP (table not found): %s\n", basename(table_path)))
@@ -252,17 +355,23 @@ make_poster_dotplot <- function(table_path, title_text, max_terms = 15) {
     return(NULL)
   }
 
-  # Parse GeneRatio (stored as "3/10" string → numeric)
+  # Parse GeneRatio (stored as "3/10" string -> numeric)
   if ("GeneRatio" %in% names(df)) {
     df$ratio <- sapply(df$GeneRatio, function(x) {
       parts <- as.numeric(strsplit(as.character(x), "/")[[1]])
       if (length(parts) == 2 && parts[2] > 0) parts[1] / parts[2] else NA
     })
   } else {
+    cat(sprintf("  SKIP (no GeneRatio column): %s\n", basename(table_path)))
     return(NULL)
   }
 
-  # Sort by p.adjust (most significant at top)
+  # Capitalize GO terms
+  if ("Description" %in% names(df)) {
+    df$Description <- capitalize_first(df$Description)
+  }
+
+  # Sort by p.adjust (most significant first), keep top N
   df <- df[order(df$p.adjust), ]
   df <- head(df, max_terms)
   df$Description <- factor(df$Description, levels = rev(df$Description))
@@ -272,56 +381,142 @@ make_poster_dotplot <- function(table_path, title_text, max_terms = 15) {
     geom_point() +
     scale_color_gradient(low = "#D55E00", high = "#0072B2",
                          name = "p-adjusted") +
-    scale_size_continuous(name = "Gene Count", range = c(2, 6)) +
+    scale_size_continuous(name = "Gene Count", range = c(4, 10)) +
     labs(
       x = "Gene Ratio",
       y = NULL,
       title = title_text
     ) +
+    guides(
+      size  = guide_legend(override.aes = list(size = c(4, 7, 10)),
+                           title.position = "top"),
+      color = guide_colorbar(title.position = "top",
+                             barwidth = 1.5, barheight = 8)
+    ) +
     theme_poster() +
-    theme(axis.text.y = element_text(size = POSTER_FONTS$axis_text),
-          legend.position = "right")
+    theme(legend.position = "right",
+          legend.box = "vertical")
 }
 
-# Find the most recent table file matching a pattern
-find_latest_table <- function(pattern) {
-  files <- list.files(TABLE_DIR, pattern = pattern, full.names = TRUE)
-  if (length(files) == 0) return(NULL)
-  files[order(file.info(files)$mtime, decreasing = TRUE)][1]
+# ---- Helper: standardized barplot from a GO/KEGG result table ----
+#  - Horizontal bar plot (y = Description, x = Count)
+#  - Bar fill colored by p.adjust gradient (same colors as dotplot)
+#  - Capitalizes GO terms
+#  - theme_poster()
+make_poster_barplot <- function(table_path, title_text, max_terms = 15) {
+  if (!file.exists(table_path)) {
+    cat(sprintf("  SKIP (table not found): %s\n", basename(table_path)))
+    return(NULL)
+  }
+
+  df <- read.csv(table_path, stringsAsFactors = FALSE)
+  if (nrow(df) == 0) {
+    cat(sprintf("  SKIP (empty table): %s\n", basename(table_path)))
+    return(NULL)
+  }
+
+  if (!("Count" %in% names(df))) {
+    cat(sprintf("  SKIP (no Count column): %s\n", basename(table_path)))
+    return(NULL)
+  }
+
+  # Capitalize GO terms
+  if ("Description" %in% names(df)) {
+    df$Description <- capitalize_first(df$Description)
+  }
+
+  # Sort by p.adjust (most significant first), keep top N
+  df <- df[order(df$p.adjust), ]
+  df <- head(df, max_terms)
+  df$Description <- factor(df$Description, levels = rev(df$Description))
+
+  ggplot(df, aes(x = Count, y = Description, fill = p.adjust)) +
+    geom_col() +
+    scale_fill_gradient(low = "#D55E00", high = "#0072B2",
+                        name = "p-adjusted") +
+    labs(
+      x = "Gene Count",
+      y = NULL,
+      title = title_text
+    ) +
+    guides(
+      fill = guide_colorbar(title.position = "top",
+                            barwidth = 1.5, barheight = 8)
+    ) +
+    theme_poster() +
+    theme(legend.position = "right")
 }
 
-# ---- GO BP dotplot (TurboID) ----
-cat("[4/6] GO BP dotplot...\n")
-go_bp_file <- find_latest_table("targeted_GO_turbo_trip4.*BP")
-if (!is.null(go_bp_file)) {
-  p_go <- make_poster_dotplot(go_bp_file,
-    "GO Biological Process — TurboID TRIP4")
-  if (!is.null(p_go)) save_poster(p_go, "go_bp_turbo", width = 8, height = 6)
-} else {
-  cat("  SKIP: Run 'make targeted-go' first\n")
-}
+# ---- Generate dotplots AND barplots for every available GO/KEGG table ----
+# For each (pattern, output_prefix, title) entry below, we look up the most
+# recent matching CSV in TABLE_DIR. If found, we create BOTH a dotplot and a
+# barplot with theme_poster().
+go_table_specs <- list(
+  # TurboID targeted GO/KEGG
+  list(pattern = "targeted_GO_turbo_trip4.*BP",   prefix = "go_bp_turbo",
+       title = "GO Biological Process — TurboID TRIP4"),
+  list(pattern = "targeted_GO_turbo_trip4.*MF",   prefix = "go_mf_turbo",
+       title = "GO Molecular Function — TurboID TRIP4"),
+  list(pattern = "targeted_GO_turbo_trip4.*CC",   prefix = "go_cc_turbo",
+       title = "GO Cellular Component — TurboID TRIP4"),
+  list(pattern = "targeted_KEGG_turbo_trip4",     prefix = "kegg_turbo",
+       title = "KEGG Pathways — TurboID TRIP4"),
 
-# ---- KEGG dotplot (TurboID) ----
-cat("[5/6] KEGG dotplot...\n")
-kegg_file <- find_latest_table("targeted_KEGG_turbo_trip4")
-if (!is.null(kegg_file)) {
-  p_kegg <- make_poster_dotplot(kegg_file,
-    "KEGG Pathways — TurboID TRIP4")
-  if (!is.null(p_kegg)) save_poster(p_kegg, "kegg_turbo", width = 8, height = 6)
-} else {
-  cat("  SKIP: Run 'make targeted-go' first (KEGG runs automatically)\n")
-}
+  # CHX-enriched GO
+  list(pattern = "GO_CHX_enriched.*BP", prefix = "go_bp_chx_enriched",
+       title = "GO BP — CHX Enriched"),
+  list(pattern = "GO_CHX_enriched.*MF", prefix = "go_mf_chx_enriched",
+       title = "GO MF — CHX Enriched"),
+  list(pattern = "GO_CHX_enriched.*CC", prefix = "go_cc_chx_enriched",
+       title = "GO CC — CHX Enriched"),
 
-# ---- Validated GO BP dotplot (C-Flag + N-Flag) ----
-cat("[6/6] Validated GO BP dotplot...\n")
-val_go_file <- find_latest_table("flagip_GO_validated_both.*BP")
-if (!is.null(val_go_file)) {
-  p_val <- make_poster_dotplot(val_go_file,
-    "GO BP — Validated by Both C-Flag + N-Flag")
-  if (!is.null(p_val)) save_poster(p_val, "go_bp_validated", width = 8, height = 6)
-} else {
-  cat("  SKIP: Run 'make flagip-validated-go' first\n")
+  # CHX-depleted GO (= DMSO-enriched side)
+  list(pattern = "GO_CHX_depleted.*BP", prefix = "go_bp_chx_depleted",
+       title = "GO BP — CHX Depleted (DMSO side)"),
+  list(pattern = "GO_CHX_depleted.*MF", prefix = "go_mf_chx_depleted",
+       title = "GO MF — CHX Depleted (DMSO side)"),
+  list(pattern = "GO_CHX_depleted.*CC", prefix = "go_cc_chx_depleted",
+       title = "GO CC — CHX Depleted (DMSO side)"),
+
+  # Flag-IP validated GO (both C+N Flag)
+  list(pattern = "flagip_GO_validated_both.*BP", prefix = "go_bp_validated",
+       title = "GO BP — Validated by Both C-Flag + N-Flag"),
+  list(pattern = "flagip_GO_validated_both.*MF", prefix = "go_mf_validated",
+       title = "GO MF — Validated by Both C-Flag + N-Flag"),
+  list(pattern = "flagip_GO_validated_both.*CC", prefix = "go_cc_validated",
+       title = "GO CC — Validated by Both C-Flag + N-Flag"),
+
+  # Any additional KEGG tables for CHX/DMSO comparisons
+  list(pattern = "KEGG_CHX_enriched",   prefix = "kegg_chx_enriched",
+       title = "KEGG Pathways — CHX Enriched"),
+  list(pattern = "KEGG_CHX_depleted",   prefix = "kegg_chx_depleted",
+       title = "KEGG Pathways — CHX Depleted (DMSO side)")
+)
+
+cat("\n[GO/KEGG] Generating dotplots and barplots...\n")
+go_count <- 0
+for (spec in go_table_specs) {
+  table_file <- find_latest_table(spec$pattern)
+  if (is.null(table_file)) {
+    cat(sprintf("  SKIP (no table matching %s)\n", spec$pattern))
+    next
+  }
+
+  # Dotplot
+  p_dot <- make_poster_dotplot(table_file, spec$title)
+  if (!is.null(p_dot)) {
+    save_poster(p_dot, paste0(spec$prefix, "_dot"), width = 8, height = 6)
+    go_count <- go_count + 1
+  }
+
+  # Barplot
+  p_bar <- make_poster_barplot(table_file, spec$title)
+  if (!is.null(p_bar)) {
+    save_poster(p_bar, paste0(spec$prefix, "_bar"), width = 8, height = 6)
+    go_count <- go_count + 1
+  }
 }
+cat(sprintf("  Generated %d GO/KEGG dot/bar plots.\n", go_count))
 
 #=============================================================================
 # DONE
