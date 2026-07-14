@@ -344,7 +344,6 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
   ggplot2::labs(
     x = expression(Log[2]~Fold~Change),
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
-    title = "TRIP4 TurboID vs WT — STRING Physical Network",
     caption = sprintf("%d of %d enriched proteins in network (%d%%)", enriched_in_net, enriched_total, pct_in_net)
   ) +
   theme_poster(font_size = 24)

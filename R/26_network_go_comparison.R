@@ -275,13 +275,12 @@ for (ont in c("BP", "CC", "MF")) {
                                    limits = c(min(cnt), max(cnt))) +
     ggplot2::guides(size = size_legend_guide()) +
     ggplot2::scale_y_discrete(labels = capitalize_first) +
-    ggplot2::labs(
-      title = sprintf("GO Enrichment: In-Network (%d genes) — %s",
-                      length(in_network_genes), ONT_NAMES[ont]),
-      x = "Gene Ratio") +
+    ggplot2::labs(x = "Gene Ratio") +
     theme_poster() +
     ggplot2::theme(axis.text =
-      ggplot2::element_text(size = 22, color = "black"))
+      ggplot2::element_text(size = 22, color = "black"),
+      legend.title = ggplot2::element_text(size = 18, face = "bold"),
+      legend.text  = ggplot2::element_text(size = 18))
 
   filename <- sprintf("network_go_comparison_%s", ont)
   save_figure(p_in, filename, width = 18, height = max(14, n_show * 0.8))
@@ -353,11 +352,10 @@ run_kegg_for_split <- function(genes, set_name, universe) {
                                      limits = c(min(cnt_k), max(cnt_k))) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::guides(size = size_legend_guide()) +
-      ggplot2::labs(
-        title = sprintf("KEGG: %s (%d genes)", set_name, length(genes)),
-        x = "Gene Ratio"
-      ) +
-      theme_poster()
+      ggplot2::labs(x = "Gene Ratio") +
+      theme_poster() +
+      ggplot2::theme(legend.title = ggplot2::element_text(size = 18, face = "bold"),
+                     legend.text  = ggplot2::element_text(size = 18))
     save_figure(p, sprintf("network_KEGG_%s_dotplot", set_name),
                 width = 18, height = max(14, n_show * 0.8))
 

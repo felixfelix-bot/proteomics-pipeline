@@ -127,8 +127,7 @@ run_targeted_go <- function(genes, set_name, universe) {
     # Build descriptive title: "GO analysis of TRIP4 TurboID vs Wild Type — Biological Process"
     dot_title <- paste0(set_title, " — ", ONT_LABELS[ont])
 
-    p_dot <- dotplot(result_simple, showCategory = n_show,
-                     title = dot_title)
+    p_dot <- dotplot(result_simple, showCategory = n_show)
     cnt_dot <- p_dot$data$Count
     p_dot <- p_dot +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
@@ -141,7 +140,9 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster() +
       ggplot2::theme(axis.text =
-        ggplot2::element_text(size = 22, color = "black"))
+        ggplot2::element_text(size = 22, color = "black"),
+        legend.title = ggplot2::element_text(size = 18, face = "bold"),
+        legend.text  = ggplot2::element_text(size = 18))
     save_figure(p_dot, paste0(prefix, "_dotplot"), width = 18, height = max(14, n_show * 0.8))
 
     # ---- Barplot ----
@@ -152,8 +153,7 @@ run_targeted_go <- function(genes, set_name, universe) {
     n_show_bar <- min(15, nrow(simple_df))
     fig_height_bar <- max(7, n_show_bar * 0.5)
 
-    p_bar <- barplot(result_simple, showCategory = n_show_bar,
-                     title = dot_title) +
+    p_bar <- barplot(result_simple, showCategory = n_show_bar) +
       ggplot2::scale_fill_gradient(low = "#D55E00", high = "#0072B2",
                                     name = "p-adjusted value") +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
@@ -217,8 +217,7 @@ run_targeted_kegg <- function(genes, set_name, universe) {
     set_title <- SET_TITLES[[set_name]]
     if (is.null(set_title)) set_title <- gsub("_", " ", set_name)
 
-    p_kegg <- enrichplot::dotplot(ekegg, showCategory = n_show,
-                                  title = paste0(set_title, " — KEGG Pathways"))
+    p_kegg <- enrichplot::dotplot(ekegg, showCategory = n_show)
     cnt_k <- p_kegg$data$Count
     p_kegg <- p_kegg +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
@@ -229,7 +228,9 @@ run_targeted_kegg <- function(genes, set_name, universe) {
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
-      theme_poster()
+      theme_poster() +
+      ggplot2::theme(legend.title = ggplot2::element_text(size = 18, face = "bold"),
+                     legend.text  = ggplot2::element_text(size = 18))
     save_figure(p_kegg, paste0(prefix, "_dotplot"),
                 width = 18, height = max(14, n_show * 0.8))
 
