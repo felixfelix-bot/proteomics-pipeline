@@ -254,7 +254,15 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value))
   ) +
   ggplot2::coord_cartesian(xlim = c(-7, NA)) +
-  theme_poster()
+  theme_poster() +
+  ggplot2::theme(
+    legend.position = c(0.02, 0.98),
+    legend.justification = c(0, 1),
+    legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
+    legend.key.size = ggplot2::unit(0.35, "cm"),
+    legend.box.margin = ggplot2::margin(1, 1, 1, 1),
+    legend.spacing.y = ggplot2::unit(0.1, "cm")
+  )
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",
             width = 16, height = 12)
