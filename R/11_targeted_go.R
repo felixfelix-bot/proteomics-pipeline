@@ -135,7 +135,7 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(cnt_dot, n_breaks = 8),
                                      limits = c(min(cnt_dot), max(cnt_dot))) +
-      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::scale_y_discrete(labels = wrap_go_labels) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster() +
@@ -156,7 +156,7 @@ run_targeted_go <- function(genes, set_name, universe) {
     p_bar <- barplot(result_simple, showCategory = n_show_bar) +
       ggplot2::scale_fill_gradient(low = "#D55E00", high = "#0072B2",
                                     name = "p-adjusted value") +
-      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::scale_y_discrete(labels = wrap_go_labels) +
       theme_poster() +
       ggplot2::theme(axis.text =
         ggplot2::element_text(size = 22, color = "black"))
@@ -225,7 +225,7 @@ run_targeted_kegg <- function(genes, set_name, universe) {
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(cnt_k, n_breaks = 8),
                                      limits = c(min(cnt_k), max(cnt_k))) +
-      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::scale_y_discrete(labels = wrap_go_labels) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster() +

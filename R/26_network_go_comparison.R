@@ -274,7 +274,7 @@ for (ont in c("BP", "CC", "MF")) {
                                    breaks = make_size_breaks(cnt, n_breaks = 8),
                                    limits = c(min(cnt), max(cnt))) +
     ggplot2::guides(size = size_legend_guide()) +
-    ggplot2::scale_y_discrete(labels = capitalize_first) +
+    ggplot2::scale_y_discrete(labels = wrap_go_labels) +
     ggplot2::labs(x = "Gene Ratio") +
     theme_poster() +
     ggplot2::theme(axis.text =
@@ -350,7 +350,7 @@ run_kegg_for_split <- function(genes, set_name, universe) {
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(cnt_k, n_breaks = 8),
                                      limits = c(min(cnt_k), max(cnt_k))) +
-      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::scale_y_discrete(labels = wrap_go_labels) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster() +
