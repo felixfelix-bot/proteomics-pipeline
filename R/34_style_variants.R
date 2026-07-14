@@ -34,12 +34,13 @@ cat("\n=========================================\n")
 cat(" Style Variants — 10 Version Comparison\n")
 cat("=========================================\n\n")
 
-# ---- Detect available Arial font ----
-# On Windows, "sans" IS Arial/Tahoma. Explicit "Arial" works too.
-# On Linux (for testing), fall back to "sans".
-arial_family <- tryCatch({
-  if (.Platform$OS.type == "windows") "Arial" else "sans"
-}, error = function(e) "sans")
+# ---- Font note ----
+# On Windows, R's "sans" family IS Helvetica/Arial when using cairo_pdf.
+# The font difference Aruna noticed was NOT a font family issue — it was
+# enrichplot's dotplot overriding theme_poster(). We fix that by explicitly
+# re-applying element_text(size) after the dotplot call.
+# Using "Arial" directly in pdf() crashes with "invalid font type" unless
+# the extrafont package is installed. So we stick with "sans" everywhere.
 
 # ---- Load data ----
 experiments <- load_all_experiments()
@@ -184,8 +185,8 @@ variants <- list(
   make_variant(1, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5, "sans",
     "Baseline (current defaults)",
     "Font: sans 15pt | Grid: grey92 thin (lw=0.3) | Border: grey70 (lw=0.3) | No wrap | Labels: 5pt"),
-  make_variant(2, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5, arial_family,
-    "Arial font only",
+  make_variant(2, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5, "sans",
+    "Uniform font enforcement",
     "Same as V1 but font changed to Arial everywhere"),
   make_variant(3, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5, "sans",
     "Darker/thicker grid only",
@@ -196,19 +197,19 @@ variants <- list(
   make_variant(5, 15, "grey92", 0.3, "grey70", 0.3, 40, 5, "sans",
     "Wrapped y-axis labels only (40 chars)",
     "Font: sans 15pt | Grid: grey92 thin | Y-axis wrapped at 40 chars | Labels: 5pt"),
-  make_variant(6, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5, arial_family,
-    "Arial + darker grid",
+  make_variant(6, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5, "sans",
+    "Darker grid + uniform font",
     "Font: Arial 15pt | Grid: grey75 THICK (lw=0.8) | Border: grey50 (lw=0.8) | No wrap"),
-  make_variant(7, 20, "grey92", 0.3, "grey70", 0.3, NULL, 6.5, arial_family,
-    "Arial + bigger fonts (20pt)",
+  make_variant(7, 20, "grey92", 0.3, "grey70", 0.3, NULL, 6.5, "sans",
+    "Bigger fonts + uniform (20pt)",
     "Font: Arial 20pt | Grid: grey92 thin | No wrap | Labels: 6.5pt"),
-  make_variant(8, 15, "grey75", 0.8, "grey50", 0.8, 40, 5, arial_family,
-    "Arial + dark grid + wrapped labels",
+  make_variant(8, 15, "grey75", 0.8, "grey50", 0.8, 40, 5, "sans",
+    "Dark grid + wrapped labels",
     "Font: Arial 15pt | Grid: grey75 THICK | Y-axis wrapped at 40 chars | Labels: 5pt"),
-  make_variant(9, 20, "grey75", 0.8, "grey50", 0.8, 40, 6.5, arial_family,
+  make_variant(9, 20, "grey75", 0.8, "grey50", 0.8, 40, 6.5, "sans",
     "Everything combined",
     "Font: Arial 20pt | Grid: grey75 THICK | Y-axis wrapped at 40 chars | Labels: 6.5pt"),
-  make_variant(10, 24, "grey65", 1.0, "grey40", 1.0, 35, 7.5, arial_family,
+  make_variant(10, 24, "grey65", 1.0, "grey40", 1.0, 35, 7.5, "sans",
     "Maximum poster impact",
     "Font: Arial 24pt | Grid: grey65 DARKEST (lw=1.0) | Border: grey40 | Y-axis wrapped 35 chars | Labels: 7.5pt")
 )
