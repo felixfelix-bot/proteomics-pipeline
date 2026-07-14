@@ -127,6 +127,7 @@ $singleTargets = @{
     "lydia-volcano"        = "lydia_network_volcano"
     "pathway-network"      = "pathway_network"
     "poster-figures"       = "poster_figures"
+    "dotplot-variants"     = "dotplot_variants"
     "diagnostics"          = "diagnostics"
 }
 
