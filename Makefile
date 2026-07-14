@@ -57,6 +57,7 @@ TABLE_DIR  := output/tables
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
         string-network crac-network venn-overflow-examples gsea pathway-network lydia-volcano chx-common \
         all-volcano all-venn all-targeted targeted-plots \
+        volcano-plots \
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all \
@@ -105,7 +106,8 @@ help:
 	@echo "  make chx-kegg-crac   KEGG on CHX + CRAC/TurboID overlap + labeled volcano"
 	@echo ""
 	@echo "Group targets:"
-	@echo "  make all-volcano       All volcano plots (incl. Lydia network)"
+	@echo "  make volcano-plots      All volcano plots (targeted + flagIP + Lydia)"
+	@echo "  make all-volcano         All volcano plots (incl. Lydia network)"
 	@echo "  make aruna-all         Run EVERYTHING (fast then slow)"
 	@echo "  make all-plots         Run everything + poster figures (ONE COMMAND)"
 	@echo "  make poster            Generate ALL figures + compile LaTeX poster"
@@ -302,6 +304,9 @@ shinygo-compare: check clean-old ## Compare ShinyGO export with STRING pipeline
 all-volcano: targeted-volcano flagip-volcano lydia-volcano ## All volcano plot targets
 	@echo ""
 	@echo "All volcano plots complete."
+
+volcano-plots: all-volcano ## Alias: all volcano plots (targeted + flagip + lydia)
+	@echo ""
 
 all-venn: venn targeted-venn ## All Venn diagram targets
 	@echo ""
