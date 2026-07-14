@@ -1,17 +1,29 @@
 ###############################################################################
 # 34_style_variants.R
-# Generates a multi-page PDF comparing different styling options for
-# poster figures. Each page shows one variant with a description header.
+# Generates a multi-page PDF with 10 numbered style variants of poster figures.
+# Each variant is one page: a GO dotplot on top, volcano below.
 #
 # Run:  Rscript R/run_step.R style_variants
 # Output: output/figures/style_variants.pdf
 #
-# The script picks representative figures (one GO dotplot + one volcano)
-# and renders them in 6 different style variants so Aruna can pick
-# which elements she likes best.
+# Page 1: Description / Legend
+# Pages 2-11: Variants 1-10 (each = 1 GO dotplot page + 1 volcano page)
+#
+# Variations covered:
+#   V1:  Baseline (current defaults)
+#   V2:  Arial font only
+#   V3:  Darker/thicker grid only
+#   V4:  Bigger fonts only (20pt)
+#   V5:  Wrapped y-axis labels only (40 chars)
+#   V6:  Arial + darker grid
+#   V7:  Arial + bigger fonts
+#   V8:  Arial + darker grid + wrapped labels
+#   V9:  Everything combined (Arial + dark grid + big fonts + wrapped labels)
+#   V10: Maximum poster impact (Arial, 24pt, darkest grid, tight wrap)
 ###############################################################################
 
 library(ggplot2)
+library(grepel)  # may not exist as standalone; ggrepel below
 library(ggrepel)
 library(clusterProfiler)
 library(org.Hs.eg.db)
@@ -20,14 +32,21 @@ library(stringr)
 source("R/00_theme.R")
 
 cat("\n=========================================\n")
-cat(" Style Variants — Multi-Version Comparison\n")
+cat(" Style Variants — 10 Version Comparison\n")
 cat("=========================================\n\n")
 
-# ---- Load data (same as other scripts) ----
+# ---- Detect available Arial font ----
+# On Windows, "sans" IS Arial/Tahoma. Explicit "Arial" works too.
+# On Linux (for testing), fall back to "sans".
+arial_family <- tryCatch({
+  if (.Platform$OS.type == "windows") "Arial" else "sans"
+}, error = function(e) "sans")
+
+# ---- Load data ----
 experiments <- load_all_experiments()
 
-# ---- Build a representative GO dotplot with long y-axis labels ----
-build_go_dotplot <- function(variant_theme, wrap_width = NULL, font_scale = 1) {
+# ---- Build a representative GO dotplot ----
+build_go_dotplot <- function(variant_theme, wrap_width = NULL, font_family = "sans") {
   turbo_exp <- "BK467_TRIP4_vs_BK467_WT"
   cflag_exp <- "BK516_Cflag_vs_BK516_Ctrl"
   nflag_exp <- "BK516_Nflag_vs_BK516_Ctrl"
@@ -79,18 +98,18 @@ build_go_dotplot <- function(variant_theme, wrap_width = NULL, font_scale = 1) {
     guides(size = size_legend_guide()) +
     labs(title = "Flag IP Validated — Biological Process",
          x = "Gene Ratio") +
-    variant_theme
+    variant_theme +
+    theme(text = element_text(family = font_family))
 
   return(p)
 }
 
-# ---- Build a representative volcano plot with gene labels ----
-build_volcano <- function(variant_theme, label_size = 5) {
+# ---- Build a representative volcano plot ----
+build_volcano <- function(variant_theme, label_size = 5, font_family = "sans") {
   df <- find_experiment(experiments, "BK467_TRIP4_vs_BK467_WT")
   if (is.null(df)) stop("Missing experiment")
 
   interactors <- read_interactors()
-  sig <- df[df$padj < P_VALUE_CUTOFF & abs(df$log2FC) >= LOG2FC_CUTOFF & !is.na(df$gene), ]
   toPlot <- data.frame(
     log2FC = df$log2FC,
     neglog10p = -log10(df$padj),
@@ -108,15 +127,10 @@ build_volcano <- function(variant_theme, label_size = 5) {
     "Enriched in WT"    = "#0072B2",
     "Not significant"   = "#D0D0D0"
   )
-  labels <- c(
-    "Enriched in TRIP4" = "Enriched in TRIP4",
-    "Enriched in WT"    = "Enriched in WT",
-    "Not significant"   = "Not significant"
-  )
 
   p <- ggplot(toPlot, aes(x = log2FC, y = neglog10p, color = category)) +
     geom_point(alpha = 0.5, size = 2.5) +
-    scale_color_manual(values = colors, labels = labels, name = NULL, drop = FALSE) +
+    scale_color_manual(values = colors, name = NULL, drop = FALSE) +
     guides(color = guide_legend(override.aes = list(size = 5, alpha = 1))) +
     geom_text_repel(
       data = label_data,
@@ -125,8 +139,10 @@ build_volcano <- function(variant_theme, label_size = 5) {
       max.overlaps = 50, show.legend = FALSE,
       bg.color = "white", bg.r = 0.15
     ) +
-    geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed", color = "grey50", linewidth = 0.3) +
-    geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    geom_hline(yintercept = -log10(P_VALUE_CUTOFF), linetype = "dashed",
+               color = "grey50", linewidth = 0.3) +
+    geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed",
+               color = "grey50", linewidth = 0.3) +
     labs(
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
@@ -134,137 +150,148 @@ build_volcano <- function(variant_theme, label_size = 5) {
     ) +
     variant_theme +
     theme(
+      text = element_text(family = font_family),
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
-      legend.background = element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      coord_cartesian(clip = "off")  # not valid here, but keeping for compatibility
+      legend.background = element_rect(fill = "white", color = "grey80", linewidth = 0.3)
     )
 
   return(p)
 }
 
-# ---- Helper: add title annotation to each variant ----
-annotate_variant <- function(plot, variant_num, description) {
-  title_text <- sprintf("Variant %d: %s", variant_num, description)
-  plot + labs(title = title_text, caption = description)
+# ============================================================
+# DEFINE 10 VARIANTS
+# ============================================================
+
+make_variant <- function(num, font_sz, grid_col, grid_lw, border_col, border_lw,
+                         wrap_w, label_sz, family, short_desc, long_desc) {
+  list(
+    num = num,
+    theme = theme_poster(base_family = family, font_size = font_sz) +
+      theme(
+        panel.grid.major = element_line(color = grid_col, linewidth = grid_lw),
+        panel.grid.minor = element_line(color = grid_col, linewidth = grid_lw * 0.5),
+        panel.border = element_rect(fill = NA, color = border_col, linewidth = border_lw)
+      ),
+    wrap = wrap_w,
+    label_size = label_sz,
+    family = family,
+    short_desc = short_desc,
+    long_desc = long_desc
+  )
 }
 
-# ---- Define 6 theme variants ----
-
-# Variant 1: BASELINE (current theme_poster defaults)
-v1_theme <- theme_poster(font_size = 15)
-v1_desc <- "Baseline (current: font=15pt, grid=grey92 thin, no wrap)"
-v1_wrap <- NULL
-v1_label_size <- 5
-
-# Variant 2: DARKER THICKER GRID only
-v2_theme <- theme_poster(font_size = 15) +
-  theme(
-    panel.grid.major = element_line(color = "grey75", linewidth = 0.8),
-    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
-    panel.border = element_rect(fill = NA, color = "grey50", linewidth = 0.8)
-  )
-v2_desc <- "Darker/thicker grid (grid=grey75 lw=0.8, border=grey50 lw=0.8)"
-v2_wrap <- NULL
-v2_label_size <- 5
-
-# Variant 3: BIGGER FONTS only
-v3_theme <- theme_poster(font_size = 20)
-v3_desc <- "Bigger fonts (font=20pt, grid=grey92 thin, no wrap)"
-v3_wrap <- NULL
-v3_label_size <- 6.5
-
-# Variant 4: WRAPPED Y-AXIS only
-v4_theme <- theme_poster(font_size = 15)
-v4_desc <- "Wrapped y-axis labels (40 chars, font=15pt)"
-v4_wrap <- 40
-v4_label_size <- 5
-
-# Variant 5: ALL COMBINED (best guess)
-v5_theme <- theme_poster(font_size = 20) +
-  theme(
-    panel.grid.major = element_line(color = "grey75", linewidth = 0.8),
-    panel.grid.minor = element_line(color = "grey85", linewidth = 0.4),
-    panel.border = element_rect(fill = NA, color = "grey50", linewidth = 0.8)
-  )
-v5_desc <- "All combined: bigger fonts (20pt) + darker grid + wrapped labels (40ch)"
-v5_wrap <- 40
-v5_label_size <- 6.5
-
-# Variant 6: POSTER-READY (even bigger, for reading from distance)
-v6_theme <- theme_poster(font_size = 24) +
-  theme(
-    panel.grid.major = element_line(color = "grey65", linewidth = 1.0),
-    panel.grid.minor = element_line(color = "grey80", linewidth = 0.5),
-    panel.border = element_rect(fill = NA, color = "grey40", linewidth = 1.0)
-  )
-v6_desc <- "Poster-ready: font=24pt, grid=grey65 lw=1.0, labels wrapped (35ch)"
-v6_wrap <- 35
-v6_label_size <- 7.5
-
-# ---- Generate all variants ----
 variants <- list(
-  list(theme = v1_theme, desc = v1_desc, wrap = v1_wrap, label = v1_label_size),
-  list(theme = v2_theme, desc = v2_desc, wrap = v2_wrap, label = v2_label_size),
-  list(theme = v3_theme, desc = v3_desc, wrap = v3_wrap, label = v3_label_size),
-  list(theme = v4_theme, desc = v4_desc, wrap = v4_wrap, label = v4_label_size),
-  list(theme = v5_theme, desc = v5_desc, wrap = v5_wrap, label = v5_label_size),
-  list(theme = v6_theme, desc = v6_desc, wrap = v6_wrap, label = v6_label_size)
+  make_variant(1, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5, "sans",
+    "Baseline (current defaults)",
+    "Font: sans 15pt | Grid: grey92 thin (lw=0.3) | Border: grey70 (lw=0.3) | No wrap | Labels: 5pt"),
+  make_variant(2, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5, arial_family,
+    "Arial font only",
+    "Same as V1 but font changed to Arial everywhere"),
+  make_variant(3, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5, "sans",
+    "Darker/thicker grid only",
+    "Font: sans 15pt | Grid: grey75 THICK (lw=0.8) | Border: grey50 (lw=0.8) | No wrap | Labels: 5pt"),
+  make_variant(4, 20, "grey92", 0.3, "grey70", 0.3, NULL, 6.5, "sans",
+    "Bigger fonts only (20pt)",
+    "Font: sans 20pt | Grid: grey92 thin | No wrap | Labels: 6.5pt"),
+  make_variant(5, 15, "grey92", 0.3, "grey70", 0.3, 40, 5, "sans",
+    "Wrapped y-axis labels only (40 chars)",
+    "Font: sans 15pt | Grid: grey92 thin | Y-axis wrapped at 40 chars | Labels: 5pt"),
+  make_variant(6, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5, arial_family,
+    "Arial + darker grid",
+    "Font: Arial 15pt | Grid: grey75 THICK (lw=0.8) | Border: grey50 (lw=0.8) | No wrap"),
+  make_variant(7, 20, "grey92", 0.3, "grey70", 0.3, NULL, 6.5, arial_family,
+    "Arial + bigger fonts (20pt)",
+    "Font: Arial 20pt | Grid: grey92 thin | No wrap | Labels: 6.5pt"),
+  make_variant(8, 15, "grey75", 0.8, "grey50", 0.8, 40, 5, arial_family,
+    "Arial + dark grid + wrapped labels",
+    "Font: Arial 15pt | Grid: grey75 THICK | Y-axis wrapped at 40 chars | Labels: 5pt"),
+  make_variant(9, 20, "grey75", 0.8, "grey50", 0.8, 40, 6.5, arial_family,
+    "Everything combined",
+    "Font: Arial 20pt | Grid: grey75 THICK | Y-axis wrapped at 40 chars | Labels: 6.5pt"),
+  make_variant(10, 24, "grey65", 1.0, "grey40", 1.0, 35, 7.5, arial_family,
+    "Maximum poster impact",
+    "Font: Arial 24pt | Grid: grey65 DARKEST (lw=1.0) | Border: grey40 | Y-axis wrapped 35 chars | Labels: 7.5pt")
 )
+
+# ============================================================
+# GENERATE PDF
+# ============================================================
 
 output_pdf <- file.path(FIGURE_DIR, "style_variants.pdf")
 
-# Open PDF device
-pdf(output_pdf, width = 14, height = 10)
+pdf(output_pdf, width = 12, height = 8)
 on.exit(dev.off())
 
-# ---- Page 0: Description / Legend ----
+# ---- Page 1: Description / Legend ----
 grid::grid.newpage()
 grid::grid.text(
   paste0(
     "PROTEOMICS POSTER — STYLE VARIANT COMPARISON\n\n",
-    "6 variants shown. Each page = one variant (GO dotplot + volcano side by side).\n\n",
-    "Variant 1: BASELINE — current defaults (font=15, grid=grey92 thin, no wrap)\n",
-    "Variant 2: DARKER GRID — grid=grey75 lw=0.8, border=grey50 lw=0.8\n",
-    "Variant 3: BIGGER FONTS — font=20pt\n",
-    "Variant 4: WRAPPED LABELS — y-axis wrapped at 40 characters\n",
-    "Variant 5: ALL COMBINED — font=20 + darker grid + wrapped (40ch)\n",
-    "Variant 6: POSTER-READY — font=24, darkest grid, wrapped (35ch)\n\n",
-    "Tell me which variant number you like for EACH element:\n",
-    "  Grid lines, Font size, Label wrapping, Gene label size\n",
-    "I will create a final version combining your choices."
+    "10 variants, each on its own page.\n",
+    "Odd pages = GO dotplot, Even pages = Volcano plot.\n",
+    "Page 2-3 = Variant 1, Page 4-5 = Variant 2, etc.\n\n",
+    "WHAT CHANGES BETWEEN VARIANTS:\n",
+    "  V1:  Baseline (current defaults: sans 15pt, light grid, no wrap)\n",
+    "  V2:  Arial font only (everything else same as V1)\n",
+    "  V3:  Darker/thicker grid lines (grey75, linewidth 0.8)\n",
+    "  V4:  Bigger fonts only (20pt)\n",
+    "  V5:  Wrapped y-axis labels only (40 characters per line)\n",
+    "  V6:  Arial + darker grid\n",
+    "  V7:  Arial + bigger fonts\n",
+    "  V8:  Arial + darker grid + wrapped labels\n",
+    "  V9:  Everything combined (Arial 20pt + dark grid + wrapped)\n",
+    "  V10: Maximum poster impact (Arial 24pt + darkest grid + tight wrap)\n\n",
+    "TELL ME: Which variant number do you like for each element?\n",
+    "  - Grid line darkness/thickness\n",
+    "  - Font size\n",
+    "  - Label wrapping (yes/no, which width?)\n",
+    "  - Gene label size on volcano plots\n",
+    "  - Font family (Arial vs sans)\n",
+    "I will create a FINAL version combining your choices."
   ),
-  gp = grid::gpar(fontsize = 14, fontface = "bold")
+  gp = grid::gpar(fontsize = 13, fontface = "bold")
 )
 
-# ---- Generate each variant page ----
+# ---- Pages 2+: Each variant (GO dotplot page + volcano page) ----
 for (i in seq_along(variants)) {
   v <- variants[[i]]
-  cat(sprintf("  Building variant %d/%d...\n", i, length(variants)))
+  cat(sprintf("  Building variant %d/%d: %s...\n", i, length(variants), v$short_desc))
 
+  # GO dotplot page
   go_plot <- tryCatch({
-    p <- build_go_dotplot(v$theme, wrap_width = v$wrap)
-    p + labs(title = sprintf("Variant %d — GO Dotplot\n%s", i, v$desc))
+    p <- build_go_dotplot(v$theme, wrap_width = v$wrap, font_family = v$family)
+    p + labs(
+      title = sprintf("V%d — GO Dotplot: %s", v$num, v$short_desc),
+      caption = v$long_desc
+    ) +
+    theme(plot.caption = element_text(size = 9, color = "grey40", hjust = 0))
   }, error = function(e) {
     ggplot() + annotate("text", x = 0.5, y = 0.5,
       label = paste("GO plot error:", conditionMessage(e)), size = 4) +
-      theme_void() + labs(title = sprintf("Variant %d — GO (error)", i))
+      theme_void() + labs(title = sprintf("V%d — GO (error)", v$num))
   })
   print(go_plot)
 
+  # Volcano page
   vol_plot <- tryCatch({
-    p <- build_volcano(v$theme, label_size = v$label)
-    p + labs(title = sprintf("Variant %d — Volcano\n%s", i, v$desc))
+    p <- build_volcano(v$theme, label_size = v$label_size, font_family = v$family)
+    p + labs(
+      title = sprintf("V%d — Volcano: %s", v$num, v$short_desc),
+      caption = v$long_desc
+    ) +
+    theme(plot.caption = element_text(size = 9, color = "grey40", hjust = 0))
   }, error = function(e) {
     ggplot() + annotate("text", x = 0.5, y = 0.5,
       label = paste("Volcano error:", conditionMessage(e)), size = 4) +
-      theme_void() + labs(title = sprintf("Variant %d — Volcano (error)", i))
+      theme_void() + labs(title = sprintf("V%d — Volcano (error)", v$num))
   })
   print(vol_plot)
 }
 
 cat(sprintf("\n  Saved: %s\n", output_pdf))
-cat(sprintf("  %d pages (1 description + %d variants)\n", length(variants) + 1, length(variants)))
+cat(sprintf("  %d pages (1 description + %d variants x 2 plots each)\n",
+            1 + length(variants) * 2, length(variants)))
 cat("\n=========================================\n")
 cat(" Style variants complete!\n")
 cat("=========================================\n")
