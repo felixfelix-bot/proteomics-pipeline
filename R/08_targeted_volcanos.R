@@ -121,13 +121,13 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    theme_poster(font_size = 14) +
+    theme_poster(font_size = 15) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      legend.text  = ggplot2::element_text(size = 10),
-      legend.title = ggplot2::element_text(size = 10),
+      legend.text  = ggplot2::element_text(size = 11),
+      legend.title = ggplot2::element_text(size = 11),
       legend.key.size = ggplot2::unit(0.35, "cm"),
       legend.box.margin = ggplot2::margin(1, 1, 1, 1),
       legend.spacing.y = ggplot2::unit(0.1, "cm")
@@ -219,13 +219,13 @@ make_main_volcano <- function(df, title) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    theme_poster(font_size = 14) +
+    theme_poster(font_size = 15) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      legend.text  = ggplot2::element_text(size = 10),
-      legend.title = ggplot2::element_text(size = 10, face = "bold")
+      legend.text  = ggplot2::element_text(size = 11),
+      legend.title = ggplot2::element_text(size = 11, face = "bold")
     )
 
   return(p)

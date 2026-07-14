@@ -175,8 +175,8 @@ for (ont in ONT_TO_RUN) {
     ggplot2::theme(
       legend.position = c(0.88, 0.72),
       legend.background = ggplot2::element_rect(fill = alpha("white", 0.85), color = "grey80", linewidth = 0.3),
-      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = POSTER_FONTS$subtitle, color = "grey30")
-    ) +
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 12, color = "grey30")
+    )
 
   # Add direction annotations with Aruna's colors
   p <- p +

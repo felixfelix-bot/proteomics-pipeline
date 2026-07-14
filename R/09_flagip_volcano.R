@@ -254,13 +254,13 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
     title = "TRIP4 TurboID vs WT — Flag IP Validation"
   ) +
-  theme_poster(font_size = 14) +
+  theme_poster(font_size = 15) +
   ggplot2::theme(
     legend.position = c(0.02, 0.98),
     legend.justification = c(0, 1),
     legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-    legend.text  = ggplot2::element_text(size = 10, face = "bold"),
-    legend.title = ggplot2::element_text(size = 10, face = "bold"),
+    legend.text  = ggplot2::element_text(size = 11, face = "bold"),
+    legend.title = ggplot2::element_text(size = 11, face = "bold"),
     legend.key.size = ggplot2::unit(0.35, "cm"),
     legend.box.margin = ggplot2::margin(1, 1, 1, 1),
     legend.spacing.y = ggplot2::unit(0.1, "cm")
