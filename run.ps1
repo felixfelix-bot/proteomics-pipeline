@@ -220,12 +220,24 @@ function Invoke-CollectAndCompile {
         Pop-Location
 
         if (Test-Path 'poster\poster_review.pdf') {
-            Write-Host ''
-            Write-Host '=========================================' -ForegroundColor Green
-            Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
-            Write-Host '=========================================' -ForegroundColor Green
-            # Open the PDF for immediate viewing
-            Start-Process 'poster\poster_review.pdf'
+            # Rename with commit hash so feedback references the right version
+            $gitHash = (git rev-parse --short HEAD 2>$null).Trim()
+            if ($gitHash) {
+                $versionedPdf = "poster\poster_review_${gitHash}.pdf"
+                Copy-Item 'poster\poster_review.pdf' $versionedPdf -Force
+                Write-Host ''
+                Write-Host '=========================================' -ForegroundColor Green
+                Write-Host " POSTER REVIEW: $versionedPdf" -ForegroundColor Green
+                Write-Host " (commit: $gitHash)" -ForegroundColor White
+                Write-Host '=========================================' -ForegroundColor Green
+                Start-Process $versionedPdf
+            } else {
+                Write-Host ''
+                Write-Host '=========================================' -ForegroundColor Green
+                Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
+                Write-Host '=========================================' -ForegroundColor Green
+                Start-Process 'poster\poster_review.pdf'
+            }
         } else {
             Write-Host 'LaTeX compilation failed.' -ForegroundColor Red
         }
