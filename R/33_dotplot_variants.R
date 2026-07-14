@@ -39,8 +39,8 @@ library(stringr)
 source("R/00_theme.R")
 
 # ---- Configuration ----
-# Font sizes: 20, 24, 28. User requested 24 in one version.
-FONT_SIZES <- c(20, 24, 28)
+# Font sizes: 18, 20, 24.
+FONT_SIZES <- c(18, 20, 24)
 # Y-axis label wrapping width (characters per line)
 WRAP_WIDTH <- 45
 # Max words for "short" GO terms
