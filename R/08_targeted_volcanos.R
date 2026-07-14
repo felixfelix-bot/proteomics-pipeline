@@ -90,7 +90,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
                                              color = category)) +
-    ggplot2::geom_point(alpha = 0.5, size = 0.8) +
+    ggplot2::geom_point(alpha = 0.5, size = 2.5) +
     ggplot2::scale_color_manual(
       values = RA_COLORS,
       labels = RA_LABELS,
@@ -98,13 +98,13 @@ make_ra_volcano <- function(df, title, n_top = 60) {
     ) +
     ggplot2::guides(
       color = ggplot2::guide_legend(
-        override.aes = list(size = 3, alpha = 1)  # Legend dot size
+        override.aes = list(size = 5, alpha = 1)  # Legend dot size
       )
     ) +
     ggrepel::geom_text_repel(
       data = label_data,
       ggplot2::aes(label = gene),
-      size = 2.5, fontface = "bold",
+      size = 5.0, fontface = "bold",
       max.overlaps = 50, show.legend = FALSE,
       bg.color = "white", bg.r = 0.15  # White background for readability
     ) +
@@ -121,13 +121,11 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    theme_poster(font_size = 18) +
+    theme_poster(font_size = 24) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      legend.text  = ggplot2::element_text(size = 18),
-      legend.title = ggplot2::element_text(size = 18),
       legend.key.size = ggplot2::unit(0.35, "cm"),
       legend.box.margin = ggplot2::margin(1, 1, 1, 1),
       legend.spacing.y = ggplot2::unit(0.1, "cm")
@@ -188,7 +186,7 @@ make_main_volcano <- function(df, title) {
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
                                              color = category)) +
-    ggplot2::geom_point(alpha = 0.5, size = 0.8) +
+    ggplot2::geom_point(alpha = 0.5, size = 2.5) +
     ggplot2::scale_color_manual(
       values = MAIN_COLORS,
       labels = MAIN_LABELS,
@@ -196,13 +194,13 @@ make_main_volcano <- function(df, title) {
     ) +
     ggplot2::guides(
       color = ggplot2::guide_legend(
-        override.aes = list(size = 3, alpha = 1)  # Legend dot size
+        override.aes = list(size = 5, alpha = 1)  # Legend dot size
       )
     ) +
     ggrepel::geom_text_repel(
       data = label_data,
       ggplot2::aes(label = gene),
-      size = 2.5, fontface = "bold",
+      size = 5.0, fontface = "bold",
       max.overlaps = 30, show.legend = FALSE,
       bg.color = "white", bg.r = 0.15
     ) +
@@ -219,14 +217,16 @@ make_main_volcano <- function(df, title) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    theme_poster(font_size = 18) +
+    theme_poster(font_size = 24) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      legend.text  = ggplot2::element_text(size = 18),
-      legend.title = ggplot2::element_text(size = 18, face = "bold")
-    )
+      legend.key.size = ggplot2::unit(0.35, "cm"),
+      legend.box.margin = ggplot2::margin(1, 1, 1, 1),
+      legend.spacing.y = ggplot2::unit(0.1, "cm")
+    ) +
+    ggplot2::coord_cartesian(clip = "off")
 
   return(p)
 }

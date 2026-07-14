@@ -223,7 +223,7 @@ FLAGIP_LABELS <- c(
 cat("\nBuilding volcano plot...\n")
 
 p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = category)) +
-  ggplot2::geom_point(alpha = 0.5, size = 0.8) +
+  ggplot2::geom_point(alpha = 0.5, size = 2.5) +
   ggplot2::scale_color_manual(
     values = FLAGIP_COLORS,
     labels = FLAGIP_LABELS,
@@ -231,13 +231,13 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
   ) +
   ggplot2::guides(
     color = ggplot2::guide_legend(
-      override.aes = list(size = 3, alpha = 1)  # Legend dot size
+      override.aes = list(size = 5, alpha = 1)  # Legend dot size
     )
   ) +
   ggrepel::geom_text_repel(
     data = label_data,
     ggplot2::aes(label = gene),
-    size = 2.5, fontface = "bold",
+    size = 5.0, fontface = "bold",
     max.overlaps = 30, show.legend = FALSE,
     bg.color = "white", bg.r = 0.15
   ) +
@@ -254,12 +254,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
     title = "TRIP4 TurboID vs WT — Flag IP Validation"
   ) +
-  theme_poster(font_size = 18) +
-  ggplot2::theme(
-    legend.position = "right",
-    legend.text  = ggplot2::element_text(size = 18),
-    legend.title = ggplot2::element_text(size = 18, face = "bold")
-  )
+  theme_poster(font_size = 24)
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",
             width = 16, height = 12)
