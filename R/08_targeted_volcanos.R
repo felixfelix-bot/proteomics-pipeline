@@ -120,7 +120,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value))
     ) +
-    theme_poster(font_size = 18) +
+    theme_poster() +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
@@ -215,7 +215,7 @@ make_main_volcano <- function(df, title) {
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value))
     ) +
-    theme_poster(font_size = 18) +
+    theme_poster() +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),

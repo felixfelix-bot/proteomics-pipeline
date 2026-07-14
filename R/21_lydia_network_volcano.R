@@ -348,7 +348,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
   ) +
   # Clip x-axis: outlier at ~-10 wastes space
   ggplot2::coord_cartesian(xlim = c(-7, NA)) +
-  theme_poster(font_size = 18)
+  theme_poster()
 
 save_figure(p, "lydia_network_volcano", width = 16, height = 12)
 

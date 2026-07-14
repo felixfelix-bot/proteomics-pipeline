@@ -76,7 +76,7 @@ capitalize_first <- function(x) {
 
 # Wrap + capitalize labels for dotplot y-axis (GO terms are very long)
 # Usage: scale_y_discrete(labels = wrap_go_labels)
-wrap_go_labels <- function(x, width = 35) {
+wrap_go_labels <- function(x, width = 40) {
   stringr::str_wrap(capitalize_first(x), width = width)
 }
 
@@ -96,13 +96,9 @@ PUBLICATION_FONTS <- list(
 # Applies consistent font sizes to every ggplot element.
 # Usage: my_plot + theme_poster()              # default 20pt
 #        my_plot + theme_poster(font_size = 18) # smaller (volcanos)
-# ---- Poster theme (FINAL — based on Aruna's voice feedback Jul 15) ----
-# Settings derived from style_variants review:
-#   Grid: grey65, lw=0.8 (V3/V6 darkness level, between grey75 and grey50)
-#   Font: 18pt axes/ticks/legend (V9 "close to perfect" at 20, V7 "good" at 20,
-#         but split difference since 20pt protein labels were too big)
-#   Titles: blank (LaTeX provides panel labels)
-theme_poster <- function(base_family = "sans", font_size = 18) {
+# ---- Poster theme (FINAL — Aruna's specs Jul 15) ----
+# Font: 20pt | Grid: grey75, lw=0.8
+theme_poster <- function(base_family = "sans", font_size = 20) {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
       plot.title    = ggplot2::element_blank(),
@@ -125,10 +121,10 @@ theme_poster <- function(base_family = "sans", font_size = 18) {
       strip.text    = ggplot2::element_text(size = font_size, face = "bold",
                                             color = "black"),
       strip.background = ggplot2::element_rect(fill = "grey95", color = "grey80"),
-      # Grid: grey65, lw=0.8 (Aruna praised V3/V6 darkness)
-      panel.grid.major = ggplot2::element_line(color = "grey65", linewidth = 0.8),
+      # Grid: grey75 THICK (Aruna's final spec)
+      panel.grid.major = ggplot2::element_line(color = "grey75", linewidth = 0.8),
       panel.grid.minor = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(fill = NA, color = "grey40", linewidth = 0.6),
+      panel.border     = ggplot2::element_rect(fill = NA, color = "grey50", linewidth = 0.5),
       plot.margin = ggplot2::margin(8, 8, 8, 8)
     )
 }

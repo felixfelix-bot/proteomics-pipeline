@@ -254,7 +254,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value))
   ) +
   ggplot2::coord_cartesian(xlim = c(-7, NA)) +
-  theme_poster(font_size = 18)
+  theme_poster()
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",
             width = 16, height = 12)
