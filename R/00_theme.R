@@ -129,7 +129,7 @@ theme_poster <- function(base_family = "sans", font_size = 20) {
     )
 }
 
-# ---- Dotplot poster theme (larger font, legends inside top-right) ----
+# ---- Dotplot poster theme (larger font, legends inside bottom-right) ----
 theme_poster_dotplot <- function(base_family = "sans", font_size = 24) {
   theme_poster(base_family = base_family, font_size = font_size) +
     ggplot2::theme(
