@@ -23,7 +23,6 @@
 ###############################################################################
 
 library(ggplot2)
-library(grepel)  # may not exist as standalone; ggrepel below
 library(ggrepel)
 library(clusterProfiler)
 library(org.Hs.eg.db)
