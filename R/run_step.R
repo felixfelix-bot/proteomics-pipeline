@@ -3,18 +3,67 @@
 # Runs a single analysis step with full logging.
 #
 # Usage:
-#   Rscript R/run_step.R <step_name>
+#   Rscript R/run_step.R <step_name> [--force]
 #
 # Where step_name is one of:
-#   volcano, venn, go, string, families, overlap
+#   volcano, venn, go, string, families, overlap, ...
+#
+# Skip logic: if output/.stamps/<step>.stamp matches the current MD5 of
+# the step script + config + utils, the step is skipped ("up to date").
+# Use --force to override and always re-run.
 ###############################################################################
+
+# ---- Compute a content hash for a step (script + shared deps) ----
+# Returns NA if any file is missing.
+compute_step_hash <- function(script_path) {
+  deps <- c(script_path, "R/01_config.R", "R/utils.R", "R/setup_logging.R")
+  hashes <- tools::md5sum(deps)
+  paste(hashes, collapse = "")
+}
+
+# ---- Check if a step should be skipped (already completed, unchanged) ----
+# Returns TRUE if the step can be skipped.
+should_skip <- function(step, script_path) {
+  stamp_dir <- file.path("output", ".stamps")
+  stamp_file <- file.path(stamp_dir, step)
+
+  if (!file.exists(stamp_file)) return(FALSE)
+
+  current_hash <- compute_step_hash(script_path)
+  if (is.na(current_hash)) return(FALSE)
+
+  saved_hash <- tryCatch(
+    trimws(readLines(stamp_file, n = 1, warn = FALSE)),
+    error = function(e) ""
+  )
+
+  if (nchar(saved_hash) > 0 && saved_hash == current_hash) {
+    return(TRUE)
+  }
+  return(FALSE)
+}
+
+# ---- Write a stamp after successful completion ----
+write_stamp <- function(step, script_path) {
+  stamp_dir <- file.path("output", ".stamps")
+  dir.create(stamp_dir, recursive = TRUE, showWarnings = FALSE)
+  stamp_file <- file.path(stamp_dir, step)
+  current_hash <- compute_step_hash(script_path)
+  writeLines(current_hash, stamp_file)
+  cat(sprintf("[Cache] Stamp written: %s\n", stamp_file))
+}
 
 main <- function() {
   args <- commandArgs(trailingOnly = TRUE)
 
+  # Parse --force flag
+  force <- "--force" %in% args
+  args <- args[args != "--force"]
+
   if (length(args) < 1) {
-    cat("Usage: Rscript R/run_step.R <step_name>\n")
-    cat("  Steps: volcano, venn, go, string, families, overlap\n")
+    cat("Usage: Rscript R/run_step.R <step_name> [--force]\n")
+    cat("  Steps: volcano, venn, go, string, families, overlap, ...\n")
+    cat("  --force: re-run even if output already exists\n")
     quit(status = 1)
   }
 
@@ -74,6 +123,13 @@ main <- function() {
     dotplot_variants       = "R/33_dotplot_variants.R"
   )
 
+  # ---- Skip check: if step already ran with same code, skip it ----
+  script_path <- step_scripts[[step]]
+  if (!force && should_skip(step, script_path)) {
+    cat(sprintf("[Cache] Skipping '%s' — up to date. Use --force to re-run.\n", step))
+    quit(status = 0)
+  }
+
   # Set up logging (captures all output to file + console)
   sys.source("R/setup_logging.R", envir = .GlobalEnv)
   setup_logging(script_name = step)
@@ -104,7 +160,12 @@ main <- function() {
 
   stop_logging(success = success)
 
-  if (!success) quit(status = 1)
+  # ---- Write stamp on success so next run can skip ----
+  if (success) {
+    write_stamp(step, script_path)
+  } else {
+    quit(status = 1)
+  }
 }
 
 main()

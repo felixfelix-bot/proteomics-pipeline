@@ -223,44 +223,44 @@ test: ## Run pipeline on synthetic test data
 # ---- Individual analysis steps ----
 # Each runs that single module with full logging
 volcano: check clean-old ## Generate volcano plots
-	$(RSCRIPT) R/run_step.R volcano
+	$(RSCRIPT) R/run_step.R volcano $(FORCE)
 
 venn: check clean-old ## Generate Venn diagrams
-	$(RSCRIPT) R/run_step.R venn
+	$(RSCRIPT) R/run_step.R venn $(FORCE)
 
 go: check clean-old ## GO enrichment analysis
-	$(RSCRIPT) R/run_step.R go
+	$(RSCRIPT) R/run_step.R go $(FORCE)
 
 string: check clean-old ## STRING network analysis
-	$(RSCRIPT) R/run_step.R string
+	$(RSCRIPT) R/run_step.R string $(FORCE)
 
 families: check clean-old ## Gene family highlighting
-	$(RSCRIPT) R/run_step.R families
+	$(RSCRIPT) R/run_step.R families $(FORCE)
 
 overlap: check clean-old ## Cross-experiment overlap
-	$(RSCRIPT) R/run_step.R overlap
+	$(RSCRIPT) R/run_step.R overlap $(FORCE)
 
 # ---- Targeted plots (researcher-specified) ----
 targeted-volcano: check clean-old ## 3 custom volcano plots: BK467 TRIP4 vs WT, RA effects
-	$(RSCRIPT) R/run_step.R targeted_volcanos
+	$(RSCRIPT) R/run_step.R targeted_volcanos $(FORCE)
 
 flagip-volcano: check clean-old ## TurboID volcano with common C-Flag/N-Flag hits labeled
-	$(RSCRIPT) R/run_step.R flagip_volcano
+	$(RSCRIPT) R/run_step.R flagip_volcano $(FORCE)
 
 targeted-venn: check clean-old ## 2 Venn diagrams: RA effect + TurboID vs C/N-Flag
-	$(RSCRIPT) R/run_step.R targeted_venns
+	$(RSCRIPT) R/run_step.R targeted_venns $(FORCE)
 
 targeted-go: check clean-old ## GO enrichment on 3 targeted gene sets
-	$(RSCRIPT) R/run_step.R targeted_go
+	$(RSCRIPT) R/run_step.R targeted_go $(FORCE)
 
 go-network-volcano: check clean-old ## Volcano highlighting GO network proteins (no labels)
-	$(RSCRIPT) R/run_step.R go_network_volcano
+	$(RSCRIPT) R/run_step.R go_network_volcano $(FORCE)
 
 context: check clean-old ## Print data context (file structure, overlaps, gene names)
 	$(RSCRIPT) R/print_context.R
 
 chx-crac-analysis: check clean-old ## CHX/DMSO volcanos + GO, CRAC volcano + GO
-	$(RSCRIPT) R/run_step.R chx_crac_analysis
+	$(RSCRIPT) R/run_step.R chx_crac_analysis $(FORCE)
 
 list-data: ## List ALL CSV files (paths, sizes, headers — no data values)
 	$(RSCRIPT) R/list_data.R
@@ -269,38 +269,38 @@ headers: ## Print column names of every CSV file
 	$(RSCRIPT) R/print_headers.R
 
 venn-examples: check clean-old ## Generate 3 Venn diagram style examples (choose your favorite)
-	$(RSCRIPT) R/run_step.R venn_examples
+	$(RSCRIPT) R/run_step.R venn_examples $(FORCE)
 
 venn-label-examples: check clean-old ## Generate 3 Venn label position variants
-	$(RSCRIPT) R/run_step.R venn_label_examples
+	$(RSCRIPT) R/run_step.R venn_label_examples $(FORCE)
 
 string-network: check clean-old ## STRING network analysis + GO by network membership
-	$(RSCRIPT) R/run_step.R string_network
+	$(RSCRIPT) R/run_step.R string_network $(FORCE)
 
 crac-network: check clean-old ## STRING network for CRAC RNA interactome data
-	$(RSCRIPT) R/run_step.R crac_string_network
+	$(RSCRIPT) R/run_step.R crac_string_network $(FORCE)
 
 venn-overflow-examples: check clean-old ## 3 Venn overflow solutions (ext.text, equal circles, boxed labels)
-	$(RSCRIPT) R/run_step.R venn_overflow_examples
+	$(RSCRIPT) R/run_step.R venn_overflow_examples $(FORCE)
 
 gsea: check clean-old ## GSEA enrichment analysis (ranked gene list via clusterProfiler)
-	$(RSCRIPT) R/run_step.R gsea
+	$(RSCRIPT) R/run_step.R gsea $(FORCE)
 
 pathway-network: check clean-old ## STRING network maps for enriched GO pathways
-	$(RSCRIPT) R/run_step.R pathway_network
+	$(RSCRIPT) R/run_step.R pathway_network $(FORCE)
 
 diagnostics: ## Print structural data summary (counts/ranges only, safe to share)
 	@echo "Running diagnostics..."
 	@Rscript R/run_step.R diagnostics
 
 chx-volcano-venn: check clean-old ## CHX vs DMSO volcano plot + Venn diagram
-	$(RSCRIPT) R/run_step.R chx_volcano_venn
+	$(RSCRIPT) R/run_step.R chx_volcano_venn $(FORCE)
 
 flagip-validated-go: check clean-old ## GO + KEGG on proteins validated by BOTH C-Flag and N-Flag IP
-	$(RSCRIPT) R/run_step.R flagip_validated_go
+	$(RSCRIPT) R/run_step.R flagip_validated_go $(FORCE)
 
 poster-figures: ## Generate poster-styled figures (standardized fonts) in poster/figures/
-	$(RSCRIPT) R/run_step.R poster_figures
+	$(RSCRIPT) R/run_step.R poster_figures $(FORCE)
 
 poster: aruna-fast poster-figures ## Generate ALL poster figures + compile LaTeX poster
 	@echo ""
@@ -331,7 +331,7 @@ poster: aruna-fast poster-figures ## Generate ALL poster figures + compile LaTeX
 	fi
 
 chx-kegg-crac: check clean-old ## KEGG on CHX data + CRAC/TurboID overlap + volcano
-	$(RSCRIPT) R/run_step.R chx_kegg_crac_overlap
+	$(RSCRIPT) R/run_step.R chx_kegg_crac_overlap $(FORCE)
 
 # ---- Poster Review: collect 6 figures + compile to single PDF ----
 # Three targets:
@@ -378,34 +378,34 @@ poster-review-only:
 	@echo "========================================="
 
 dotplot-variants: check ## GO dotplot font-size variants (18 files: 3 plots x 2 label modes x 3 sizes)
-	$(RSCRIPT) R/run_step.R dotplot_variants
+	$(RSCRIPT) R/run_step.R dotplot_variants $(FORCE)
 
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
-	$(RSCRIPT) R/run_step.R string_style_network
+	$(RSCRIPT) R/run_step.R string_style_network $(FORCE)
 
 bidirectional-go-ra: check clean-old ## Bidirectional GO: -RA (left) vs +RA (right)
-	$(RSCRIPT) R/run_step.R bidirectional_go_ra
+	$(RSCRIPT) R/run_step.R bidirectional_go_ra $(FORCE)
 
 network-go: check clean-old ## GO enrichment split by in-network vs not-in-network
-	$(RSCRIPT) R/run_step.R network_go
+	$(RSCRIPT) R/run_step.R network_go $(FORCE)
 
 lydia-volcano: check clean-old ## Lydia-style volcano with STRING network overlay
-	$(RSCRIPT) R/run_step.R lydia_network_volcano
+	$(RSCRIPT) R/run_step.R lydia_network_volcano $(FORCE)
 
 chx-common: check clean-old ## CHX/DMSO common analysis — enriched/depleted + STRING + GO
-	$(RSCRIPT) R/run_step.R chx_common_analysis
+	$(RSCRIPT) R/run_step.R chx_common_analysis $(FORCE)
 
 ra-common: check clean-old ## RA common protein analysis — enriched/depleted across RA02+RA04
-	$(RSCRIPT) R/run_step.R ra_common
+	$(RSCRIPT) R/run_step.R ra_common $(FORCE)
 
 ra-common-network: ra-common ## Alias — same as ra-common
 	@echo "RA common analysis complete (includes STRING networks)."
 
 bidirectional-go: check clean-old ## Bidirectional GO dot plot — up right, down left
-	$(RSCRIPT) R/run_step.R bidirectional_go
+	$(RSCRIPT) R/run_step.R bidirectional_go $(FORCE)
 
 shinygo-compare: check clean-old ## Compare ShinyGO export with STRING pipeline
-	$(RSCRIPT) R/run_step.R shinygo_comparison
+	$(RSCRIPT) R/run_step.R shinygo_comparison $(FORCE)
 
 # ---- Group targets (run multiple steps at once) ----
 all-volcano: targeted-volcano flagip-volcano lydia-volcano ## All volcano plot targets
