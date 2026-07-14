@@ -76,7 +76,7 @@ capitalize_first <- function(x) {
 
 # Wrap + capitalize labels for dotplot y-axis (GO terms are very long)
 # Usage: scale_y_discrete(labels = wrap_go_labels)
-wrap_go_labels <- function(x, width = 45) {
+wrap_go_labels <- function(x, width = 35) {
   stringr::str_wrap(capitalize_first(x), width = width)
 }
 

@@ -78,16 +78,12 @@ cat("  Computing GO enrichment (once for all variants)...\n")
 # ============================================================
 # FAST PLOT BUILDERS (use precomputed data — no recompute)
 # ============================================================
-build_go_dotplot <- function(variant_theme, wrap_width = NULL) {
+build_go_dotplot <- function(variant_theme, wrap_width = 30) {
   n_show <- min(12, nrow(as.data.frame(GO_RESULT)))
   p <- dotplot(GO_RESULT, showCategory = n_show)
   cnt_go <- p$data$Count
 
-  if (!is.null(wrap_width)) {
-    wrap_labels <- function(x) str_wrap(capitalize_first(x), width = wrap_width)
-  } else {
-    wrap_labels <- capitalize_first
-  }
+  wrap_labels <- function(x) str_wrap(capitalize_first(x), width = wrap_width)
 
   p +
     scale_color_gradient(low = "#D55E00", high = "#0072B2", name = "p-adjusted") +
@@ -96,7 +92,7 @@ build_go_dotplot <- function(variant_theme, wrap_width = NULL) {
                            limits = c(min(cnt_go), max(cnt_go))) +
     scale_y_discrete(labels = wrap_labels) +
     guides(size = size_legend_guide()) +
-    labs(title = "Flag IP Validated — Biological Process", x = "Gene Ratio") +
+    labs(x = "Gene Ratio") +
     variant_theme
 }
 
@@ -106,6 +102,9 @@ build_volcano <- function(variant_theme, label_size = 5) {
     "Enriched in WT"    = "#0072B2",
     "Not significant"   = "#D0D0D0"
   )
+
+  # Clip x-axis: outlier at ~-10 wastes space, clip at -7
+  x_min <- -7
 
   ggplot(VOLCANO_DATA, aes(x = log2FC, y = neglog10p, color = category)) +
     geom_point(alpha = 0.5, size = 2.5) +
@@ -122,10 +121,10 @@ build_volcano <- function(variant_theme, label_size = 5) {
                color = "grey50", linewidth = 0.3) +
     geom_vline(xintercept = c(-LOG2FC_CUTOFF, LOG2FC_CUTOFF), linetype = "dashed",
                color = "grey50", linewidth = 0.3) +
+    coord_cartesian(xlim = c(x_min, NA)) +
     labs(
       x = expression(Log[2]~Fold~Change),
-      y = expression(-Log[10]~(adjusted~italic(p)~value)),
-      title = "TRIP4 TurboID vs Wild Type"
+      y = expression(-Log[10]~(adjusted~italic(p)~value))
     ) +
     variant_theme +
     theme(
@@ -156,36 +155,30 @@ make_variant <- function(num, font_sz, grid_col, grid_lw, border_col, border_lw,
 }
 
 variants <- list(
-  make_variant(1, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5,
-    "Baseline (current defaults)",
-    "Font: 15pt | Grid: grey92 thin (lw=0.3) | No wrap | Labels: 5pt"),
-  make_variant(2, 15, "grey92", 0.3, "grey70", 0.3, NULL, 5,
-    "Uniform font enforcement",
-    "Same as V1 (all fonts forced consistent via theme override)"),
-  make_variant(3, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5,
-    "Darker/thicker grid only",
-    "Font: 15pt | Grid: grey75 THICK (lw=0.8) | Border: grey50 (lw=0.8) | Labels: 5pt"),
-  make_variant(4, 20, "grey92", 0.3, "grey70", 0.3, NULL, 6.5,
-    "Bigger fonts only (20pt)",
-    "Font: 20pt | Grid: grey92 thin | No wrap | Labels: 6.5pt"),
-  make_variant(5, 15, "grey92", 0.3, "grey70", 0.3, 40, 5,
-    "Wrapped y-axis labels only (40 chars)",
-    "Font: 15pt | Grid: grey92 thin | Y-axis wrapped at 40 chars | Labels: 5pt"),
-  make_variant(6, 15, "grey75", 0.8, "grey50", 0.8, NULL, 5,
-    "Darker grid + uniform font",
-    "Font: 15pt | Grid: grey75 THICK | No wrap | Labels: 5pt"),
-  make_variant(7, 20, "grey92", 0.3, "grey70", 0.3, NULL, 6.5,
-    "Bigger fonts + uniform (20pt)",
-    "Font: 20pt | Grid: grey92 thin | No wrap | Labels: 6.5pt"),
-  make_variant(8, 15, "grey75", 0.8, "grey50", 0.8, 40, 5,
-    "Dark grid + wrapped labels",
-    "Font: 15pt | Grid: grey75 THICK | Y-axis wrapped at 40 chars | Labels: 5pt"),
-  make_variant(9, 20, "grey75", 0.8, "grey50", 0.8, 40, 6.5,
-    "Everything combined",
-    "Font: 20pt | Grid: grey75 THICK | Y-axis wrapped at 40 chars | Labels: 6.5pt"),
-  make_variant(10, 24, "grey65", 1.0, "grey40", 1.0, 35, 7.5,
-    "Maximum poster impact",
-    "Font: 24pt | Grid: grey65 DARKEST (lw=1.0) | Border: grey40 | Y-axis wrapped 35 chars | Labels: 7.5pt")
+  make_variant(1, 15, "grey75", 0.6, "grey50", 0.5, 30, 5,
+    "Baseline (dark grid + wrapped labels)",
+    "Font: 15pt | Grid: grey75 (lw=0.6) | Wrap: 30ch | Labels: 5pt"),
+  make_variant(2, 18, "grey75", 0.6, "grey50", 0.5, 30, 6,
+    "Bigger fonts (18pt)",
+    "Font: 18pt | Grid: grey75 (lw=0.6) | Wrap: 30ch | Labels: 6pt"),
+  make_variant(3, 15, "grey60", 0.8, "grey40", 0.8, 30, 5,
+    "Darker grid (grey60)",
+    "Font: 15pt | Grid: grey60 THICK (lw=0.8) | Wrap: 30ch | Labels: 5pt"),
+  make_variant(4, 20, "grey60", 0.8, "grey40", 0.8, 30, 6.5,
+    "Bigger fonts + dark grid (20pt)",
+    "Font: 20pt | Grid: grey60 (lw=0.8) | Wrap: 30ch | Labels: 6.5pt"),
+  make_variant(5, 15, "grey75", 0.6, "grey50", 0.5, 22, 5,
+    "Tighter wrap (22 chars)",
+    "Font: 15pt | Grid: grey75 | Wrap: 22ch (tighter) | Labels: 5pt"),
+  make_variant(6, 18, "grey60", 0.8, "grey40", 0.8, 25, 6,
+    "Medium combo (18pt + dark grid + 25ch wrap)",
+    "Font: 18pt | Grid: grey60 | Wrap: 25ch | Labels: 6pt"),
+  make_variant(7, 22, "grey60", 0.8, "grey40", 0.8, 30, 7,
+    "Poster-ready (22pt)",
+    "Font: 22pt | Grid: grey60 | Wrap: 30ch | Labels: 7pt"),
+  make_variant(8, 18, "grey50", 1.0, "grey30", 1.0, 25, 6,
+    "Darkest grid (grey50)",
+    "Font: 18pt | Grid: grey50 DARKEST (lw=1.0) | Wrap: 25ch | Labels: 6pt")
 )
 
 # ============================================================
