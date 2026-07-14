@@ -151,7 +151,8 @@ make_dotplot <- function(df, font_size, use_short_terms, title_text) {
       axis.text = element_text(size = font_size, color = "black"),
       axis.title.x = element_text(size = font_size, color = "black"),
       plot.title = element_text(size = font_size, face = "bold",
-                                 hjust = 0.5, color = "black")
+                                 hjust = 0.5, color = "black"),
+      panel.grid.major = element_line(color = "grey75", linewidth = 0.4)
     )
 
   return(p)
