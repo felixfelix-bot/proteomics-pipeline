@@ -141,7 +141,9 @@ function Invoke-Step {
     Write-Host '=========================================' -ForegroundColor Cyan
     Write-Host ''
 
-    & $RSCRIPT 'R/run_step.R' $StepName
+    # Capture both stdout and stderr so we can show the error
+    $output = & $RSCRIPT 'R/run_step.R' $StepName 2>&1
+    $output | Write-Host
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "FAILED: $StepName (exit code $LASTEXITCODE)" -ForegroundColor Red
