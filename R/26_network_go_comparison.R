@@ -273,10 +273,17 @@ for (ont in c("BP", "CC", "MF")) {
     ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                    breaks = make_size_breaks(cnt, n_breaks = 8),
                                    limits = c(min(cnt), max(cnt))) +
-    ggplot2::guides(size = size_legend_guide()) +
     ggplot2::scale_y_discrete(labels = wrap_go_labels) +
+    ggplot2::guides(size = size_legend_guide()) +
     ggplot2::labs(x = "Gene Ratio") +
-    theme_poster()
+    theme_poster(font_size = 24) +
+    ggplot2::theme(
+      legend.position = c(0.98, 0.02),
+      legend.justification = c(1, 0),
+      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
+      legend.box.margin = ggplot2::margin(1, 1, 1, 1),
+      legend.box = "vertical"
+    )
 
   filename <- sprintf("network_go_comparison_%s", ont)
   save_figure(p_in, filename, width = 18, height = max(14, n_show * 0.8))

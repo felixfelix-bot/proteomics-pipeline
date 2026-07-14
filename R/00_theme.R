@@ -76,7 +76,7 @@ capitalize_first <- function(x) {
 
 # Wrap + capitalize labels for dotplot y-axis (GO terms are very long)
 # Usage: scale_y_discrete(labels = wrap_go_labels)
-wrap_go_labels <- function(x, width = 40) {
+wrap_go_labels <- function(x, width = 30) {
   stringr::str_wrap(capitalize_first(x), width = width)
 }
 
@@ -126,6 +126,20 @@ theme_poster <- function(base_family = "sans", font_size = 20) {
       panel.grid.minor = ggplot2::element_blank(),
       panel.border     = ggplot2::element_rect(fill = NA, color = "grey50", linewidth = 0.5),
       plot.margin = ggplot2::margin(8, 8, 8, 8)
+    )
+}
+
+# ---- Dotplot poster theme (larger font, legends inside top-right) ----
+theme_poster_dotplot <- function(base_family = "sans", font_size = 24) {
+  theme_poster(base_family = base_family, font_size = font_size) +
+    ggplot2::theme(
+      legend.position = c(0.98, 0.98),
+      legend.justification = c(1, 1),
+      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
+      legend.box = "vertical",
+      legend.box.margin = ggplot2::margin(1, 1, 1, 1),
+      legend.title = ggplot2::element_text(size = font_size, face = "bold"),
+      legend.text  = ggplot2::element_text(size = font_size)
     )
 }
 
