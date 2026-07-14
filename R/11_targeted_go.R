@@ -223,8 +223,8 @@ run_targeted_kegg <- function(genes, set_name, universe) {
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster() +
-      ggplot2::theme(legend.title = ggplot2::element_text(size = 18, face = "bold"),
-                     legend.text  = ggplot2::element_text(size = 18))
+      ggplot2::theme(legend.title = ggplot2::element_text(size = 20, face = "bold"),
+                     legend.text  = ggplot2::element_text(size = 20))
     save_figure(p_kegg, paste0(prefix, "_dotplot"),
                 width = 18, height = max(14, n_show * 0.8))
 
