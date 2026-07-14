@@ -16,7 +16,7 @@
 # ---- Compute a content hash for a step (script + shared deps) ----
 # Returns NA if any file is missing.
 compute_step_hash <- function(script_path) {
-  deps <- c(script_path, "R/01_config.R", "R/utils.R", "R/setup_logging.R")
+  deps <- c(script_path, "R/00_theme.R", "R/01_config.R", "R/utils.R", "R/setup_logging.R")
   hashes <- tools::md5sum(deps)
   paste(hashes, collapse = "")
 }
