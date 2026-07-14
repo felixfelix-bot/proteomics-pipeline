@@ -61,7 +61,8 @@ cat("  Computing GO enrichment (once for all variants)...\n")
 # ---- Precompute volcano data ----
 {
   df_vol <- find_experiment(experiments, "BK467_TRIP4_vs_BK467_WT")
-  interactors_vol <- read_interactors()
+  interactors_file <- file.path(DATA_DIR, "known_interactors.txt")
+  interactors_vol <- load_known_interactors(interactors_file)
   VOLCANO_DATA <- data.frame(
     log2FC = df_vol$log2FC,
     neglog10p = -log10(df_vol$padj),
