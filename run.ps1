@@ -323,14 +323,15 @@ switch ($Target) {
         # Step 1: Check data files
         if (-not (Test-DataFiles)) { break }
 
-        # Step 2: Generate poster figures (run_step.R handles caching)
+        # Step 2: Generate ONLY poster figures (run_step.R handles caching)
+        # ra_common removed — its outputs aren't in the poster figMap.
+        # Saves ~10 min on first run (no STRING networks, Venn, circular, etc.)
         $posterSteps = @(
             'targeted_volcanos',
             'flagip_volcano',
             'lydia_network_volcano',
             'flagip_validated_go',
             'network_go',
-            'ra_common',
             'targeted_go'
         )
         $failed = @()
@@ -360,7 +361,6 @@ switch ($Target) {
             'lydia_network_volcano',
             'flagip_validated_go',
             'network_go',
-            'ra_common',
             'targeted_go'
         )
         $failed = @()

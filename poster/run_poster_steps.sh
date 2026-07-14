@@ -21,6 +21,7 @@ if [[ "${1:-}" == "--force" ]]; then
 fi
 
 # Step name → key output pattern (if this file exists, step is cached)
+# ra_common removed — its outputs aren't in the poster figure map.
 # Array of "step_name|output_pattern" strings
 STEPS=(
     "targeted_volcanos|targeted_volcano_BK504_RA_effect"
@@ -28,7 +29,6 @@ STEPS=(
     "lydia_network_volcano|lydia_network_volcano"
     "flagip_validated_go|flagip_GO_validated_any_BP_dotplot"
     "network_go|network_go_comparison_BP"
-    "ra_common|RA_common_enriched"
     "targeted_go|targeted_GO_RA_shared_core_MF_dotplot"
 )
 
