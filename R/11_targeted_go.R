@@ -157,7 +157,9 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::scale_fill_gradient(low = "#D55E00", high = "#0072B2",
                                     name = "p-adjusted value") +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
-      theme_poster()
+      theme_poster() +
+      ggplot2::theme(axis.text =
+        ggplot2::element_text(size = 22, color = "black"))
     save_figure(p_bar, paste0(prefix, "_barplot"), width = 18, height = max(12, n_show_bar * 0.8))
   }
 }
