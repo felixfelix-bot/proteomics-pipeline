@@ -11,7 +11,7 @@
 #       3. Verified (off network)
 #       4. Highly enriched (stringent seeds)
 #       5. Network (highly enriched)
-#       6. Not assigned to interaction network
+#       6. Unassigned
 #
 # Usage:
 #   make lydia-volcano
@@ -282,11 +282,11 @@ present_colors <- SIG_NET_COLORS[all_cats]
 # 7. Not enriched (grey)
 legend_order <- c(
   "ascc_FALSE", "ascc_TRUE", "ascc_high",          # 1. ASCC
-  "ia_TRUE", "ia_high",                              # 2. Verified & in network
-  "ia_FALSE",                                        # 3. Verified & not in network
+  "ia_TRUE", "ia_high",                              # 2. Verified (in network)
+  "ia_FALSE",                                        # 3. Verified (off network)
   "high_high", "high_TRUE", "high_FALSE",            # 4. Highly enriched
-  "TRUE_TRUE", "TRUE_high",                          # 5. In network of highly enriched
-  "TRUE_FALSE",                                      # 6. Not assigned
+  "TRUE_TRUE", "TRUE_high",                          # 5. Network (highly enriched)
+  "TRUE_FALSE",                                      # 6. Unassigned
   "FALSE_FALSE", "FALSE_TRUE", "FALSE_high"          # 7. Not enriched
 )
 # Keep only categories present in data, deduplicate by label
