@@ -66,7 +66,7 @@ PUBLICATION_FONTS <- list(
 # ---- Poster theme (for all poster figures) ----
 # Applies consistent font sizes to every ggplot element.
 # Usage: my_plot + theme_poster()
-theme_poster <- function(base_family = "Arial") {
+theme_poster <- function(base_family = "sans") {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
       # Titles
