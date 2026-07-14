@@ -61,7 +61,8 @@ TABLE_DIR  := output/tables
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all \
-        chx-kegg-crac dotplot-variants
+        chx-kegg-crac dotplot-variants \
+        poster-review poster-review-only
 
 # ---- Help ----
 help:
@@ -105,6 +106,7 @@ help:
 	@echo "  make shinygo-compare  Compare ShinyGO export with our STRING results"
 	@echo "  make chx-kegg-crac   KEGG on CHX + CRAC/TurboID overlap + labeled volcano"
 	@echo "  make dotplot-variants  GO dotplot font-size variants (full + short terms, 3 sizes)"
+	@echo "  make poster-review     Collect 6 poster figures + compile review poster (A3 landscape)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make volcano-plots      All volcano plots (targeted + flagIP + Lydia)"
@@ -273,6 +275,38 @@ poster: aruna-fast poster-figures ## Generate ALL poster figures + compile LaTeX
 
 chx-kegg-crac: check clean-old ## KEGG on CHX data + CRAC/TurboID overlap + volcano
 	$(RSCRIPT) R/run_step.R chx_kegg_crac_overlap
+
+# ---- Poster Review: collect 6 figures + compile to single PDF ----
+# Two targets:
+#   poster-review      - regenerate all 6 figures, then collect + compile
+#   poster-review-only - just collect existing figures + compile (fast iteration)
+#
+# The collect step searches output/figures/ RECURSIVELY (handles subdirs
+# with spaces like "update before lydia" and "Final volcano plots").
+# Prefers PDF (vector) over PNG (raster).
+
+poster-review: targeted-volcano flagip-volcano lydia-volcano \
+               flagip-validated-go network-go targeted-go
+	@bash poster/collect_review_figures.sh
+	@echo ""
+	@echo "  Compiling poster_review.tex ..."
+	@cd poster && pdflatex -interaction=nonstopmode poster_review.tex && \
+	            pdflatex -interaction=nonstopmode poster_review.tex
+	@echo ""
+	@echo "========================================="
+	@echo " POSTER REVIEW: poster/poster_review.pdf"
+	@echo "========================================="
+
+poster-review-only:
+	@bash poster/collect_review_figures.sh
+	@echo ""
+	@echo "  Compiling poster_review.tex ..."
+	@cd poster && pdflatex -interaction=nonstopmode poster_review.tex && \
+	            pdflatex -interaction=nonstopmode poster_review.tex
+	@echo ""
+	@echo "========================================="
+	@echo " POSTER REVIEW: poster/poster_review.pdf"
+	@echo "========================================="
 
 dotplot-variants: check ## GO dotplot font-size variants (18 files: 3 plots x 2 label modes x 3 sizes)
 	$(RSCRIPT) R/run_step.R dotplot_variants

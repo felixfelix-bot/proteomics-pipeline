@@ -84,6 +84,39 @@ making one panel physically smaller — but it's proportional and predictable.
 
 5. **Result:** `poster/poster_simple.pdf` — ready to print.
 
+### Review Poster (New)
+
+A third template, `poster/poster_review.tex`, puts all 6 final figures in a single
+A3 landscape PDF for side-by-side font/size/legend review:
+
+| Panel | Figure | Script |
+|-------|--------|--------|
+| A | Flag IP validated GO (BP dotplot) | R/30 flagip_validated_go |
+| B | Network GO comparison (BP dotplot) | R/26 network_go |
+| C | RA shared core GO (MF dotplot) | R/11 targeted_go |
+| D | Flag IP overlap volcano (BK467) | R/09 flagip_volcano |
+| E | Lydia STRING network volcano | R/21 lydia_network_volcano |
+| F | Targeted volcano BK504 RA effect | R/08 targeted_volcanos |
+
+**One command to generate everything + compile:**
+```
+# Windows (Aruna):
+.\run.ps1 poster-review
+
+# Linux:
+make poster-review
+```
+
+**Fast iteration (figures already generated, just recompile LaTeX):**
+```
+.\run.ps1 poster-review-only
+make poster-review-only
+```
+
+The collect step searches `output/figures/` recursively (including subdirs like
+"update before lydia" and "Final volcano plots"), finds the newest PDF/PNG by
+pattern, and copies to `poster/figures/` with clean names matching the LaTeX.
+
 ### Which Figures to Include
 
 Recommended figure set for a TRIP4/ASCC poster:
