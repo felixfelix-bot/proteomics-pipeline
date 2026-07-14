@@ -120,7 +120,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value))
     ) +
-    theme_poster(font_size = 24) +
+    theme_poster(font_size = 18) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
@@ -129,7 +129,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       legend.box.margin = ggplot2::margin(1, 1, 1, 1),
       legend.spacing.y = ggplot2::unit(0.1, "cm")
     ) +
-    ggplot2::coord_cartesian(clip = "off")
+    ggplot2::coord_cartesian(clip = "off", xlim = c(-7, NA))
 
   return(p)
 }
@@ -215,7 +215,7 @@ make_main_volcano <- function(df, title) {
       x = expression(Log[2]~Fold~Change),
       y = expression(-Log[10]~(adjusted~italic(p)~value))
     ) +
-    theme_poster(font_size = 24) +
+    theme_poster(font_size = 18) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
@@ -224,7 +224,7 @@ make_main_volcano <- function(df, title) {
       legend.box.margin = ggplot2::margin(1, 1, 1, 1),
       legend.spacing.y = ggplot2::unit(0.1, "cm")
     ) +
-    ggplot2::coord_cartesian(clip = "off")
+    ggplot2::coord_cartesian(clip = "off", xlim = c(-7, NA))
 
   return(p)
 }

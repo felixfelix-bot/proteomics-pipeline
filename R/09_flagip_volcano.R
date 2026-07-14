@@ -253,7 +253,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     x = expression(Log[2]~Fold~Change),
     y = expression(-Log[10]~(adjusted~italic(p)~value))
   ) +
-  theme_poster(font_size = 24)
+  theme_poster(font_size = 18)
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",
             width = 16, height = 12)

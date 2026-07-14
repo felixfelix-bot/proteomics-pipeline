@@ -346,7 +346,9 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
     caption = sprintf("%d of %d enriched proteins in network (%d%%)", enriched_in_net, enriched_total, pct_in_net)
   ) +
-  theme_poster(font_size = 24)
+  # Clip x-axis: outlier at ~-10 wastes space
+  ggplot2::coord_cartesian(xlim = c(-7, NA)) +
+  theme_poster(font_size = 18)
 
 save_figure(p, "lydia_network_volcano", width = 16, height = 12)
 

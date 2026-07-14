@@ -96,13 +96,17 @@ PUBLICATION_FONTS <- list(
 # Applies consistent font sizes to every ggplot element.
 # Usage: my_plot + theme_poster()              # default 20pt
 #        my_plot + theme_poster(font_size = 18) # smaller (volcanos)
+# ---- Poster theme (FINAL — based on Aruna's voice feedback Jul 15) ----
+# Settings derived from style_variants review:
+#   Grid: grey65, lw=0.8 (V3/V6 darkness level, between grey75 and grey50)
+#   Font: 18pt axes/ticks/legend (V9 "close to perfect" at 20, V7 "good" at 20,
+#         but split difference since 20pt protein labels were too big)
+#   Titles: blank (LaTeX provides panel labels)
 theme_poster <- function(base_family = "sans", font_size = 18) {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
-      # Titles — removed for poster (LaTeX provides panel labels)
       plot.title    = ggplot2::element_blank(),
       plot.subtitle = ggplot2::element_blank(),
-      # Axes
       axis.title.x  = ggplot2::element_text(size = font_size,
                                              margin = ggplot2::margin(t = 6),
                                              color = "black"),
@@ -111,7 +115,6 @@ theme_poster <- function(base_family = "sans", font_size = 18) {
                                              color = "black"),
       axis.text.x   = ggplot2::element_text(size = font_size, color = "black"),
       axis.text.y   = ggplot2::element_text(size = font_size, color = "black"),
-      # Legend
       legend.title  = ggplot2::element_text(size = font_size, face = "bold",
                                             color = "black"),
       legend.text   = ggplot2::element_text(size = font_size,
@@ -119,15 +122,13 @@ theme_poster <- function(base_family = "sans", font_size = 18) {
       legend.position  = "right",
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       legend.key       = ggplot2::element_rect(fill = "white", color = NA),
-      # Facets (column descriptions in dot plots)
       strip.text    = ggplot2::element_text(size = font_size, face = "bold",
                                             color = "black"),
       strip.background = ggplot2::element_rect(fill = "grey95", color = "grey80"),
-      # Panel — darker grid
-      panel.grid.major = ggplot2::element_line(color = "grey75", linewidth = 0.6),
+      # Grid: grey65, lw=0.8 (Aruna praised V3/V6 darkness)
+      panel.grid.major = ggplot2::element_line(color = "grey65", linewidth = 0.8),
       panel.grid.minor = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(fill = NA, color = "grey50", linewidth = 0.5),
-      # Margins (compact for poster density)
+      panel.border     = ggplot2::element_rect(fill = NA, color = "grey40", linewidth = 0.6),
       plot.margin = ggplot2::margin(8, 8, 8, 8)
     )
 }
