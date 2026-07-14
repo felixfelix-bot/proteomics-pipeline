@@ -166,6 +166,22 @@ switch ($Target) {
         break
     }
 
+    'setup' {
+        Write-Host '=========================================' -ForegroundColor Cyan
+        Write-Host ' FULL SETUP: Git + R + Rtools + R packages + MiKTeX' -ForegroundColor Cyan
+        Write-Host '=========================================' -ForegroundColor Cyan
+        Write-Host ''
+        Write-Host 'This requires Administrator privileges. UAC prompt will appear.' -ForegroundColor Yellow
+        Write-Host 'Takes 20-30 minutes on first run.' -ForegroundColor White
+        Write-Host ''
+        $scriptPath = Join-Path $PSScriptRoot 'ansible\bootstrap-windows-all.ps1'
+        Start-Process powershell -Verb RunAs -Wait -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+        Write-Host ''
+        Write-Host 'Setup script finished. Restart PowerShell to pick up new PATH entries.' -ForegroundColor Green
+        break
+    }
+
+    { $groupTargets.ContainsKey($_) } {
     { $groupTargets.ContainsKey($_) } {
         $steps = $groupTargets[$_]
         $failed = @()
@@ -321,7 +337,8 @@ switch ($Target) {
         Write-Host '  .\run.ps1 diagnostics        Structural data summary'
         Write-Host ''
         Write-Host 'Setup:'
-        Write-Host '  .\run.ps1 install            Install R packages'
+        Write-Host '  .\run.ps1 setup              Full setup: Git + R + Rtools + packages + MiKTeX'
+        Write-Host '  .\run.ps1 install            Install R packages only'
         break
     }
 

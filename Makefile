@@ -53,7 +53,7 @@ TABLE_DIR  := output/tables
 # ---- Default target ----
 .DEFAULT_GOAL := help
 
-.PHONY: help install all test volcano venn go string families overlap clean pull push status check \
+.PHONY: help install all test volcano venn go string families overlap clean pull push status check setup \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
         string-network crac-network venn-overflow-examples gsea pathway-network lydia-volcano chx-common \
         all-volcano all-venn all-targeted targeted-plots \
@@ -69,6 +69,7 @@ help:
 	@echo "TRIP4/ASCC Proteomics Analysis Pipeline"
 	@echo ""
 	@echo "First time setup:"
+	@echo "  make setup       Full setup: R + packages + LaTeX (one command)"
 	@echo "  make install     Install all required R packages"
 	@echo "  make check       Verify all packages are installed"
 	@echo ""
@@ -141,6 +142,57 @@ help:
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean       Remove all generated figures and tables"
+
+# ---- Setup (one-command full environment setup) ----
+# Installs EVERYTHING: system deps + R packages + LaTeX
+# On Windows: calls bootstrap-windows-all.ps1 (needs PowerShell)
+# On Linux: installs R + TeX Live + R packages
+ifeq ($(OS),Windows_NT)
+setup: ## Full setup: Git + R + Rtools + R packages + MiKTeX (Windows)
+	@echo "=== Windows full setup ==="
+	powershell -ExecutionPolicy Bypass -File ansible/bootstrap-windows-all.ps1
+else
+setup: ## Full setup: R + TeX Live + R packages (Linux/macOS)
+	@echo "=== Linux/macOS full setup ==="
+	@# R + R packages
+	@if ! command -v Rscript >/dev/null 2>&1; then \
+		echo "Installing R..."; \
+		if command -v apt-get >/dev/null 2>&1; then \
+			sudo apt-get update && sudo apt-get install -y r-base; \
+		elif command -v dnf >/dev/null 2>&1; then \
+			sudo dnf install -y R; \
+		elif command -v brew >/dev/null 2>&1; then \
+			brew install r; \
+		else \
+			echo "Install R manually: https://cran.r-project.org/"; \
+			exit 1; \
+		fi; \
+	fi
+	@# LaTeX (TeX Live)
+	@if ! command -v pdflatex >/dev/null 2>&1; then \
+		echo "Installing TeX Live..."; \
+		if command -v apt-get >/dev/null 2>&1; then \
+			sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended texlive-latex-base; \
+		elif command -v dnf >/dev/null 2>&1; then \
+			sudo dnf install -y texlive-scheme-medium; \
+		elif command -v brew >/dev/null 2>&1; then \
+			brew install --cask mactex; \
+		else \
+			echo "Install TeX Live manually: https://www.tug.org/texlive/"; \
+		fi; \
+	fi
+	@# R packages
+	$(RSCRIPT) R/00_install_packages.R
+	@echo ""
+	@echo "========================================="
+	@echo " SETUP COMPLETE"
+	@echo "========================================="
+	@echo "  R packages:  installed"
+	@command -v pdflatex >/dev/null 2>&1 && echo "  LaTeX:        $$(pdflatex --version | head -1)" || echo "  LaTeX:        NOT FOUND (install manually for posters)"
+	@echo "  Test:         make test"
+	@echo "  Poster:       make poster-review"
+	@echo "========================================="
+endif
 
 # ---- Install ----
 install: ## Install all required R packages

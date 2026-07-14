@@ -234,9 +234,30 @@ if ($Rscript -and (Test-Path $Rscript)) {
 }
 
 # =====================================================================
-# 5. Verification
+# 5. MiKTeX (LaTeX — needed for poster compilation)
 # =====================================================================
-Step "5/5" "Verification..."
+Step "5/6" "Installing MiKTeX (LaTeX)..."
+Refresh-Path
+
+if (Get-Command pdflatex -ErrorAction SilentlyContinue) {
+    Skip "MiKTeX/pdflatex"
+} elseif (Get-Command choco -ErrorAction SilentlyContinue) {
+    Info "Installing MiKTeX via Chocolatey..."
+    choco install miktex -y --no-progress 2>$null
+    Refresh-Path
+    if (Get-Command pdflatex -ErrorAction SilentlyContinue) {
+        OK "MiKTeX installed"
+    } else {
+        Warn "MiKTeX install may have failed. Download from https://miktex.org/download"
+    }
+} else {
+    Warn "Cannot install MiKTeX (no Chocolatey). Download from https://miktex.org/download"
+}
+
+# =====================================================================
+# 6. Verification
+# =====================================================================
+Step "6/6" "Verification..."
 
 if ($Rscript -and (Test-Path $Rscript)) {
     & $Rscript -e "cat('R:', R.version.string, '\n'); pkgs <- c('ggplot2','clusterProfiler','EnhancedVolcano','org.Hs.eg.db','igraph','ggVennDiagram'); for (p in pkgs) cat(sprintf('  %-25s %s', p, ifelse(requireNamespace(p, quietly=TRUE), 'OK', 'MISSING')), '\n')"
