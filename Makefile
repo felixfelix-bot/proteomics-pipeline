@@ -61,7 +61,7 @@ TABLE_DIR  := output/tables
         open-targeted-volcano open-flagip-volcano open-targeted-venn open-targeted-go open-chx-crac open-venn-examples open-venn-label-examples \
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all \
-        chx-kegg-crac
+        chx-kegg-crac dotplot-variants
 
 # ---- Help ----
 help:
@@ -104,6 +104,7 @@ help:
 	@echo "  make bidirectional-go Bidirectional GO dot plot (up=right, down=left)"
 	@echo "  make shinygo-compare  Compare ShinyGO export with our STRING results"
 	@echo "  make chx-kegg-crac   KEGG on CHX + CRAC/TurboID overlap + labeled volcano"
+	@echo "  make dotplot-variants  GO dotplot font-size variants (full + short terms, 3 sizes)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make volcano-plots      All volcano plots (targeted + flagIP + Lydia)"
@@ -272,6 +273,9 @@ poster: aruna-fast poster-figures ## Generate ALL poster figures + compile LaTeX
 
 chx-kegg-crac: check clean-old ## KEGG on CHX data + CRAC/TurboID overlap + volcano
 	$(RSCRIPT) R/run_step.R chx_kegg_crac_overlap
+
+dotplot-variants: check ## GO dotplot font-size variants (18 files: 3 plots x 2 label modes x 3 sizes)
+	$(RSCRIPT) R/run_step.R dotplot_variants
 
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
 	$(RSCRIPT) R/run_step.R string_style_network

@@ -31,7 +31,7 @@ main <- function() {
                    "diagnostics", "network_go", "bidirectional_go_ra",
                    "string_style_network", "chx_volcano_venn",
                    "flagip_validated_go", "poster_figures",
-                   "chx_kegg_crac_overlap")
+                   "chx_kegg_crac_overlap", "dotplot_variants")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -70,7 +70,8 @@ main <- function() {
     chx_volcano_venn       = "R/29_chx_volcano_venn.R",
     flagip_validated_go    = "R/30_flagip_validated_go.R",
     poster_figures         = "R/31_poster_figures.R",
-    chx_kegg_crac_overlap  = "R/32_chx_kegg_crac_overlap.R"
+    chx_kegg_crac_overlap  = "R/32_chx_kegg_crac_overlap.R",
+    dotplot_variants       = "R/33_dotplot_variants.R"
   )
 
   # Set up logging (captures all output to file + console)
