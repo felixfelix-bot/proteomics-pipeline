@@ -194,13 +194,14 @@ switch ($Target) {
     }
 
     'poster-review' {
+        # Step 1: Regenerate all 6 poster figures
         $posterSteps = @(
             'targeted_volcanos',
             'flagip_volcano',
             'lydia_network_volcano',
             'flagip_validated_go',
             'network_go',
-            'ra_common'
+            'targeted_go'
         )
         $failed = @()
         foreach ($step in $posterSteps) {
@@ -212,39 +213,55 @@ switch ($Target) {
             Write-Host 'Continuing with available figures...' -ForegroundColor Yellow
         }
 
-        # Copy figures to poster/figures/ with standardized names (no hash)
+        # Step 2: Collect + compile falls through to shared block below
+    }
+
+    'poster-review-only' {
+        # Skip figure regeneration — just collect + compile (fast iteration)
+        # Fall through to collect+compile below
+    }
+
+    { $_ -eq 'poster-review' -or $_ -eq 'poster-review-only' } {
+        # ---- Collect figures from output/figures/ (RECURSIVE) ----
+        # Searches ALL subdirectories (handles "update before lydia", "Final volcano plots")
         $figDir = 'output\figures'
         $posterDir = 'poster\figures'
         if (-not (Test-Path $posterDir)) { New-Item -ItemType Directory -Path $posterDir | Out-Null }
 
-        $patterns = @(
-            'flagip_overlap_volcano_BK467_TRIP4_vs_WT',
-            'lydia_network_volcano',
-            'targeted_volcano_BK504_RA_effect',
-            'flagip_GO_validated_any_BP_dotplot',
-            'network_go_comparison_BP',
-            'targeted_GO_RA_shared_core_MF_dotplot'
-        )
+        # Pattern -> clean name mapping (clean names match poster_review.tex \includegraphics)
+        $figMap = @{
+            'flagip_GO_validated_any_BP_dotplot'       = 'dotplot_flagip_validated_BP'
+            'network_go_comparison_BP'                 = 'dotplot_network_go_BP'
+            'targeted_GO_RA_shared_core_MF_dotplot'    = 'dotplot_RA_shared_MF'
+            'flagip_overlap_volcano_BK467_TRIP4_vs_WT' = 'volcano_flagip_overlap'
+            'lydia_network_volcano'                    = 'volcano_lydia_network'
+            'targeted_volcano_BK504_RA_effect'         = 'volcano_RA_BK504'
+        }
 
         Write-Host ''
-        Write-Host 'Copying figures to poster\figures\ ...' -ForegroundColor Cyan
-        foreach ($pat in $patterns) {
-            $pdf = Get-ChildItem -Path $figDir -Filter "$($pat)_*.pdf" -ErrorAction SilentlyContinue |
-                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            $png = Get-ChildItem -Path $figDir -Filter "$($pat)_*.png" -ErrorAction SilentlyContinue |
-                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            if ($pdf) {
-                Copy-Item $pdf.FullName "$posterDir\$($pat).pdf" -Force
-                Write-Host "  PDF: $($pdf.Name) -> $($pat).pdf"
-            } else {
-                Write-Host "  WARNING: No PDF for $pat" -ForegroundColor Yellow
+        Write-Host 'Collecting figures (recursive search)...' -ForegroundColor Cyan
+        foreach ($entry in $figMap.GetEnumerator()) {
+            $pattern = $entry.Key
+            $cleanName = $entry.Value
+
+            # Search recursively for PDF (preferred) then PNG
+            $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.pdf" -ErrorAction SilentlyContinue |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $found) {
+                $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.png" -ErrorAction SilentlyContinue |
+                         Sort-Object LastWriteTime -Descending | Select-Object -First 1
             }
-            if ($png) {
-                Copy-Item $png.FullName "$posterDir\$($pat).png" -Force
+
+            if ($found) {
+                $ext = $found.Extension  # .pdf or .png
+                Copy-Item $found.FullName "$posterDir\$cleanName$ext" -Force
+                Write-Host "  $($found.Name) -> $cleanName$ext"
+            } else {
+                Write-Host "  WARNING: Not found: $pattern" -ForegroundColor Yellow
             }
         }
 
-        # Compile poster
+        # Step 3: Compile LaTeX poster
         Write-Host ''
         Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
         Push-Location 'poster'
@@ -257,6 +274,8 @@ switch ($Target) {
             Write-Host '=========================================' -ForegroundColor Green
             Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
             Write-Host '=========================================' -ForegroundColor Green
+            # Open the PDF for immediate viewing
+            Start-Process 'poster\poster_review.pdf'
         } else {
             Write-Host 'LaTeX compilation failed. Check if pdflatex is installed.' -ForegroundColor Red
             Write-Host 'Install MiKTeX from https://miktex.org/' -ForegroundColor Yellow
@@ -282,6 +301,7 @@ switch ($Target) {
         Write-Host '  .\run.ps1 flagip-validated-go  Flag-validated GO+KEGG'
         Write-Host '  .\run.ps1 poster-figures     Poster-styled figures'
         Write-Host '  .\run.ps1 poster-review       All 6 poster figures + compile to single PDF'
+        Write-Host '  .\run.ps1 poster-review-only   Just collect + compile (fast, skip R)'
         Write-Host '  .\run.ps1 dotplot-variants   GO dotplot font-size variants'
         Write-Host '  .\run.ps1 diagnostics        Structural data summary'
         Write-Host ''

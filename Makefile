@@ -62,7 +62,7 @@ TABLE_DIR  := output/tables
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all \
         chx-kegg-crac dotplot-variants \
-        poster-review
+        poster-review poster-review-only
 
 # ---- Help ----
 help:
