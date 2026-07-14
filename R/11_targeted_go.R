@@ -133,8 +133,10 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p_dot$data$Count)) +
+                                     breaks = make_size_breaks(p_dot$data$Count),
+                                     limits = c(0, NA)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster()
     save_figure(p_dot, paste0(prefix, "_dotplot"), width = 18, height = max(14, n_show * 0.8))
@@ -216,8 +218,10 @@ run_targeted_kegg <- function(genes, set_name, universe) {
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p_kegg$data$Count)) +
+                                     breaks = make_size_breaks(p_kegg$data$Count),
+                                     limits = c(0, NA)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster()
     save_figure(p_kegg, paste0(prefix, "_dotplot"),

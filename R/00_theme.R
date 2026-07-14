@@ -36,12 +36,30 @@ POSTER_FONTS <- list(
 # Helper: create size breaks that cover the FULL data range (min to max).
 # Used with scale_size_continuous(breaks = ...) so the size legend
 # always shows the smallest and largest dot sizes.
+#
+# CRITICAL: The caller MUST also pass limits = c(0, NA) to
+# scale_size_continuous(). Without limits, ggplot uses the data min
+# as the domain minimum, so break=0 maps to the same size as the
+# smallest data dot. With limits = c(0, NA), the domain starts at 0,
+# making the 0-break legend dot genuinely smaller than any data dot.
 make_size_breaks <- function(counts) {
-  cmin <- min(counts, na.rm = TRUE)
   cmax <- max(counts, na.rm = TRUE)
-  brks <- pretty(c(cmin, cmax), n = 3)
-  # Force actual min and max to always appear in legend
-  unique(sort(c(cmin, brks, cmax)))
+  # Start from 0 so the smallest legend dot is always smaller
+  # than any actual data point's dot.
+  brks <- pretty(c(0, cmax), n = 3)
+  unique(sort(brks))
+}
+
+# Standard guides() call for size legend — ensures legend circles
+# render consistently (grey fill, not black) regardless of the
+# color scale override applied to the dotplot.
+# Usage: p + guides(size = size_legend_guide())
+size_legend_guide <- function() {
+  ggplot2::guide_legend(
+    override.aes = list(color = "grey50", fill = NA),
+    title.position = "top",
+    order = 2
+  )
 }
 # clusterProfiler returns terms like "negative regulation of..."
 # This capitalizes the very first character.

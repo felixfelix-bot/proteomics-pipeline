@@ -31,6 +31,7 @@ library(org.Hs.eg.db)
 library(enrichplot)
 library(ggplot2)
 library(patchwork)
+source("R/00_theme.R")
 
 # ---- Load data ----
 experiments <- load_all_experiments()
@@ -253,6 +254,9 @@ ONT_NAMES <- c("BP" = "Biological Process",
                "CC" = "Cellular Component",
                "MF" = "Molecular Function")
 
+# Three font-size variants for the user to choose from
+FONT_SIZES <- c(v1 = 15, v2 = 18, v3 = 21)
+
 for (ont in c("BP", "CC", "MF")) {
   has_in <- !is.null(go_in_net[[ont]]) && nrow(as.data.frame(go_in_net[[ont]])) > 0
   has_not <- !is.null(go_not_net[[ont]]) && nrow(as.data.frame(go_not_net[[ont]])) > 0
@@ -264,57 +268,77 @@ for (ont in c("BP", "CC", "MF")) {
 
   cat(sprintf("  [%s] Building side-by-side plot... ", ont))
 
-  plots <- list()
+  # Build base plots (without per-version theming)
+  base_plots <- list()
 
-  # In-network plot
   if (has_in) {
     n_show <- min(15, nrow(as.data.frame(go_in_net[[ont]])))
-    p_in <- dotplot(go_in_net[[ont]], showCategory = n_show) +
-      ggplot2::labs(title = sprintf("In Network (%d genes) — %s",
-                                    length(in_network_genes), ONT_NAMES[ont]),
-                    x = "GeneRatio", color = "p.adjust") +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 10),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
-    plots[["in"]] <- p_in
+    p_in <- dotplot(go_in_net[[ont]], showCategory = n_show)
+    p_in <- p_in +
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
+                                     breaks = make_size_breaks(p_in$data$Count),
+                                     limits = c(0, NA)) +
+      ggplot2::guides(size = size_legend_guide()) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::labs(
+        title = sprintf("In Network (%d genes) — %s",
+                        length(in_network_genes), ONT_NAMES[ont]),
+        x = "Gene Ratio")
+    base_plots[["in"]] <- p_in
   }
 
-  # Not-in-network plot
   if (has_not) {
     n_show <- min(15, nrow(as.data.frame(go_not_net[[ont]])))
-    p_not <- dotplot(go_not_net[[ont]], showCategory = n_show) +
-      ggplot2::labs(title = sprintf("Not In Network (%d genes) — %s",
-                                    length(not_in_network_genes), ONT_NAMES[ont]),
-                    x = "GeneRatio", color = "p.adjust") +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 10),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
-    plots$not <- p_not
+    p_not <- dotplot(go_not_net[[ont]], showCategory = n_show)
+    p_not <- p_not +
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
+                                     breaks = make_size_breaks(p_not$data$Count),
+                                     limits = c(0, NA)) +
+      ggplot2::guides(size = size_legend_guide()) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::labs(
+        title = sprintf("Not In Network (%d genes) — %s",
+                        length(not_in_network_genes), ONT_NAMES[ont]),
+        x = "Gene Ratio")
+    base_plots$not <- p_not
   }
 
-  # Combine side by side
-  if (length(plots) == 2) {
-    combined <- plots[["in"]] + plots$not +
-      patchwork::plot_layout(widths = c(1, 1)) +
-      patchwork::plot_annotation(
-        title = sprintf("GO Enrichment: In-Network vs Not-In-Network — %s", ONT_NAMES[ont]),
-        subtitle = "TRIP4 TurboID vs WT — enriched proteins split by STRING network membership",
-        theme = ggplot2::theme(
-          plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 12),
-          plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 9, color = "grey30")
+  # Generate each font-size variant
+  for (ver in names(FONT_SIZES)) {
+    fs <- FONT_SIZES[[ver]]
+
+    themed_plots <- list()
+    for (nm in names(base_plots)) {
+      themed_plots[[nm]] <- base_plots[[nm]] + theme_poster(font_size = fs)
+    }
+
+    # Combine side by side
+    if (length(themed_plots) == 2) {
+      combined <- themed_plots[["in"]] + themed_plots$not +
+        patchwork::plot_layout(widths = c(1, 1)) +
+        patchwork::plot_annotation(
+          title = sprintf("GO Enrichment: In-Network vs Not-In-Network — %s", ONT_NAMES[ont]),
+          subtitle = "TRIP4 TurboID vs WT — enriched proteins split by STRING network membership",
+          theme = ggplot2::theme(
+            plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = fs + 2),
+            plot.subtitle = ggplot2::element_text(hjust = 0.5, size = fs - 2, color = "grey30")
+          )
         )
-      )
-  } else if (!is.null(plots[["in"]])) {
-    combined <- plots[["in"]]
-  } else {
-    combined <- plots$not
-  }
+    } else if (!is.null(themed_plots[["in"]])) {
+      combined <- themed_plots[["in"]]
+    } else {
+      combined <- themed_plots$not
+    }
 
-  filename <- sprintf("network_go_comparison_%s", ont)
-  fig_w <- if (length(plots) == 2) 16 else 8
-  save_figure(combined, filename, width = fig_w, height = 8)
+    filename <- sprintf("network_go_comparison_%s_%s", ont, ver)
+    fig_w <- if (length(themed_plots) == 2) 20 else 10
+    fig_h <- if (length(themed_plots) == 2) 12 else 14
+    save_figure(combined, filename, width = fig_w, height = fig_h)
+  }
 
   cat("done\n")
 }
@@ -373,17 +397,22 @@ run_kegg_for_split <- function(genes, set_name, universe) {
     n_show <- min(20, nrow(kegg_df))
     fig_height <- max(7, n_show * 0.4)
 
-    p <- enrichplot::dotplot(ekegg, showCategory = n_show) +
+    p <- enrichplot::dotplot(ekegg, showCategory = n_show)
+    p <- p +
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
+                                     breaks = make_size_breaks(p$data$Count),
+                                     limits = c(0, NA)) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(
         title = sprintf("KEGG: %s (%d genes)", set_name, length(genes)),
-        x = "GeneRatio", color = "p.adjust"
+        x = "Gene Ratio"
       ) +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
+      theme_poster()
     save_figure(p, sprintf("network_KEGG_%s_dotplot", set_name),
-                width = 10, height = fig_height)
+                width = 18, height = max(14, n_show * 0.8))
 
   }, error = function(e) {
     cat(sprintf("    KEGG error (may need internet): %s\n",

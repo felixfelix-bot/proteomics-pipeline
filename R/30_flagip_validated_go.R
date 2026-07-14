@@ -116,8 +116,10 @@ run_validated_go <- function(genes, set_label) {
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p$data$Count)) +
+                                     breaks = make_size_breaks(p$data$Count),
+                                     limits = c(0, NA)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(
         title = sprintf("Flag IP %s — %s", gsub("_", " ", set_label), ONT_NAMES[ont]),
         x = "Gene Ratio"
@@ -152,8 +154,10 @@ run_validated_go <- function(genes, set_label) {
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p$data$Count)) +
+                                     breaks = make_size_breaks(p$data$Count),
+                                     limits = c(0, NA)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(title = sprintf("Flag IP %s — KEGG Pathways", gsub("_", " ", set_label)),
                     x = "Gene Ratio") +
       theme_poster()
