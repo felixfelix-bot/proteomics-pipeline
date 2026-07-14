@@ -67,7 +67,7 @@ PUBLICATION_FONTS <- list(
 # Applies consistent font sizes to every ggplot element.
 # Usage: my_plot + theme_poster()              # default 20pt
 #        my_plot + theme_poster(font_size = 18) # smaller (volcanos)
-theme_poster <- function(base_family = "sans", font_size = 20) {
+theme_poster <- function(base_family = "sans", font_size = 16) {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
       # Titles

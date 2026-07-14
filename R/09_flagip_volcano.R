@@ -254,7 +254,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
     title = "TRIP4 TurboID vs WT — Flag IP Validation"
   ) +
-  theme_poster(font_size = 18) +
+  theme_poster(font_size = 16) +
   ggplot2::theme(
     legend.position = c(0.02, 0.98),
     legend.justification = c(0, 1),
