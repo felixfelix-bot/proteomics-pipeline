@@ -182,7 +182,6 @@ switch ($Target) {
     }
 
     { $groupTargets.ContainsKey($_) } {
-    { $groupTargets.ContainsKey($_) } {
         $steps = $groupTargets[$_]
         $failed = @()
         foreach ($step in $steps) {
