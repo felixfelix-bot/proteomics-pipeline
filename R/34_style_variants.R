@@ -243,32 +243,24 @@ for (i in seq_along(variants)) {
   cat(sprintf("  Building variant %d/%d...\n", i, length(variants)))
 
   go_plot <- tryCatch({
-    build_go_dotplot(v$theme, wrap_width = v$wrap)
+    p <- build_go_dotplot(v$theme, wrap_width = v$wrap)
+    p + labs(title = sprintf("Variant %d — GO Dotplot\n%s", i, v$desc))
   }, error = function(e) {
-    ggplot() + annotate("text", x = 0.5, y = 0.5, label = paste("GO plot error:", conditionMessage(e)), size = 4) +
-      theme_void() + labs(title = "GO Dotplot (error)")
+    ggplot() + annotate("text", x = 0.5, y = 0.5,
+      label = paste("GO plot error:", conditionMessage(e)), size = 4) +
+      theme_void() + labs(title = sprintf("Variant %d — GO (error)", i))
   })
+  print(go_plot)
 
   vol_plot <- tryCatch({
-    build_volcano(v$theme, label_size = v$label)
+    p <- build_volcano(v$theme, label_size = v$label)
+    p + labs(title = sprintf("Variant %d — Volcano\n%s", i, v$desc))
   }, error = function(e) {
-    ggplot() + annotate("text", x = 0.5, y = 0.5, label = paste("Volcano error:", conditionMessage(e)), size = 4) +
-      theme_void() + labs(title = "Volcano (error)")
+    ggplot() + annotate("text", x = 0.5, y = 0.5,
+      label = paste("Volcano error:", conditionMessage(e)), size = 4) +
+      theme_void() + labs(title = sprintf("Variant %d — Volcano (error)", i))
   })
-
-  # Combine side by side
-  combined <- cowplot::plot_grid(go_plot, vol_plot, ncol = 2, rel_widths = c(1.2, 1))
-
-  # Add variant header
-  title_obj <- ggdraw() +
-    draw_label(
-      sprintf("Variant %d/%d: %s", i, length(variants), v$desc),
-      fontface = "bold", size = 14, hjust = 0, x = 0.02
-    )
-
-  final_plot <- cowplot::plot_grid(title_obj, combined, ncol = 1, rel_heights = c(0.08, 1))
-
-  print(final_plot)
+  print(vol_plot)
 }
 
 cat(sprintf("\n  Saved: %s\n", output_pdf))
