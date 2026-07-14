@@ -155,6 +155,186 @@ function Invoke-Step {
     return $true
 }
 
+# ---- Helper: collect figures + compile poster ----
+function Invoke-CollectAndCompile {
+    # ---- Collect figures from output/figures/ (RECURSIVE) ----
+    $figDir = 'output\figures'
+    $posterDir = 'poster\figures'
+    if (-not (Test-Path $posterDir)) { New-Item -ItemType Directory -Path $posterDir | Out-Null }
+
+    # Pattern -> clean name mapping (clean names match poster_review.tex \includegraphics)
+    $figMap = @{
+        'flagip_GO_validated_any_BP_dotplot'       = 'dotplot_flagip_validated_BP'
+        'network_go_comparison_BP'                 = 'dotplot_network_go_BP'
+        'targeted_GO_RA_shared_core_MF_dotplot'    = 'dotplot_RA_shared_MF'
+        'flagip_overlap_volcano_BK467_TRIP4_vs_WT' = 'volcano_flagip_overlap'
+        'lydia_network_volcano'                    = 'volcano_lydia_network'
+        'targeted_volcano_BK504_RA_effect'         = 'volcano_RA_BK504'
+    }
+
+    Write-Host ''
+    Write-Host 'Collecting figures (recursive search)...' -ForegroundColor Cyan
+    foreach ($entry in $figMap.GetEnumerator()) {
+        $pattern = $entry.Key
+        $cleanName = $entry.Value
+
+        # Search recursively for PDF (preferred) then PNG
+        $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.pdf" -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if (-not $found) {
+            $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.png" -ErrorAction SilentlyContinue |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        }
+
+        if ($found) {
+            $ext = $found.Extension  # .pdf or .png
+            Copy-Item $found.FullName "$posterDir\$cleanName$ext" -Force
+            Write-Host "  $($found.Name) -> $cleanName$ext"
+        } else {
+            Write-Host "  WARNING: Not found: $pattern" -ForegroundColor Yellow
+        }
+    }
+
+    # ---- Compile LaTeX poster (if pdflatex is available) ----
+    $pdflatex = Get-Command pdflatex -ErrorAction SilentlyContinue
+    if (-not $pdflatex) {
+        Write-Host ''
+        Write-Host '=========================================' -ForegroundColor Yellow
+        Write-Host ' FIGURES COLLECTED — pdflatex not installed' -ForegroundColor Yellow
+        Write-Host '=========================================' -ForegroundColor Yellow
+        Write-Host '  Figures are in poster\figures\' -ForegroundColor White
+        Write-Host ''
+        Write-Host '  To compile the poster PDF, install MiKTeX:' -ForegroundColor White
+        Write-Host '    1. Download: https://miktex.org/download' -ForegroundColor White
+        Write-Host '    2. Install (accept defaults)' -ForegroundColor White
+        Write-Host '    3. Run: .\run.ps1 poster-review-only' -ForegroundColor White
+        Write-Host ''
+        Write-Host '  OR: send the figures to someone with LaTeX installed.' -ForegroundColor White
+    } else {
+        Write-Host ''
+        Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
+        Push-Location 'poster'
+        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+        Pop-Location
+
+        if (Test-Path 'poster\poster_review.pdf') {
+            Write-Host ''
+            Write-Host '=========================================' -ForegroundColor Green
+            Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
+            Write-Host '=========================================' -ForegroundColor Green
+            # Open the PDF for immediate viewing
+            Start-Process 'poster\poster_review.pdf'
+        } else {
+            Write-Host 'LaTeX compilation failed.' -ForegroundColor Red
+        }
+    }
+}
+
+# ---- Helper: check data files exist ----
+function Test-DataFiles {
+    $dataFiles = Get-ChildItem -Path 'data' -Recurse -Filter '*diffEx_minProb*.csv' -ErrorAction SilentlyContinue
+    if (-not $dataFiles -or $dataFiles.Count -eq 0) {
+        Write-Host '=========================================' -ForegroundColor Red
+        Write-Host ' ERROR: No data files found in data\' -ForegroundColor Red
+        Write-Host '=========================================' -ForegroundColor Red
+        Write-Host ''
+        Write-Host 'The pipeline needs CSV files ending in _diffEx_minProb.csv' -ForegroundColor Yellow
+        Write-Host 'in the data\ directory (or subdirectories).' -ForegroundColor Yellow
+        Write-Host ''
+        Write-Host 'Copy your mass spec output files to data\ and try again.' -ForegroundColor Yellow
+        Write-Host ''
+        $dataContents = Get-ChildItem -Path 'data' -Recurse -ErrorAction SilentlyContinue
+        if ($dataContents) {
+            Write-Host 'Current contents of data\:' -ForegroundColor Gray
+            $dataContents | ForEach-Object { Write-Host "  $($_.FullName.Replace((Get-Location).Path, ''))" }
+        } else {
+            Write-Host 'data\ directory is empty or does not exist.' -ForegroundColor Gray
+        }
+        return $false
+    }
+    Write-Host "Found $($dataFiles.Count) data file(s) in data\" -ForegroundColor Green
+    Write-Host ''
+    return $true
+}
+
+# ---- Helper: collect figures + compile poster ----
+function Invoke-Poster-Collect {
+    # ---- Collect figures from output/figures/ (RECURSIVE) ----
+    # Searches ALL subdirectories (handles "update before lydia", "Final volcano plots")
+    $figDir = 'output\figures'
+    $posterDir = 'poster\figures'
+    if (-not (Test-Path $posterDir)) { New-Item -ItemType Directory -Path $posterDir | Out-Null }
+
+    # Pattern -> clean name mapping (clean names match poster_review.tex \includegraphics)
+    $figMap = @{
+        'flagip_GO_validated_any_BP_dotplot'       = 'dotplot_flagip_validated_BP'
+        'network_go_comparison_BP'                 = 'dotplot_network_go_BP'
+        'targeted_GO_RA_shared_core_MF_dotplot'    = 'dotplot_RA_shared_MF'
+        'flagip_overlap_volcano_BK467_TRIP4_vs_WT' = 'volcano_flagip_overlap'
+        'lydia_network_volcano'                    = 'volcano_lydia_network'
+        'targeted_volcano_BK504_RA_effect'         = 'volcano_RA_BK504'
+    }
+
+    Write-Host ''
+    Write-Host 'Collecting figures (recursive search)...' -ForegroundColor Cyan
+    foreach ($entry in $figMap.GetEnumerator()) {
+        $pattern = $entry.Key
+        $cleanName = $entry.Value
+
+        # Search recursively for PDF (preferred) then PNG
+        $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.pdf" -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if (-not $found) {
+            $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.png" -ErrorAction SilentlyContinue |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        }
+
+        if ($found) {
+            $ext = $found.Extension  # .pdf or .png
+            Copy-Item $found.FullName "$posterDir\$cleanName$ext" -Force
+            Write-Host "  $($found.Name) -> $cleanName$ext"
+        } else {
+            Write-Host "  WARNING: Not found: $pattern" -ForegroundColor Yellow
+        }
+    }
+
+    # Step 3: Compile LaTeX poster (if pdflatex is available)
+    $pdflatex = Get-Command pdflatex -ErrorAction SilentlyContinue
+    if (-not $pdflatex) {
+        Write-Host ''
+        Write-Host '=========================================' -ForegroundColor Yellow
+        Write-Host ' FIGURES COLLECTED - pdflatex not installed' -ForegroundColor Yellow
+        Write-Host '=========================================' -ForegroundColor Yellow
+        Write-Host '  Figures are in poster\figures\' -ForegroundColor White
+        Write-Host ''
+        Write-Host '  To compile the poster PDF, install MiKTeX:' -ForegroundColor White
+        Write-Host '    1. Download: https://miktex.org/download' -ForegroundColor White
+        Write-Host '    2. Install (accept defaults)' -ForegroundColor White
+        Write-Host '    3. Run: .\run.ps1 poster-review-only' -ForegroundColor White
+        Write-Host ''
+        Write-Host '  OR: send the figures to someone with LaTeX installed.' -ForegroundColor White
+    } else {
+        Write-Host ''
+        Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
+        Push-Location 'poster'
+        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+        Pop-Location
+
+        if (Test-Path 'poster\poster_review.pdf') {
+            Write-Host ''
+            Write-Host '=========================================' -ForegroundColor Green
+            Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
+            Write-Host '=========================================' -ForegroundColor Green
+            # Open the PDF for immediate viewing
+            Start-Process 'poster\poster_review.pdf'
+        } else {
+            Write-Host 'LaTeX compilation failed.' -ForegroundColor Red
+        }
+    }
+}
+
 # ---- Check packages first ----
 Write-Host 'Checking R packages...' -ForegroundColor Cyan
 & $RSCRIPT 'R/check_packages.R' 2>&1 | Write-Host
@@ -164,6 +344,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # ---- Dispatch ----
+$force = $RemainingArgs -contains '--force'
+
 switch ($Target) {
     'install' {
         Write-Host 'Installing R packages...' -ForegroundColor Cyan
@@ -187,7 +369,6 @@ switch ($Target) {
     }
 
     { $groupTargets.ContainsKey($_) } {
-        $force = $RemainingArgs -contains '--force'
         $steps = $groupTargets[$_]
         $failed = @()
         foreach ($step in $steps) {
@@ -206,7 +387,6 @@ switch ($Target) {
     }
 
     { $singleTargets.ContainsKey($_) } {
-        $force = $RemainingArgs -contains '--force'
         $stepName = $singleTargets[$_]
         $ok = Invoke-Step -StepName $stepName -Force:$force
         if ($ok) {
@@ -216,85 +396,39 @@ switch ($Target) {
     }
 
     'poster-review' {
-        # Step 0: Check that data files exist
-        $dataFiles = Get-ChildItem -Path 'data' -Recurse -Filter '*diffEx_minProb*.csv' -ErrorAction SilentlyContinue
-        if (-not $dataFiles -or $dataFiles.Count -eq 0) {
-            Write-Host '=========================================' -ForegroundColor Red
-            Write-Host ' ERROR: No data files found in data\' -ForegroundColor Red
-            Write-Host '=========================================' -ForegroundColor Red
-            Write-Host ''
-            Write-Host 'The pipeline needs CSV files ending in _diffEx_minProb.csv' -ForegroundColor Yellow
-            Write-Host 'in the data\ directory (or subdirectories).' -ForegroundColor Yellow
-            Write-Host ''
-            Write-Host 'Copy your mass spec output files to data\ and try again.' -ForegroundColor Yellow
-            Write-Host ''
-            # Show what IS in data\ for debugging
-            $dataContents = Get-ChildItem -Path 'data' -Recurse -ErrorAction SilentlyContinue
-            if ($dataContents) {
-                Write-Host 'Current contents of data\:' -ForegroundColor Gray
-                $dataContents | ForEach-Object { Write-Host "  $($_.FullName.Replace((Get-Location).Path, ''))" }
-            } else {
-                Write-Host 'data\ directory is empty or does not exist.' -ForegroundColor Gray
-            }
-            break
-        }
-        Write-Host "Found $($dataFiles.Count) data file(s) in data\" -ForegroundColor Green
-        Write-Host ''
+        # Step 1: Check data files
+        if (-not (Test-DataFiles)) { break }
 
-        # Step 1: Regenerate poster figures (with caching)
-        # Each step maps to a key output file — if it exists in output\figures\, skip
+        # Step 2: Generate poster figures (run_step.R handles caching)
         $posterSteps = @(
-            @{ name = 'targeted_volcanos';     check = 'targeted_volcano_BK504_RA_effect' },
-            @{ name = 'flagip_volcano';         check = 'flagip_overlap_volcano_BK467_TRIP4_vs_WT' },
-            @{ name = 'lydia_network_volcano';  check = 'lydia_network_volcano' },
-            @{ name = 'flagip_validated_go';    check = 'flagip_GO_validated_any_BP_dotplot' },
-            @{ name = 'network_go';             check = 'network_go_comparison_BP' },
-            @{ name = 'ra_common';              check = 'RA_common_enriched' },
-            @{ name = 'targeted_go';            check = 'targeted_GO_RA_shared_core_MF_dotplot' }
+            'targeted_volcanos',
+            'flagip_volcano',
+            'lydia_network_volcano',
+            'flagip_validated_go',
+            'network_go',
+            'ra_common',
+            'targeted_go'
         )
         $failed = @()
-        $skipped = 0
         foreach ($step in $posterSteps) {
-            $stepName = $step.name
-            $checkPattern = $step.check
-
-            # Check if output already exists (caching)
-            $existing = Get-ChildItem -Path 'output\figures' -Recurse -Filter "$($checkPattern)*.pdf" -ErrorAction SilentlyContinue |
-                        Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            if (-not $existing) {
-                $existing = Get-ChildItem -Path 'output\figures' -Recurse -Filter "$($checkPattern)*.png" -ErrorAction SilentlyContinue |
-                            Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            }
-
-            if ($existing) {
-                Write-Host "  [CACHED] $stepName — output exists: $($existing.Name)" -ForegroundColor DarkGray
-                $skipped++
-                continue
-            }
-
-            $ok = Invoke-Step -StepName $stepName
-            if (-not $ok) { $failed += $stepName }
+            $ok = Invoke-Step -StepName $step -Force:$force
+            if (-not $ok) { $failed += $step }
         }
         Write-Host ''
-        if ($skipped -gt 0) {
-            Write-Host "  $skipped step(s) skipped (cached). " -ForegroundColor DarkGreen
-        }
         if ($failed.Count -gt 0) {
             Write-Host "Some steps failed: $($failed -join ', ')" -ForegroundColor Yellow
             Write-Host 'Continuing with available figures...' -ForegroundColor Yellow
         }
 
-        # Step 2: Collect + compile falls through to shared block below
+        # Step 3: Collect + compile
+        Invoke-CollectAndCompile
+        break
     }
 
     'poster-review-force' {
         # Same as poster-review but ignores cache — regenerates everything
-        $dataFiles = Get-ChildItem -Path 'data' -Recurse -Filter '*diffEx_minProb*.csv' -ErrorAction SilentlyContinue
-        if (-not $dataFiles -or $dataFiles.Count -eq 0) {
-            Write-Host 'ERROR: No data files in data\' -ForegroundColor Red
-            break
-        }
-        Write-Host "Found $($dataFiles.Count) data file(s) — regenerating ALL figures..." -ForegroundColor Green
+        if (-not (Test-DataFiles)) { break }
+        Write-Host "Regenerating ALL figures (no cache)..." -ForegroundColor Green
 
         $posterSteps = @(
             'targeted_volcanos',
@@ -307,94 +441,20 @@ switch ($Target) {
         )
         $failed = @()
         foreach ($step in $posterSteps) {
-            $ok = Invoke-Step -StepName $step
+            $ok = Invoke-Step -StepName $step -Force
             if (-not $ok) { $failed += $step }
         }
         if ($failed.Count -gt 0) {
             Write-Host "Some steps failed: $($failed -join ', ')" -ForegroundColor Yellow
         }
-        # Falls through to collect+compile below
+
+        Invoke-CollectAndCompile
+        break
     }
 
     'poster-review-only' {
         # Skip figure regeneration — just collect + compile (fast iteration)
-        # Fall through to collect+compile below
-    }
-
-    { $_ -eq 'poster-review' -or $_ -eq 'poster-review-only' -or $_ -eq 'poster-review-force' } {
-        # ---- Collect figures from output/figures/ (RECURSIVE) ----
-        # Searches ALL subdirectories (handles "update before lydia", "Final volcano plots")
-        $figDir = 'output\figures'
-        $posterDir = 'poster\figures'
-        if (-not (Test-Path $posterDir)) { New-Item -ItemType Directory -Path $posterDir | Out-Null }
-
-        # Pattern -> clean name mapping (clean names match poster_review.tex \includegraphics)
-        $figMap = @{
-            'flagip_GO_validated_any_BP_dotplot'       = 'dotplot_flagip_validated_BP'
-            'network_go_comparison_BP'                 = 'dotplot_network_go_BP'
-            'targeted_GO_RA_shared_core_MF_dotplot'    = 'dotplot_RA_shared_MF'
-            'flagip_overlap_volcano_BK467_TRIP4_vs_WT' = 'volcano_flagip_overlap'
-            'lydia_network_volcano'                    = 'volcano_lydia_network'
-            'targeted_volcano_BK504_RA_effect'         = 'volcano_RA_BK504'
-        }
-
-        Write-Host ''
-        Write-Host 'Collecting figures (recursive search)...' -ForegroundColor Cyan
-        foreach ($entry in $figMap.GetEnumerator()) {
-            $pattern = $entry.Key
-            $cleanName = $entry.Value
-
-            # Search recursively for PDF (preferred) then PNG
-            $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.pdf" -ErrorAction SilentlyContinue |
-                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            if (-not $found) {
-                $found = Get-ChildItem -Path $figDir -Recurse -Filter "$($pattern)*.png" -ErrorAction SilentlyContinue |
-                         Sort-Object LastWriteTime -Descending | Select-Object -First 1
-            }
-
-            if ($found) {
-                $ext = $found.Extension  # .pdf or .png
-                Copy-Item $found.FullName "$posterDir\$cleanName$ext" -Force
-                Write-Host "  $($found.Name) -> $cleanName$ext"
-            } else {
-                Write-Host "  WARNING: Not found: $pattern" -ForegroundColor Yellow
-            }
-        }
-
-        # Step 3: Compile LaTeX poster (if pdflatex is available)
-        $pdflatex = Get-Command pdflatex -ErrorAction SilentlyContinue
-        if (-not $pdflatex) {
-            Write-Host ''
-            Write-Host '=========================================' -ForegroundColor Yellow
-            Write-Host ' FIGURES COLLECTED — pdflatex not installed' -ForegroundColor Yellow
-            Write-Host '=========================================' -ForegroundColor Yellow
-            Write-Host '  Figures are in poster\figures\' -ForegroundColor White
-            Write-Host ''
-            Write-Host '  To compile the poster PDF, install MiKTeX:' -ForegroundColor White
-            Write-Host '    1. Download: https://miktex.org/download' -ForegroundColor White
-            Write-Host '    2. Install (accept defaults)' -ForegroundColor White
-            Write-Host '    3. Run: .\run.ps1 poster-review-only' -ForegroundColor White
-            Write-Host ''
-            Write-Host '  OR: send the figures to someone with LaTeX installed.' -ForegroundColor White
-        } else {
-            Write-Host ''
-            Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
-            Push-Location 'poster'
-            & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
-            & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
-            Pop-Location
-
-            if (Test-Path 'poster\poster_review.pdf') {
-                Write-Host ''
-                Write-Host '=========================================' -ForegroundColor Green
-                Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
-                Write-Host '=========================================' -ForegroundColor Green
-                # Open the PDF for immediate viewing
-                Start-Process 'poster\poster_review.pdf'
-            } else {
-                Write-Host 'LaTeX compilation failed.' -ForegroundColor Red
-            }
-        }
+        Invoke-CollectAndCompile
         break
     }
 
