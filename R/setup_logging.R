@@ -35,18 +35,20 @@ setup_logging <- function(script_name = "run") {
   #
   # tryCatch() is R's try/catch — if git isn't available (or this isn't
   # a git repo), it returns "unknown" instead of crashing.
-  git_commit <- tryCatch(
-    trimws(system2("git", c("rev-parse", "--short", "HEAD"),
-                   stdout = TRUE, stderr = FALSE)),
-    error = function(e) "unknown"
-  )
+  git_commit <- tryCatch({
+    result <- system2("git", c("rev-parse", "--short", "HEAD"),
+                      stdout = TRUE, stderr = FALSE)
+    # system2 returns character(0) when git fails (not a repo, git missing).
+    # tryCatch only catches R errors, not non-zero git exit codes.
+    if (length(result) == 0 || result == "") "nogit" else trimws(result)
+  }, error = function(e) "nogit")
 
   # Also get the branch name (e.g., "main", "develop")
-  git_branch <- tryCatch(
-    trimws(system2("git", c("rev-parse", "--abbrev-ref", "HEAD"),
-                   stdout = TRUE, stderr = FALSE)),
-    error = function(e) "unknown"
-  )
+  git_branch <- tryCatch({
+    result <- system2("git", c("rev-parse", "--abbrev-ref", "HEAD"),
+                      stdout = TRUE, stderr = FALSE)
+    if (length(result) == 0 || result == "") "nogit" else trimws(result)
+  }, error = function(e) "nogit")
 
   # ---- Create a timestamped log filename ----
   # Sys.time() returns the current date and time.
