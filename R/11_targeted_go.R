@@ -34,6 +34,7 @@ cat("=========================================\n\n")
 library(org.Hs.eg.db)
 library(clusterProfiler)
 library(enrichplot)
+source("R/00_theme.R")
 
 experiments <- load_all_experiments()
 
@@ -128,12 +129,12 @@ run_targeted_go <- function(genes, set_name, universe) {
 
     p_dot <- dotplot(result_simple, showCategory = n_show,
                      title = dot_title) +
-      ggplot2::labs(x = "Gene Ratio",  # Fix: space between Gene and Ratio
-                    color = "p-adjusted value") +  # Descriptive legend name
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::labs(x = "Gene Ratio") +
+      theme_poster()
     save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = fig_height)
 
     # ---- Barplot ----
@@ -146,11 +147,10 @@ run_targeted_go <- function(genes, set_name, universe) {
 
     p_bar <- barplot(result_simple, showCategory = n_show_bar,
                      title = dot_title) +
-      ggplot2::labs(color = "p-adjusted value", fill = "p-adjusted value") +  # Descriptive legend
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold"),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
+      ggplot2::scale_fill_gradient(low = "#D55E00", high = "#0072B2",
+                                    name = "p-adjusted value") +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      theme_poster()
     save_figure(p_bar, paste0(prefix, "_barplot"), width = 10, height = fig_height_bar)
   }
 }
@@ -210,11 +210,12 @@ run_targeted_kegg <- function(genes, set_name, universe) {
 
     p_kegg <- enrichplot::dotplot(ekegg, showCategory = n_show,
                                   title = paste0(set_title, " — KEGG Pathways")) +
-      ggplot2::labs(x = "Gene Ratio", color = "p-adjusted value") +
-      ggplot2::theme(
-        plot.title  = ggplot2::element_text(hjust = 0.5, face = "bold"),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
+      ggplot2::labs(x = "Gene Ratio") +
+      theme_poster()
     save_figure(p_kegg, paste0(prefix, "_dotplot"),
                 width = 10, height = fig_height)
 

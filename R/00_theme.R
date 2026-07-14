@@ -23,15 +23,26 @@
 # These are the ONLY font size values used across the entire pipeline.
 # Changing a number here changes it EVERYWHERE.
 POSTER_FONTS <- list(
-  title       = 24,
-  subtitle    = 24,
-  axis_title  = 24,
-  axis_text   = 24,
-  legend_title = 24,
-  legend_text  = 24,
-  facet_title  = 24,
-  annotate    = 24
+  title       = 20,
+  subtitle    = 20,
+  axis_title  = 20,
+  axis_text   = 20,
+  legend_title = 20,
+  legend_text  = 20,
+  facet_title  = 20,
+  annotate    = 20
 )
+
+# ---- Capitalize first letter of GO terms ----
+# clusterProfiler returns terms like "negative regulation of..."
+# This capitalizes the very first character.
+# Shared across all GO scripts (R/11, R/23, R/30, R/31).
+capitalize_first <- function(x) {
+  sapply(x, function(s) {
+    s <- as.character(s)
+    if (nchar(s) > 0) paste0(toupper(substr(s, 1, 1)), substr(s, 2, nchar(s))) else s
+  })
+}
 
 # Publication fonts (slightly smaller for journal figures)
 PUBLICATION_FONTS <- list(

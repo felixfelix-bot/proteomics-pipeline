@@ -328,10 +328,12 @@ timed-target:
 # These run in under a minute each. Bundle them so Aruna can review
 # outputs quickly while slower network analyses are still running.
 aruna-fast: targeted-volcano flagip-volcano targeted-venn targeted-go \
-            venn bidirectional-go flagip-validated-go
+            venn bidirectional-go flagip-validated-go poster-figures
 	@echo ""
 	@echo "================================================"
-	@echo " FAST ANALYSIS COMPLETE — review output/figures/"
+	@echo " FAST ANALYSIS + POSTER FIGURES COMPLETE"
+	@echo " output/figures/  — pipeline figures (Arial 20)"
+	@echo " poster/figures/  — poster-styled figures (PDF+PNG)"
 	@echo " Now run: make aruna-slow"
 	@echo "================================================"
 

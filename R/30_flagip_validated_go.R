@@ -17,6 +17,7 @@ library(clusterProfiler)
 library(org.Hs.eg.db)
 library(enrichplot)
 library(ggplot2)
+source("R/00_theme.R")
 
 experiments <- load_all_experiments()
 
@@ -111,14 +112,15 @@ run_validated_go <- function(genes, set_label) {
 
     n_show <- min(15, nrow(res))
     p <- dotplot(ego_s, showCategory = n_show) +
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(
         title = sprintf("Flag IP %s — %s", gsub("_", " ", set_label), ONT_NAMES[ont]),
-        x = "GeneRatio"
+        x = "Gene Ratio"
       ) +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
+      theme_poster()
     save_figure(p, sprintf("flagip_GO_%s_%s_dotplot", set_label, ont),
                 width = 10, height = max(6, n_show * 0.4))
   }
@@ -144,12 +146,13 @@ run_validated_go <- function(genes, set_label) {
     save_table(as.data.frame(ekegg), sprintf("flagip_KEGG_%s", set_label))
     n_show <- min(15, nrow(as.data.frame(ekegg)))
     p <- dotplot(ekegg, showCategory = n_show) +
+      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                     name = "p-adjusted value") +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(title = sprintf("Flag IP %s — KEGG Pathways", gsub("_", " ", set_label)),
-                    x = "GeneRatio") +
-      ggplot2::theme(
-        plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-        axis.text.y = ggplot2::element_text(size = 7)
-      )
+                    x = "Gene Ratio") +
+      theme_poster()
     save_figure(p, sprintf("flagip_KEGG_%s_dotplot", set_label),
                 width = 10, height = max(6, n_show * 0.4))
   } else {

@@ -19,6 +19,7 @@
 
 source('R/01_config.R', chdir = TRUE)
 source('R/utils.R')
+source('R/00_theme.R')
 
 library(clusterProfiler)
 library(org.Hs.eg.db)
@@ -113,6 +114,8 @@ run_bidir_go <- function(gene_set, direction, ont) {
   res$short_Description <- sapply(res$Description, function(x) {
     if (nchar(x) > 55) paste0(substr(x, 1, 52), "...") else x
   })
+  # Capitalize first letter
+  res$short_Description <- capitalize_first(res$short_Description)
 
   return(res)
 }
@@ -156,7 +159,7 @@ for (ont in ONT_TO_RUN) {
     ) +
     ggplot2::scale_size_continuous(
       name = "Gene Count",
-      range = c(2, 8)      # Bigger dots for poster
+      range = c(3, 12)      # Consistent with all other dot plots
     ) +
     ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "grey50", linewidth = 0.3) +
     ggplot2::labs(
@@ -168,18 +171,12 @@ for (ont in ONT_TO_RUN) {
                          length(up_genes), sum(combined$direction == "up", na.rm = TRUE),
                          length(dn_genes), sum(combined$direction == "down", na.rm = TRUE))
     ) +
-    ggplot2::theme_bw() +
+    theme_poster() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
-      axis.text.y = ggplot2::element_text(size = 7),
-      axis.text.x = ggplot2::element_text(size = 8),
-      legend.position = "right",
-      legend.text = ggplot2::element_text(size = 8),
-      legend.title = ggplot2::element_text(size = 9),
-      panel.grid.minor = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
-    )
+      legend.position = c(0.88, 0.72),
+      legend.background = ggplot2::element_rect(fill = alpha("white", 0.85), color = "grey80", linewidth = 0.3),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5, size = POSTER_FONTS$subtitle, color = "grey30")
+    ) +
 
   # Add direction annotations with Aruna's colors
   p <- p +

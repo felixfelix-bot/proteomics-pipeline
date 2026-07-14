@@ -17,7 +17,7 @@
 #   make poster-figures  (runs this script only)
 ###############################################################################
 cat("\n=========================================\n")
-cat(" Poster Figures — Arial 24, Black, GO-dot/bar, synced legends\n")
+cat(" Poster Figures — Arial 20, Black, GO-dot/bar, synced legends\n")
 cat("=========================================\n\n")
 
 # ---- Source theme (must come BEFORE any plotting) ----
@@ -42,15 +42,7 @@ save_poster <- function(plot, name, width = 8, height = 6) {
   cat(sprintf("  [POSTER] %s.pdf (%.0f x %.0f in)\n", name, width, height))
 }
 
-# ---- Helper: capitalize the first letter of each GO term ----
-# clusterProfiler returns terms like "negative regulation of..."
-# We just uppercase the very first character.
-capitalize_first <- function(x) {
-  sapply(x, function(s) {
-    s <- as.character(s)
-    if (nchar(s) > 0) paste0(toupper(substr(s, 1, 1)), substr(s, 2, nchar(s))) else s
-  })
-}
+# ---- capitalize_first() is defined in R/00_theme.R (sourced above) ----
 
 # ---- Load experiments ----
 experiments <- load_all_experiments()
@@ -381,15 +373,15 @@ make_poster_dotplot <- function(table_path, title_text, max_terms = 15) {
     geom_point() +
     scale_color_gradient(low = "#D55E00", high = "#0072B2",
                          name = "p-adjusted") +
-    scale_size_continuous(name = "Gene Count", range = c(4, 10)) +
+    scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
     labs(
       x = "Gene Ratio",
       y = NULL,
       title = title_text
     ) +
     guides(
-      size  = guide_legend(override.aes = list(size = c(4, 7, 10)),
-                           title.position = "top"),
+      size  = guide_legend(title.position = "top",
+                           override.aes = list(color = "#D55E00")),
       color = guide_colorbar(title.position = "top",
                              barwidth = 1.5, barheight = 8)
     ) +
