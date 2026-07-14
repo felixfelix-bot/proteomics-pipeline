@@ -65,36 +65,37 @@ PUBLICATION_FONTS <- list(
 
 # ---- Poster theme (for all poster figures) ----
 # Applies consistent font sizes to every ggplot element.
-# Usage: my_plot + theme_poster()
-theme_poster <- function(base_family = "sans") {
+# Usage: my_plot + theme_poster()              # default 20pt
+#        my_plot + theme_poster(font_size = 18) # smaller (volcanos)
+theme_poster <- function(base_family = "sans", font_size = 20) {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
       # Titles
-      plot.title    = ggplot2::element_text(face = "bold", size = POSTER_FONTS$title,
+      plot.title    = ggplot2::element_text(face = "bold", size = font_size,
                                              hjust = 0.5, margin = ggplot2::margin(b = 8),
                                              color = "black"),
-      plot.subtitle = ggplot2::element_text(size = POSTER_FONTS$subtitle,
+      plot.subtitle = ggplot2::element_text(size = font_size,
                                              hjust = 0.5, margin = ggplot2::margin(b = 6),
                                              color = "black"),
       # Axes
-      axis.title.x  = ggplot2::element_text(size = POSTER_FONTS$axis_title,
+      axis.title.x  = ggplot2::element_text(size = font_size,
                                              margin = ggplot2::margin(t = 6),
                                              color = "black"),
-      axis.title.y  = ggplot2::element_text(size = POSTER_FONTS$axis_title,
+      axis.title.y  = ggplot2::element_text(size = font_size,
                                              margin = ggplot2::margin(r = 6),
                                              color = "black"),
-      axis.text.x   = ggplot2::element_text(size = POSTER_FONTS$axis_text, color = "black"),
-      axis.text.y   = ggplot2::element_text(size = POSTER_FONTS$axis_text, color = "black"),
+      axis.text.x   = ggplot2::element_text(size = font_size, color = "black"),
+      axis.text.y   = ggplot2::element_text(size = font_size, color = "black"),
       # Legend
-      legend.title  = ggplot2::element_text(size = POSTER_FONTS$legend_title, face = "bold",
+      legend.title  = ggplot2::element_text(size = font_size, face = "bold",
                                             color = "black"),
-      legend.text   = ggplot2::element_text(size = POSTER_FONTS$legend_text,
+      legend.text   = ggplot2::element_text(size = font_size,
                                             color = "black"),
       legend.position  = "right",
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       legend.key       = ggplot2::element_rect(fill = "white", color = NA),
       # Facets
-      strip.text    = ggplot2::element_text(size = POSTER_FONTS$facet_title, face = "bold",
+      strip.text    = ggplot2::element_text(size = font_size, face = "bold",
                                             color = "black"),
       strip.background = ggplot2::element_rect(fill = "grey95", color = "grey80"),
       # Panel
