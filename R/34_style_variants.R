@@ -98,8 +98,7 @@ build_go_dotplot <- function(variant_theme, wrap_width = NULL, font_family = "sa
     guides(size = size_legend_guide()) +
     labs(title = "Flag IP Validated — Biological Process",
          x = "Gene Ratio") +
-    variant_theme +
-    theme(text = element_text(family = font_family))
+    variant_theme
 
   return(p)
 }
@@ -150,7 +149,6 @@ build_volcano <- function(variant_theme, label_size = 5, font_family = "sans") {
     ) +
     variant_theme +
     theme(
-      text = element_text(family = font_family),
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
       legend.background = element_rect(fill = "white", color = "grey80", linewidth = 0.3)
@@ -271,7 +269,8 @@ for (i in seq_along(variants)) {
       label = paste("GO plot error:", conditionMessage(e)), size = 4) +
       theme_void() + labs(title = sprintf("V%d — GO (error)", v$num))
   })
-  print(go_plot)
+  tryCatch(print(go_plot),
+    error = function(e) cat(sprintf("    [WARN] GO render error V%d: %s\n", v$num, conditionMessage(e))))
 
   # Volcano page
   vol_plot <- tryCatch({
@@ -286,7 +285,8 @@ for (i in seq_along(variants)) {
       label = paste("Volcano error:", conditionMessage(e)), size = 4) +
       theme_void() + labs(title = sprintf("V%d — Volcano (error)", v$num))
   })
-  print(vol_plot)
+  tryCatch(print(vol_plot),
+    error = function(e) cat(sprintf("    [WARN] Volcano render error V%d: %s\n", v$num, conditionMessage(e))))
 }
 
 cat(sprintf("\n  Saved: %s\n", output_pdf))
