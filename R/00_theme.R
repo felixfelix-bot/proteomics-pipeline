@@ -133,8 +133,8 @@ theme_poster <- function(base_family = "sans", font_size = 20) {
 theme_poster_dotplot <- function(base_family = "sans", font_size = 24) {
   theme_poster(base_family = base_family, font_size = font_size) +
     ggplot2::theme(
-      legend.position = c(0.98, 0.98),
-      legend.justification = c(1, 1),
+      legend.position = c(0.98, 0.02),
+      legend.justification = c(1, 0),
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       legend.box = "vertical",
       legend.box.margin = ggplot2::margin(1, 1, 1, 1),
