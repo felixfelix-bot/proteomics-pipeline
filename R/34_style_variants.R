@@ -192,19 +192,19 @@ all_plots <- list()
 # Description page (use cowplot-free approach: blank ggplot with text)
 desc_text <- paste0(
   "PROTEOMICS POSTER — STYLE VARIANT COMPARISON\n\n",
-  "10 variants, each on 2 pages (GO dotplot + volcano).\n\n",
-  "V1:  Baseline (current defaults: 15pt, light grid, no wrap)\n",
-  "V2:  Uniform font enforcement\n",
-  "V3:  Darker/thicker grid (grey75, lw=0.8)\n",
-  "V4:  Bigger fonts (20pt)\n",
-  "V5:  Wrapped y-axis labels (40 chars)\n",
-  "V6:  Darker grid + uniform font\n",
-  "V7:  Bigger fonts + uniform (20pt)\n",
-  "V8:  Dark grid + wrapped labels\n",
-  "V9:  Everything combined (20pt + dark grid + wrapped)\n",
-  "V10: Maximum poster (24pt, darkest grid, tight wrap)\n\n",
+  "8 variants, each on 2 pages (GO dotplot + volcano).\n",
+  "ALL variants: dark grid + wrapped labels (30ch default).\n",
+  "Volcano x-axis clipped at -7 (outlier removed).\n\n",
+  "V1:  Baseline — 15pt, grey75 grid, 30ch wrap\n",
+  "V2:  Bigger fonts — 18pt\n",
+  "V3:  Darker grid — grey60, lw=0.8\n",
+  "V4:  Bigger + dark — 20pt, grey60\n",
+  "V5:  Tighter wrap — 22 chars\n",
+  "V6:  Medium combo — 18pt, grey60, 25ch wrap\n",
+  "V7:  Poster-ready — 22pt\n",
+  "V8:  Darkest grid — grey50, lw=1.0\n\n",
   "TELL ME: Which variant number for each element:\n",
-  "  Grid, Font size, Label wrapping, Gene label size\n",
+  "  Grid darkness, Font size, Label wrapping\n",
   "I will combine your choices into a final version."
 )
 all_plots[[1]] <- ggplot() +
