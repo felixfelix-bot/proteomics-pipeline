@@ -276,11 +276,7 @@ for (ont in c("BP", "CC", "MF")) {
     ggplot2::guides(size = size_legend_guide()) +
     ggplot2::scale_y_discrete(labels = wrap_go_labels) +
     ggplot2::labs(x = "Gene Ratio") +
-    theme_poster() +
-    ggplot2::theme(axis.text =
-      ggplot2::element_text(size = 22, color = "black"),
-      legend.title = ggplot2::element_text(size = 18, face = "bold"),
-      legend.text  = ggplot2::element_text(size = 18))
+    theme_poster()
 
   filename <- sprintf("network_go_comparison_%s", ont)
   save_figure(p_in, filename, width = 18, height = max(14, n_show * 0.8))

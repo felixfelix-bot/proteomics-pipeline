@@ -138,11 +138,7 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::scale_y_discrete(labels = wrap_go_labels) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(x = "Gene Ratio") +
-      theme_poster() +
-      ggplot2::theme(axis.text =
-        ggplot2::element_text(size = 22, color = "black"),
-        legend.title = ggplot2::element_text(size = 18, face = "bold"),
-        legend.text  = ggplot2::element_text(size = 18))
+      theme_poster()
     save_figure(p_dot, paste0(prefix, "_dotplot"), width = 18, height = max(14, n_show * 0.8))
 
     # ---- Barplot ----
@@ -157,9 +153,7 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::scale_fill_gradient(low = "#D55E00", high = "#0072B2",
                                     name = "p-adjusted value") +
       ggplot2::scale_y_discrete(labels = wrap_go_labels) +
-      theme_poster() +
-      ggplot2::theme(axis.text =
-        ggplot2::element_text(size = 22, color = "black"))
+      theme_poster()
     save_figure(p_bar, paste0(prefix, "_barplot"), width = 18, height = max(12, n_show_bar * 0.8))
   }
 }
