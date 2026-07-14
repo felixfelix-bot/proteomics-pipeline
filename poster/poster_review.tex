@@ -1,0 +1,111 @@
+% =========================================================================
+% REVIEW POSTER — All 6 figures for layout/font-ratio review
+% =========================================================================
+% Purpose: See all poster figures together to assess:
+%   - Column layout balance
+%   - Tick sizes relative to image
+%   - Legend sizes
+%   - Label readability
+%   - Image-to-text ratio
+%
+% Compile: pdflatex poster_review.tex (run 2x for layout)
+% Prerequisite: figures must be in poster/figures/ (run collect script first)
+%
+% PAPER: A3 landscape (420mm x 297mm) — large enough to see detail
+% =========================================================================
+
+\documentclass[11pt, a3paper, landscape]{article}
+\usepackage[margin=1.2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{multicol}
+\usepackage{caption}
+
+% Color scheme
+\definecolor{asccblue}{HTML}{0072B2}
+\definecolor{panellabel}{HTML}{333333}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+% Consistent figure caption
+\newcommand{\figcap}[2]{%
+  {\centering\sffamily\small\textbf{\textcolor{panellabel}{#1}}\quad #2\par\vspace{0.4cm}}%
+}
+
+\begin{document}
+
+% ---- Title ----
+\begin{center}
+  {\Large\bfseries\color{asccblue} TRIP4/ASCC Proteomics --- Figure Review Poster}\par
+  \vspace{0.1cm}
+  {\normalsize\itshape Review font sizes, tick marks, legends, and image-to-text ratios across all panels}\par
+\end{center}
+\vspace{0.2cm}
+\hrule
+\vspace{0.3cm}
+
+% ---- Two-column layout ----
+\begin{multicols}{2}
+
+% ==================== LEFT COLUMN: DOT PLOTS ====================
+
+{\sffamily\bfseries\color{asccblue}\large GO Enrichment Dot Plots}
+\vspace{0.2cm}\hrule\vspace{0.3cm}
+
+% Panel A: Flag IP validated BP
+\includegraphics[width=\linewidth]{figures/dotplot_flagip_validated_BP.pdf}
+\figcap{Panel A}{Flag IP validated interactors --- GO Biological Process}
+
+\vspace{0.3cm}
+
+% Panel B: Network GO comparison BP
+\includegraphics[width=\linewidth]{figures/dotplot_network_go_BP.pdf}
+\figcap{Panel B}{Network GO comparison --- Biological Process (in-network vs not-in-network)}
+
+\vspace{0.3cm}
+
+% Panel C: Targeted GO RA shared core MF
+\includegraphics[width=\linewidth]{figures/dotplot_RA_shared_MF.pdf}
+\figcap{Panel C}{RA shared core proteins --- GO Molecular Function}
+
+
+% ==================== RIGHT COLUMN: VOLCANO PLOTS ====================
+% \columnbreak forces the right column to start here
+
+\columnbreak
+
+{\sffamily\bfseries\color{asccblue}\large Volcano Plots}
+\vspace{0.2cm}\hrule\vspace{0.3cm}
+
+% Panel D: Flag IP overlap volcano
+\includegraphics[width=\linewidth]{figures/volcano_flagip_overlap.pdf}
+\figcap{Panel D}{Flag IP overlap volcano --- BK467 TRIP4 vs WT (C-Flag \& N-Flag validated)}
+
+\vspace{0.3cm}
+
+% Panel E: Lydia network volcano
+\includegraphics[width=\linewidth]{figures/volcano_lydia_network.pdf}
+\figcap{Panel E}{Lydia STRING network volcano --- physical interaction overlay}
+
+\vspace{0.3cm}
+
+% Panel F: Targeted volcano RA effect
+\includegraphics[width=\linewidth]{figures/volcano_RA_BK504.pdf}
+\figcap{Panel F}{Targeted volcano --- BK504 RA effect (retinoic acid treatment)}
+
+\end{multicols}
+
+\vspace{0.3cm}
+\hrule
+\vspace{0.2cm}
+
+% ---- Review checklist at bottom ----
+{\sffamily\footnotesize\textbf{Review checklist:}
+\textit{Check each panel for:} (1) Axis tick labels readable at poster distance\quad
+(2) Legend text not overlapping\quad (3) Dot sizes proportional across dot plots\quad
+(4) Volcano gene labels legible\quad (5) Consistent font sizes between left and right columns}
+
+\end{document}

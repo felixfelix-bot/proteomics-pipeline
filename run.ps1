@@ -193,6 +193,77 @@ switch ($Target) {
         break
     }
 
+    'poster-review' {
+        $posterSteps = @(
+            'targeted_volcanos',
+            'flagip_volcano',
+            'lydia_network_volcano',
+            'flagip_validated_go',
+            'network_go',
+            'ra_common'
+        )
+        $failed = @()
+        foreach ($step in $posterSteps) {
+            $ok = Invoke-Step -StepName $step
+            if (-not $ok) { $failed += $step }
+        }
+        if ($failed.Count -gt 0) {
+            Write-Host "Some steps failed: $($failed -join ', ')" -ForegroundColor Yellow
+            Write-Host 'Continuing with available figures...' -ForegroundColor Yellow
+        }
+
+        # Copy figures to poster/figures/ with standardized names (no hash)
+        $figDir = 'output\figures'
+        $posterDir = 'poster\figures'
+        if (-not (Test-Path $posterDir)) { New-Item -ItemType Directory -Path $posterDir | Out-Null }
+
+        $patterns = @(
+            'flagip_overlap_volcano_BK467_TRIP4_vs_WT',
+            'lydia_network_volcano',
+            'targeted_volcano_BK504_RA_effect',
+            'flagip_GO_validated_any_BP_dotplot',
+            'network_go_comparison_BP',
+            'targeted_GO_RA_shared_core_MF_dotplot'
+        )
+
+        Write-Host ''
+        Write-Host 'Copying figures to poster\figures\ ...' -ForegroundColor Cyan
+        foreach ($pat in $patterns) {
+            $pdf = Get-ChildItem -Path $figDir -Filter "$($pat)_*.pdf" -ErrorAction SilentlyContinue |
+                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            $png = Get-ChildItem -Path $figDir -Filter "$($pat)_*.png" -ErrorAction SilentlyContinue |
+                   Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($pdf) {
+                Copy-Item $pdf.FullName "$posterDir\$($pat).pdf" -Force
+                Write-Host "  PDF: $($pdf.Name) -> $($pat).pdf"
+            } else {
+                Write-Host "  WARNING: No PDF for $pat" -ForegroundColor Yellow
+            }
+            if ($png) {
+                Copy-Item $png.FullName "$posterDir\$($pat).png" -Force
+            }
+        }
+
+        # Compile poster
+        Write-Host ''
+        Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
+        Push-Location 'poster'
+        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+        Pop-Location
+
+        if (Test-Path 'poster\poster_review.pdf') {
+            Write-Host ''
+            Write-Host '=========================================' -ForegroundColor Green
+            Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
+            Write-Host '=========================================' -ForegroundColor Green
+        } else {
+            Write-Host 'LaTeX compilation failed. Check if pdflatex is installed.' -ForegroundColor Red
+            Write-Host 'Install MiKTeX from https://miktex.org/' -ForegroundColor Yellow
+        }
+        break
+    }
+
     'help' {
         Write-Host 'TRIP4/ASCC Proteomics Pipeline - PowerShell Runner'
         Write-Host ''
@@ -210,6 +281,7 @@ switch ($Target) {
         Write-Host '  .\run.ps1 string-network     STRING PPI network'
         Write-Host '  .\run.ps1 flagip-validated-go  Flag-validated GO+KEGG'
         Write-Host '  .\run.ps1 poster-figures     Poster-styled figures'
+        Write-Host '  .\run.ps1 poster-review       All 6 poster figures + compile to single PDF'
         Write-Host '  .\run.ps1 dotplot-variants   GO dotplot font-size variants'
         Write-Host '  .\run.ps1 diagnostics        Structural data summary'
         Write-Host ''
