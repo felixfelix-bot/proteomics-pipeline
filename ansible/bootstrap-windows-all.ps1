@@ -234,9 +234,9 @@ if ($Rscript -and (Test-Path $Rscript)) {
 }
 
 # =====================================================================
-# 5. MiKTeX (LaTeX — needed for poster compilation)
+# 5. MiKTeX (LaTeX) + SumatraPDF (lightweight PDF viewer)
 # =====================================================================
-Step "5/6" "Installing MiKTeX (LaTeX)..."
+Step "5/7" "Installing MiKTeX (LaTeX)..."
 Refresh-Path
 
 if (Get-Command pdflatex -ErrorAction SilentlyContinue) {
@@ -254,10 +254,38 @@ if (Get-Command pdflatex -ErrorAction SilentlyContinue) {
     Warn "Cannot install MiKTeX (no Chocolatey). Download from https://miktex.org/download"
 }
 
+# ---------------------------------------------------------------------
+# 5b. SumatraPDF — lightweight PDF viewer (Windows equivalent of evince)
+#     Auto-reloads PDF on recompile, supports command-line open.
+# ---------------------------------------------------------------------
+Step "5b/7" "Installing SumatraPDF (PDF viewer)..."
+$sumatra = Get-Command SumatraPDF -ErrorAction SilentlyContinue
+if (-not $sumatra) {
+    $sumatraExe = "${env:ProgramFiles}\SumatraPDF\SumatraPDF.exe"
+    if (Test-Path $sumatraExe) {
+        $sumatra = $true
+    }
+}
+if ($sumatra) {
+    Skip "SumatraPDF"
+} elseif (Get-Command choco -ErrorAction SilentlyContinue) {
+    Info "Installing SumatraPDF via Chocolatey..."
+    choco install sumatrapdf -y --no-progress 2>$null
+    Refresh-Path
+    $sumatraExe = "${env:ProgramFiles}\SumatraPDF\SumatraPDF.exe"
+    if ((Get-Command SumatraPDF -ErrorAction SilentlyContinue) -or (Test-Path $sumatraExe)) {
+        OK "SumatraPDF installed"
+    } else {
+        Warn "SumatraPDF install may have failed. Download from https://sumatrapdfreader.org/"
+    }
+} else {
+    Warn "Cannot install SumatraPDF (no Chocolatey). Download from https://sumatrapdfreader.org/"
+}
+
 # =====================================================================
 # 6. Verification
 # =====================================================================
-Step "6/6" "Verification..."
+Step "6/7" "Verification..."
 
 if ($Rscript -and (Test-Path $Rscript)) {
     & $Rscript -e "cat('R:', R.version.string, '\n'); pkgs <- c('ggplot2','clusterProfiler','EnhancedVolcano','org.Hs.eg.db','igraph','ggVennDiagram'); for (p in pkgs) cat(sprintf('  %-25s %s', p, ifelse(requireNamespace(p, quietly=TRUE), 'OK', 'MISSING')), '\n')"
