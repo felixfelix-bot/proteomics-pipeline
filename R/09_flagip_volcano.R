@@ -217,7 +217,7 @@ FLAGIP_LABELS <- c(
   "in_nflag"   = "N-Flag only",
   "trip4_only" = "TRIP4 only",
   "wt_enriched" = "WT enriched",
-  "nonsig"      = "n.s."
+  "nonsig"      = "Not significant"
 )
 
 cat("\nBuilding volcano plot...\n")

@@ -83,9 +83,9 @@ make_ra_volcano <- function(df, title, n_top = 60) {
   )
 
   RA_LABELS <- c(
-    "enriched_up" = "+RA",
-    "enriched_dn" = "\u2212RA",
-    "nonsig"      = "n.s."
+    "enriched_up" = "Enriched with RA",
+    "enriched_dn" = "Enriched without RA",
+    "nonsig"      = "Not significant"
   )
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
