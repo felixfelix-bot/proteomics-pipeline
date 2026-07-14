@@ -115,7 +115,7 @@ run_validated_go <- function(genes, set_label) {
     p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(p$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(
@@ -151,7 +151,7 @@ run_validated_go <- function(genes, set_label) {
     p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(p$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(title = sprintf("Flag IP %s — KEGG Pathways", gsub("_", " ", set_label)),

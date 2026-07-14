@@ -39,7 +39,9 @@ POSTER_FONTS <- list(
 make_size_breaks <- function(counts) {
   cmin <- min(counts, na.rm = TRUE)
   cmax <- max(counts, na.rm = TRUE)
-  pretty(c(cmin, cmax), n = 3)
+  brks <- pretty(c(cmin, cmax), n = 3)
+  # Force actual min and max to always appear in legend
+  unique(sort(c(cmin, brks, cmax)))
 }
 # clusterProfiler returns terms like "negative regulation of..."
 # This capitalizes the very first character.

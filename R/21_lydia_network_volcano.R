@@ -25,6 +25,8 @@ cat("\n=========================================\n")
 cat(" Lydia-Style Network Volcano\n")
 cat("=========================================\n\n")
 
+source("R/00_theme.R")
+
 # ---- Load data ----
 experiments <- load_all_experiments()
 
@@ -345,21 +347,16 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p,
     title = "TRIP4 TurboID vs WT — STRING Physical Network",
     caption = sprintf("%d%% of enriched proteins in physical interaction network of highly enriched proteins", pct_in_net)
   ) +
-  ggplot2::theme_bw() +
+  theme_poster(font_size = 14) +
   ggplot2::theme(
-    plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-    plot.caption = ggplot2::element_text(hjust = 0.5, size = 8, color = "grey30"),
-    axis.title.x = ggplot2::element_text(hjust = 0.5),
-    axis.text = ggplot2::element_text(colour = "black", size = 8),
     legend.position = c(0.02, 0.98),
     legend.justification = c(0, 1),
     legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-    legend.text = ggplot2::element_text(size = 8),
-    panel.grid.minor = ggplot2::element_blank(),
-    plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+    legend.text = ggplot2::element_text(size = 10),
+    legend.title = ggplot2::element_text(size = 10, face = "bold")
   )
 
-save_figure(p, "lydia_network_volcano", width = 9, height = 6)
+save_figure(p, "lydia_network_volcano", width = 16, height = 12)
 
 # ---- Export gene lists ----
 cat("\n--- Exporting gene lists ---\n")

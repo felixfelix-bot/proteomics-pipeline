@@ -159,7 +159,7 @@ for (ont in ONT_TO_RUN) {
     ) +
     ggplot2::scale_size_continuous(
       name = "Gene Count",
-      range = c(3, 12)      # Consistent with all other dot plots
+      range = c(3, 10)      # Consistent with all other dot plots
     ) +
     ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "grey50", linewidth = 0.3) +
     ggplot2::labs(

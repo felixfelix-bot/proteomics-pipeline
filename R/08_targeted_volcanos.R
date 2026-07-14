@@ -125,7 +125,9 @@ make_ra_volcano <- function(df, title, n_top = 60) {
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
-      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3)
+      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
+      legend.text  = ggplot2::element_text(size = 10),
+      legend.title = ggplot2::element_text(size = 10)
     )
 
   return(p)
@@ -217,7 +219,9 @@ make_main_volcano <- function(df, title) {
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
-      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3)
+      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
+      legend.text  = ggplot2::element_text(size = 10),
+      legend.title = ggplot2::element_text(size = 10, face = "bold")
     )
 
   return(p)

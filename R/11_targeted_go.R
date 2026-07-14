@@ -132,7 +132,7 @@ run_targeted_go <- function(genes, set_name, universe) {
     p_dot <- p_dot +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(p_dot$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(x = "Gene Ratio") +
@@ -215,7 +215,7 @@ run_targeted_kegg <- function(genes, set_name, universe) {
     p_kegg <- p_kegg +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
                                      breaks = make_size_breaks(p_kegg$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(x = "Gene Ratio") +

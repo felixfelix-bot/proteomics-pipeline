@@ -258,7 +258,9 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
   ggplot2::theme(
     legend.position = c(0.02, 0.98),
     legend.justification = c(0, 1),
-    legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3)
+    legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
+    legend.text  = ggplot2::element_text(size = 10),
+    legend.title = ggplot2::element_text(size = 10, face = "bold")
   )
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",
