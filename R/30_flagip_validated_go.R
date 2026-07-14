@@ -127,6 +127,15 @@ run_validated_go <- function(genes, set_label) {
       theme_poster()
     save_figure(p, sprintf("flagip_GO_%s_%s_dotplot", set_label, ont),
                 width = 18, height = max(14, n_show * 0.8))
+
+    # ---- Axis-text size variants (researcher picks v1/v2/v3) ----
+    axis_sizes <- c(18, 22, 26)
+    for (v in seq_along(axis_sizes)) {
+      p_v <- p + ggplot2::theme(axis.text =
+               ggplot2::element_text(size = axis_sizes[v], color = "black"))
+      save_figure(p_v, sprintf("flagip_GO_%s_%s_dotplot_v%d", set_label, ont, v),
+                  width = 18, height = max(14, n_show * 0.8))
+    }
   }
 
   # ---- KEGG enrichment ----

@@ -255,7 +255,9 @@ ONT_NAMES <- c("BP" = "Biological Process",
                "MF" = "Molecular Function")
 
 # Three font-size variants for the user to choose from
-FONT_SIZES <- c(v1 = 15, v2 = 18, v3 = 21)
+# Axis-text sizes for v1/v2/v3 — researcher picks. Only axis.text changes,
+# NOT titles/legend (which stay at theme_poster default).
+AXIS_SIZES <- c(v1 = 18, v2 = 22, v3 = 26)
 
 for (ont in c("BP", "CC", "MF")) {
   has_in <- !is.null(go_in_net[[ont]]) && nrow(as.data.frame(go_in_net[[ont]])) > 0
@@ -285,7 +287,7 @@ for (ont in c("BP", "CC", "MF")) {
       ggplot2::labs(
         title = sprintf("In Network (%d genes) — %s",
                         length(in_network_genes), ONT_NAMES[ont]),
-        x = "Gene Ratio")
+        x = "Gene Ratio") + theme_poster()
     base_plots[["in"]] <- p_in
   }
 
@@ -303,29 +305,31 @@ for (ont in c("BP", "CC", "MF")) {
       ggplot2::labs(
         title = sprintf("Not In Network (%d genes) — %s",
                         length(not_in_network_genes), ONT_NAMES[ont]),
-        x = "Gene Ratio")
+        x = "Gene Ratio") + theme_poster()
     base_plots$not <- p_not
   }
 
-  # Generate each font-size variant
-  for (ver in names(FONT_SIZES)) {
-    fs <- FONT_SIZES[[ver]]
+  # Generate each axis-text variant — only axis.text changes, not titles
+  for (ver in names(AXIS_SIZES)) {
+    as <- AXIS_SIZES[[ver]]
 
     themed_plots <- list()
     for (nm in names(base_plots)) {
-      themed_plots[[nm]] <- base_plots[[nm]] + theme_poster(font_size = fs)
+      themed_plots[[nm]] <- base_plots[[nm]] +
+        ggplot2::theme(axis.text =
+          ggplot2::element_text(size = as, color = "black"))
     }
 
-    # Combine side by side
+    # Combine side by side — guides="collect" merges duplicate legends
     if (length(themed_plots) == 2) {
       combined <- themed_plots[["in"]] + themed_plots$not +
-        patchwork::plot_layout(widths = c(1, 1)) +
+        patchwork::plot_layout(widths = c(1, 1), guides = "collect") +
         patchwork::plot_annotation(
           title = sprintf("GO Enrichment: In-Network vs Not-In-Network — %s", ONT_NAMES[ont]),
           subtitle = "TRIP4 TurboID vs WT — enriched proteins split by STRING network membership",
           theme = ggplot2::theme(
-            plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = fs + 2),
-            plot.subtitle = ggplot2::element_text(hjust = 0.5, size = fs - 2, color = "grey30")
+            plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 17),
+            plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 13, color = "grey30")
           )
         )
     } else if (!is.null(themed_plots[["in"]])) {

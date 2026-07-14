@@ -141,6 +141,15 @@ run_targeted_go <- function(genes, set_name, universe) {
       theme_poster()
     save_figure(p_dot, paste0(prefix, "_dotplot"), width = 18, height = max(14, n_show * 0.8))
 
+    # ---- Axis-text size variants (researcher picks v1/v2/v3) ----
+    axis_sizes <- c(18, 22, 26)
+    for (v in seq_along(axis_sizes)) {
+      p_v <- p_dot + ggplot2::theme(axis.text =
+               ggplot2::element_text(size = axis_sizes[v], color = "black"))
+      save_figure(p_v, sprintf("%s_dotplot_v%d", prefix, v),
+                  width = 18, height = max(14, n_show * 0.8))
+    }
+
     # ---- Barplot ----
     # Sorted by Count (highest at top, lowest at bottom).
     # NOTE: orderBy = "Count" (capital C) — matches the column name in
