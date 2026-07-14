@@ -261,24 +261,39 @@ switch ($Target) {
             }
         }
 
-        # Step 3: Compile LaTeX poster
-        Write-Host ''
-        Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
-        Push-Location 'poster'
-        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
-        & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
-        Pop-Location
-
-        if (Test-Path 'poster\poster_review.pdf') {
+        # Step 3: Compile LaTeX poster (if pdflatex is available)
+        $pdflatex = Get-Command pdflatex -ErrorAction SilentlyContinue
+        if (-not $pdflatex) {
             Write-Host ''
-            Write-Host '=========================================' -ForegroundColor Green
-            Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
-            Write-Host '=========================================' -ForegroundColor Green
-            # Open the PDF for immediate viewing
-            Start-Process 'poster\poster_review.pdf'
+            Write-Host '=========================================' -ForegroundColor Yellow
+            Write-Host ' FIGURES COLLECTED — pdflatex not installed' -ForegroundColor Yellow
+            Write-Host '=========================================' -ForegroundColor Yellow
+            Write-Host '  Figures are in poster\figures\' -ForegroundColor White
+            Write-Host ''
+            Write-Host '  To compile the poster PDF, install MiKTeX:' -ForegroundColor White
+            Write-Host '    1. Download: https://miktex.org/download' -ForegroundColor White
+            Write-Host '    2. Install (accept defaults)' -ForegroundColor White
+            Write-Host '    3. Run: .\run.ps1 poster-review-only' -ForegroundColor White
+            Write-Host ''
+            Write-Host '  OR: send the figures to someone with LaTeX installed.' -ForegroundColor White
         } else {
-            Write-Host 'LaTeX compilation failed. Check if pdflatex is installed.' -ForegroundColor Red
-            Write-Host 'Install MiKTeX from https://miktex.org/' -ForegroundColor Yellow
+            Write-Host ''
+            Write-Host 'Compiling poster_review.tex ...' -ForegroundColor Cyan
+            Push-Location 'poster'
+            & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+            & pdflatex -interaction=nonstopmode poster_review.tex 2>&1 | Out-Null
+            Pop-Location
+
+            if (Test-Path 'poster\poster_review.pdf') {
+                Write-Host ''
+                Write-Host '=========================================' -ForegroundColor Green
+                Write-Host ' POSTER REVIEW: poster\poster_review.pdf' -ForegroundColor Green
+                Write-Host '=========================================' -ForegroundColor Green
+                # Open the PDF for immediate viewing
+                Start-Process 'poster\poster_review.pdf'
+            } else {
+                Write-Host 'LaTeX compilation failed.' -ForegroundColor Red
+            }
         }
         break
     }
