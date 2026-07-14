@@ -188,7 +188,7 @@ for (ont in ONT_TO_RUN) {
                       fontface = "bold", size = 4, vjust = 0)
 
   filename <- sprintf("bidirectional_go_%s_%s", gsub("_", "-", BIDIR_EXP), ont)
-  save_figure(p, filename, width = 10, height = max(6, nrow(combined) * 0.35))
+  save_figure(p, filename, width = 18, height = max(14, nrow(combined) * 0.6))
 
   # Also export the combined results table
   export_cols <- c("Description", "direction", "GeneRatio", "Count",

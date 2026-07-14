@@ -254,7 +254,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
     title = "TRIP4 TurboID vs WT — Flag IP Validation"
   ) +
-  theme_poster(font_size = 16) +
+  theme_poster(font_size = 14) +
   ggplot2::theme(
     legend.position = c(0.02, 0.98),
     legend.justification = c(0, 1),
@@ -262,7 +262,7 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
   )
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",
-            width = 8, height = 6)
+            width = 16, height = 12)
 
 cat("\n=========================================\n")
 cat(" Flag IP overlap volcano complete!\n")

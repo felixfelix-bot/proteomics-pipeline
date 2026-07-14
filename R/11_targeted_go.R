@@ -137,7 +137,7 @@ run_targeted_go <- function(genes, set_name, universe) {
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster()
-    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 10, height = fig_height)
+    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 18, height = max(14, n_show * 0.8))
 
     # ---- Barplot ----
     # Sorted by Count (highest at top, lowest at bottom).
@@ -153,7 +153,7 @@ run_targeted_go <- function(genes, set_name, universe) {
                                     name = "p-adjusted value") +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       theme_poster()
-    save_figure(p_bar, paste0(prefix, "_barplot"), width = 10, height = fig_height_bar)
+    save_figure(p_bar, paste0(prefix, "_barplot"), width = 18, height = max(12, n_show_bar * 0.8))
   }
 }
 
@@ -221,7 +221,7 @@ run_targeted_kegg <- function(genes, set_name, universe) {
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster()
     save_figure(p_kegg, paste0(prefix, "_dotplot"),
-                width = 10, height = fig_height)
+                width = 18, height = max(14, n_show * 0.8))
 
   }, error = function(e) {
     cat(sprintf("  KEGG error (may need internet): %s\n",

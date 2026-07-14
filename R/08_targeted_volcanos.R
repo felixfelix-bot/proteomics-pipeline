@@ -121,7 +121,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    theme_poster(font_size = 16) +
+    theme_poster(font_size = 14) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
@@ -213,7 +213,7 @@ make_main_volcano <- function(df, title) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    theme_poster(font_size = 16) +
+    theme_poster(font_size = 14) +
     ggplot2::theme(
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
@@ -235,7 +235,7 @@ if (exp1 %in% names(experiments)) {
     title = "TRIP4 TurboID vs Wild Type"
   )
   save_figure(p1, "targeted_volcano_BK467_TRIP4_vs_WT",
-              width = 8, height = 6)
+              width = 16, height = 12)
 } else {
   cat("  WARNING: Experiment not found:", exp1, "\n")
 }
@@ -254,7 +254,7 @@ if (exp2 %in% names(experiments)) {
     title = title2
   )
   save_figure(p2, "targeted_volcano_BK467_RA_effect",
-              width = 8, height = 6)
+              width = 16, height = 12)
 } else {
   cat("  WARNING: Experiment not found:", exp2, "\n")
 }
@@ -272,7 +272,7 @@ if (exp3 %in% names(experiments)) {
     title = title3
   )
   save_figure(p3, "targeted_volcano_BK504_RA_effect",
-              width = 8, height = 6)
+              width = 16, height = 12)
 } else {
   cat("  WARNING: Experiment not found:", exp3, "\n")
 }

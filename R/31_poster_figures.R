@@ -122,7 +122,7 @@ p_volcano <- ggplot(df_volcano,
         legend.justification = c(0, 1),
         legend.background = element_rect(fill = "white", color = "grey80"))
 
-save_poster(p_volcano, "volcano_turbo", width = 7, height = 6)
+save_poster(p_volcano, "volcano_turbo", width = 16, height = 12)
 
 #---------------------------------------------------------------------------
 # A2. FLAG IP OVERLAY VOLCANO (existing, updated fonts)
@@ -181,7 +181,7 @@ p_flag <- ggplot(df_flag,
         legend.justification = c(0, 1),
         legend.background = element_rect(fill = "white", color = "grey80"))
 
-save_poster(p_flag, "volcano_flagip", width = 7, height = 6)
+save_poster(p_flag, "volcano_flagip", width = 16, height = 12)
 
 #---------------------------------------------------------------------------
 # A3-A5. CHX/DMSO VOLCANO PLOTS (new)
@@ -244,7 +244,7 @@ make_chx_volcano <- function(df, experiment_name, plot_title, out_name) {
           legend.justification = c(1, 1),
           legend.background = element_rect(fill = "white", color = "grey80"))
 
-  save_poster(p, out_name, width = 7, height = 6)
+  save_poster(p, out_name, width = 16, height = 12)
 }
 
 # A3. CHX vs DMSO
@@ -315,7 +315,7 @@ p_venn <- tryCatch({
 })
 
 if (!is.null(p_venn)) {
-  save_poster(p_venn, "venn_overlap", width = 7, height = 6)
+  save_poster(p_venn, "venn_overlap", width = 16, height = 12)
 }
 
 #=============================================================================
@@ -498,14 +498,14 @@ for (spec in go_table_specs) {
   # Dotplot
   p_dot <- make_poster_dotplot(table_file, spec$title)
   if (!is.null(p_dot)) {
-    save_poster(p_dot, paste0(spec$prefix, "_dot"), width = 8, height = 6)
+    save_poster(p_dot, paste0(spec$prefix, "_dot"), width = 18, height = 14)
     go_count <- go_count + 1
   }
 
   # Barplot
   p_bar <- make_poster_barplot(table_file, spec$title)
   if (!is.null(p_bar)) {
-    save_poster(p_bar, paste0(spec$prefix, "_bar"), width = 8, height = 6)
+    save_poster(p_bar, paste0(spec$prefix, "_bar"), width = 18, height = 14)
     go_count <- go_count + 1
   }
 }

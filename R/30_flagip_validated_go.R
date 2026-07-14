@@ -124,7 +124,7 @@ run_validated_go <- function(genes, set_label) {
       ) +
       theme_poster()
     save_figure(p, sprintf("flagip_GO_%s_%s_dotplot", set_label, ont),
-                width = 10, height = max(6, n_show * 0.4))
+                width = 18, height = max(14, n_show * 0.8))
   }
 
   # ---- KEGG enrichment ----
@@ -158,7 +158,7 @@ run_validated_go <- function(genes, set_label) {
                     x = "Gene Ratio") +
       theme_poster()
     save_figure(p, sprintf("flagip_KEGG_%s_dotplot", set_label),
-                width = 10, height = max(6, n_show * 0.4))
+                width = 18, height = max(14, n_show * 0.8))
   } else {
     cat("No pathways\n")
   }
