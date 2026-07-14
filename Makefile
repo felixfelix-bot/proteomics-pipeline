@@ -338,7 +338,7 @@ chx-kegg-crac: check clean-old ## KEGG on CHX data + CRAC/TurboID overlap + volc
 # Prefers PDF (vector) over PNG (raster).
 
 poster-review: targeted-volcano flagip-volcano lydia-volcano \
-               flagip-validated-go network-go targeted-go
+               flagip-validated-go network-go ra-common targeted-go
 	@bash poster/collect_review_figures.sh
 	@echo ""
 	@echo "  Compiling poster_review.tex ..."

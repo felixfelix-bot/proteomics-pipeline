@@ -147,6 +147,14 @@ function Invoke-Step {
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "FAILED: $StepName (exit code $LASTEXITCODE)" -ForegroundColor Red
+        # R's sink() can swallow errors — show the log file if it exists
+        $latestLog = Get-ChildItem -Path 'output\logs' -Filter "*_$StepName.log" -ErrorAction SilentlyContinue |
+                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($latestLog) {
+            Write-Host "`n--- Last 20 lines of log ($($latestLog.Name)) ---" -ForegroundColor Yellow
+            Get-Content $latestLog.FullName -Tail 20 | Write-Host
+            Write-Host "---" -ForegroundColor Yellow
+        }
         return $false
     }
     return $true
@@ -211,6 +219,31 @@ switch ($Target) {
     }
 
     'poster-review' {
+        # Step 0: Check that data files exist
+        $dataFiles = Get-ChildItem -Path 'data' -Recurse -Filter '*diffEx_minProb*.csv' -ErrorAction SilentlyContinue
+        if (-not $dataFiles -or $dataFiles.Count -eq 0) {
+            Write-Host '=========================================' -ForegroundColor Red
+            Write-Host ' ERROR: No data files found in data\' -ForegroundColor Red
+            Write-Host '=========================================' -ForegroundColor Red
+            Write-Host ''
+            Write-Host 'The pipeline needs CSV files ending in _diffEx_minProb.csv' -ForegroundColor Yellow
+            Write-Host 'in the data\ directory (or subdirectories).' -ForegroundColor Yellow
+            Write-Host ''
+            Write-Host 'Copy your mass spec output files to data\ and try again.' -ForegroundColor Yellow
+            Write-Host ''
+            # Show what IS in data\ for debugging
+            $dataContents = Get-ChildItem -Path 'data' -Recurse -ErrorAction SilentlyContinue
+            if ($dataContents) {
+                Write-Host 'Current contents of data\:' -ForegroundColor Gray
+                $dataContents | ForEach-Object { Write-Host "  $($_.FullName.Replace((Get-Location).Path, ''))" }
+            } else {
+                Write-Host 'data\ directory is empty or does not exist.' -ForegroundColor Gray
+            }
+            break
+        }
+        Write-Host "Found $($dataFiles.Count) data file(s) in data\" -ForegroundColor Green
+        Write-Host ''
+
         # Step 1: Regenerate all 6 poster figures
         $posterSteps = @(
             'targeted_volcanos',
@@ -218,6 +251,7 @@ switch ($Target) {
             'lydia_network_volcano',
             'flagip_validated_go',
             'network_go',
+            'ra_common',
             'targeted_go'
         )
         $failed = @()
