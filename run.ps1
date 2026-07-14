@@ -128,6 +128,7 @@ $singleTargets = @{
     'pathway-network'      = 'pathway_network'
     'poster-figures'       = 'poster_figures'
     'dotplot-variants'     = 'dotplot_variants'
+    'style-variants'       = 'style_variants'
     'diagnostics'          = 'diagnostics'
 }
 
@@ -402,6 +403,7 @@ switch ($Target) {
         Write-Host '  .\run.ps1 poster-review-only   Just collect + compile (fast, skip R)'
         Write-Host '  .\run.ps1 poster-review-force  Regenerate ALL figures + compile (no cache)'
         Write-Host '  .\run.ps1 dotplot-variants   GO dotplot font-size variants'
+        Write-Host '  .\run.ps1 style-variants     12 style variants in one PDF (pick your favorite)'
         Write-Host '  .\run.ps1 diagnostics        Structural data summary'
         Write-Host ''
         Write-Host 'Caching:'

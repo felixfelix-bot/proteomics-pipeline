@@ -65,6 +65,7 @@ FORCE ?=
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all \
         chx-kegg-crac dotplot-variants \
+        style-variants \
         poster-review poster-review-only poster-review-force
 
 # ---- Help ----
@@ -110,6 +111,7 @@ help:
 	@echo "  make shinygo-compare  Compare ShinyGO export with our STRING results"
 	@echo "  make chx-kegg-crac   KEGG on CHX + CRAC/TurboID overlap + labeled volcano"
 	@echo "  make dotplot-variants  GO dotplot font-size variants (full + short terms, 3 sizes)"
+	@echo "  make style-variants  Multi-page PDF with 12 style variants for poster figures"
 	@echo "  make poster-review     Collect 6 poster figures + compile (skips cached steps)"
 	@echo "  make poster-review-force  Regenerate ALL figures + compile (ignore cache)"
 	@echo "  make poster-review-only  Just collect + compile (fast, no R steps)"
@@ -379,6 +381,9 @@ poster-review-only:
 
 dotplot-variants: check ## GO dotplot font-size variants (18 files: 3 plots x 2 label modes x 3 sizes)
 	$(RSCRIPT) R/run_step.R dotplot_variants $(FORCE)
+
+style-variants: check ## Multi-page PDF with 12 numbered style variants for poster figures
+	$(RSCRIPT) R/run_step.R style_variants $(FORCE)
 
 string-style-network: check clean-old ## STRING website-style bubble network for RA common proteins
 	$(RSCRIPT) R/run_step.R string_style_network $(FORCE)

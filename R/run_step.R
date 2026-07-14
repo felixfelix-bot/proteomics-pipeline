@@ -80,7 +80,8 @@ main <- function() {
                    "diagnostics", "network_go", "bidirectional_go_ra",
                    "string_style_network", "chx_volcano_venn",
                    "flagip_validated_go", "poster_figures",
-                   "chx_kegg_crac_overlap", "dotplot_variants")
+                   "chx_kegg_crac_overlap", "dotplot_variants",
+                   "style_variants")
   if (!(step %in% valid_steps)) {
     cat(sprintf("Error: Unknown step '%s'\n", step))
     cat(sprintf("  Valid steps: %s\n", paste(valid_steps, collapse = ", ")))
@@ -120,7 +121,8 @@ main <- function() {
     flagip_validated_go    = "R/30_flagip_validated_go.R",
     poster_figures         = "R/31_poster_figures.R",
     chx_kegg_crac_overlap  = "R/32_chx_kegg_crac_overlap.R",
-    dotplot_variants       = "R/33_dotplot_variants.R"
+    dotplot_variants       = "R/33_dotplot_variants.R",
+    style_variants         = "R/34_style_variants.R"
   )
 
   # ---- Skip check: if step already ran with same code, skip it ----
