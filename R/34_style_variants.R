@@ -184,7 +184,8 @@ variants <- list(
 # ============================================================
 # GENERATE PDF — use ggsave per page to avoid sink() conflicts
 # ============================================================
-output_pdf <- file.path(FIGURE_DIR, "style_variants.pdf")
+commit_hash <- get_git_hash()
+output_pdf <- file.path(FIGURE_DIR, paste0("style_variants_", commit_hash, ".pdf"))
 
 # Build all plots into a list first, then write PDF
 all_plots <- list()

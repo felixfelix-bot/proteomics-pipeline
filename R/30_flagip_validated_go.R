@@ -124,12 +124,7 @@ run_validated_go <- function(genes, set_label) {
       ggplot2::labs(
         x = "Gene Ratio"
       ) +
-      theme_poster() +
-      ggplot2::theme(
-        axis.text  = ggplot2::element_text(size = 22, color = "black"),
-        legend.title = ggplot2::element_text(size = 18, face = "bold"),
-        legend.text  = ggplot2::element_text(size = 18)
-      )
+      theme_poster()
     save_figure(p, sprintf("flagip_GO_%s_%s_dotplot", set_label, ont),
                 width = 18, height = max(14, n_show * 0.8))
   }
