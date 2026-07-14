@@ -34,20 +34,23 @@ POSTER_FONTS <- list(
 )
 
 # Helper: create size breaks that cover the FULL data range (min to max).
-# Used with scale_size_continuous(breaks = ...) so the size legend
-# always shows the smallest and largest dot sizes.
+# Produces n_breaks circles with CONSTANT step size from min to max.
+# The smallest legend dot = actual data minimum (e.g. 1, never 0).
 #
-# CRITICAL: The caller MUST also pass limits = c(0, NA) to
-# scale_size_continuous(). Without limits, ggplot uses the data min
-# as the domain minimum, so break=0 maps to the same size as the
-# smallest data dot. With limits = c(0, NA), the domain starts at 0,
-# making the 0-break legend dot genuinely smaller than any data dot.
-make_size_breaks <- function(counts) {
+# CRITICAL: The caller MUST also pass limits = c(min(counts), max(counts))
+# to scale_size_continuous() so the size domain matches the breaks exactly.
+# Otherwise ggplot extends the domain below min and the dot sizes don't match.
+#
+# Usage:
+#   cnt <- p$data$Count
+#   scale_size_continuous(name = "Gene Count", range = c(3, 10),
+#                         breaks = make_size_breaks(cnt, n_breaks = 8),
+#                         limits = c(min(cnt), max(cnt)))
+make_size_breaks <- function(counts, n_breaks = 8) {
+  cmin <- min(counts, na.rm = TRUE)
   cmax <- max(counts, na.rm = TRUE)
-  # Start from 0 so the smallest legend dot is always smaller
-  # than any actual data point's dot.
-  brks <- pretty(c(0, cmax), n = 3)
-  unique(sort(brks))
+  # Constant-step integer sequence from min to max
+  unique(round(seq(cmin, cmax, length.out = n_breaks)))
 }
 
 # Standard guides() call for size legend — ensures legend circles

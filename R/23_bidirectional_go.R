@@ -160,8 +160,8 @@ for (ont in ONT_TO_RUN) {
     ggplot2::scale_size_continuous(
       name = "Gene Count",
       range = c(3, 10),      # Consistent with all other dot plots
-      breaks = make_size_breaks(combined$Count),
-      limits = c(0, NA)
+      breaks = make_size_breaks(combined$Count, n_breaks = 8),
+      limits = c(min(combined$Count), max(combined$Count))
     ) +
     ggplot2::guides(size = size_legend_guide()) +
     ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "grey50", linewidth = 0.3) +

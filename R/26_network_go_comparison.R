@@ -246,103 +246,45 @@ cat("\n--- GO Enrichment: Not In Network ---")
 go_not_net <- run_go_for_split(not_in_network_genes, "not_in_network", universe_genes)
 
 # =====================================================================
-# Plot side-by-side comparison for each ontology
+# Plot In-Network GO enrichment (single plot — Not-In-Network excluded)
 # =====================================================================
-cat("\n--- Generating comparison plots ---\n")
+cat("\n--- Generating In-Network GO plots ---\n")
 
 ONT_NAMES <- c("BP" = "Biological Process",
                "CC" = "Cellular Component",
                "MF" = "Molecular Function")
 
-# Three font-size variants for the user to choose from
-# Axis-text sizes for v1/v2/v3 — researcher picks. Only axis.text changes,
-# NOT titles/legend (which stay at theme_poster default).
-AXIS_SIZES <- c(v1 = 18, v2 = 22, v3 = 26)
-
 for (ont in c("BP", "CC", "MF")) {
   has_in <- !is.null(go_in_net[[ont]]) && nrow(as.data.frame(go_in_net[[ont]])) > 0
-  has_not <- !is.null(go_not_net[[ont]]) && nrow(as.data.frame(go_not_net[[ont]])) > 0
 
-  if (!has_in && !has_not) {
-    cat(sprintf("  [%s] No enriched terms in either set. Skipping.\n", ont))
+  if (!has_in) {
+    cat(sprintf("  [%s] No enriched terms. Skipping.\n", ont))
     next
   }
 
-  cat(sprintf("  [%s] Building side-by-side plot... ", ont))
+  cat(sprintf("  [%s] Building plot... ", ont))
 
-  # Build base plots (without per-version theming)
-  base_plots <- list()
+  n_show <- min(15, nrow(as.data.frame(go_in_net[[ont]])))
+  p_in <- dotplot(go_in_net[[ont]], showCategory = n_show)
+  cnt <- p_in$data$Count
+  p_in <- p_in +
+    ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                   name = "p-adjusted value") +
+    ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
+                                   breaks = make_size_breaks(cnt, n_breaks = 8),
+                                   limits = c(min(cnt), max(cnt))) +
+    ggplot2::guides(size = size_legend_guide()) +
+    ggplot2::scale_y_discrete(labels = capitalize_first) +
+    ggplot2::labs(
+      title = sprintf("GO Enrichment: In-Network (%d genes) — %s",
+                      length(in_network_genes), ONT_NAMES[ont]),
+      x = "Gene Ratio") +
+    theme_poster() +
+    ggplot2::theme(axis.text =
+      ggplot2::element_text(size = 22, color = "black"))
 
-  if (has_in) {
-    n_show <- min(15, nrow(as.data.frame(go_in_net[[ont]])))
-    p_in <- dotplot(go_in_net[[ont]], showCategory = n_show)
-    p_in <- p_in +
-      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
-                                     name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p_in$data$Count),
-                                     limits = c(0, NA)) +
-      ggplot2::guides(size = size_legend_guide()) +
-      ggplot2::scale_y_discrete(labels = capitalize_first) +
-      ggplot2::labs(
-        title = sprintf("In Network (%d genes) — %s",
-                        length(in_network_genes), ONT_NAMES[ont]),
-        x = "Gene Ratio") + theme_poster()
-    base_plots[["in"]] <- p_in
-  }
-
-  if (has_not) {
-    n_show <- min(15, nrow(as.data.frame(go_not_net[[ont]])))
-    p_not <- dotplot(go_not_net[[ont]], showCategory = n_show)
-    p_not <- p_not +
-      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
-                                     name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p_not$data$Count),
-                                     limits = c(0, NA)) +
-      ggplot2::guides(size = size_legend_guide()) +
-      ggplot2::scale_y_discrete(labels = capitalize_first) +
-      ggplot2::labs(
-        title = sprintf("Not In Network (%d genes) — %s",
-                        length(not_in_network_genes), ONT_NAMES[ont]),
-        x = "Gene Ratio") + theme_poster()
-    base_plots$not <- p_not
-  }
-
-  # Generate each axis-text variant — only axis.text changes, not titles
-  for (ver in names(AXIS_SIZES)) {
-    as <- AXIS_SIZES[[ver]]
-
-    themed_plots <- list()
-    for (nm in names(base_plots)) {
-      themed_plots[[nm]] <- base_plots[[nm]] +
-        ggplot2::theme(axis.text =
-          ggplot2::element_text(size = as, color = "black"))
-    }
-
-    # Combine side by side — guides="collect" merges duplicate legends
-    if (length(themed_plots) == 2) {
-      combined <- themed_plots[["in"]] + themed_plots$not +
-        patchwork::plot_layout(widths = c(1, 1), guides = "collect") +
-        patchwork::plot_annotation(
-          title = sprintf("GO Enrichment: In-Network vs Not-In-Network — %s", ONT_NAMES[ont]),
-          subtitle = "TRIP4 TurboID vs WT — enriched proteins split by STRING network membership",
-          theme = ggplot2::theme(
-            plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 17),
-            plot.subtitle = ggplot2::element_text(hjust = 0.5, size = 13, color = "grey30")
-          )
-        )
-    } else if (!is.null(themed_plots[["in"]])) {
-      combined <- themed_plots[["in"]]
-    } else {
-      combined <- themed_plots$not
-    }
-
-    filename <- sprintf("network_go_comparison_%s_%s", ont, ver)
-    fig_w <- if (length(themed_plots) == 2) 20 else 10
-    fig_h <- if (length(themed_plots) == 2) 12 else 14
-    save_figure(combined, filename, width = fig_w, height = fig_h)
-  }
+  filename <- sprintf("network_go_comparison_%s", ont)
+  save_figure(p_in, filename, width = 18, height = max(14, n_show * 0.8))
 
   cat("done\n")
 }
@@ -402,12 +344,13 @@ run_kegg_for_split <- function(genes, set_name, universe) {
     fig_height <- max(7, n_show * 0.4)
 
     p <- enrichplot::dotplot(ekegg, showCategory = n_show)
+    cnt_k <- p$data$Count
     p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p$data$Count),
-                                     limits = c(0, NA)) +
+                                     breaks = make_size_breaks(cnt_k, n_breaks = 8),
+                                     limits = c(min(cnt_k), max(cnt_k))) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(

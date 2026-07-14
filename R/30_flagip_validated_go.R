@@ -112,30 +112,24 @@ run_validated_go <- function(genes, set_label) {
 
     n_show <- min(15, nrow(res))
     p <- dotplot(ego_s, showCategory = n_show)
+    cnt_go <- p$data$Count
     p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p$data$Count),
-                                     limits = c(0, NA)) +
+                                     breaks = make_size_breaks(cnt_go, n_breaks = 8),
+                                     limits = c(min(cnt_go), max(cnt_go))) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(
         title = sprintf("Flag IP %s — %s", gsub("_", " ", set_label), ONT_NAMES[ont]),
         x = "Gene Ratio"
       ) +
-      theme_poster()
+      theme_poster() +
+      ggplot2::theme(axis.text =
+        ggplot2::element_text(size = 22, color = "black"))
     save_figure(p, sprintf("flagip_GO_%s_%s_dotplot", set_label, ont),
                 width = 18, height = max(14, n_show * 0.8))
-
-    # ---- Axis-text size variants (researcher picks v1/v2/v3) ----
-    axis_sizes <- c(18, 22, 26)
-    for (v in seq_along(axis_sizes)) {
-      p_v <- p + ggplot2::theme(axis.text =
-               ggplot2::element_text(size = axis_sizes[v], color = "black"))
-      save_figure(p_v, sprintf("flagip_GO_%s_%s_dotplot_v%d", set_label, ont, v),
-                  width = 18, height = max(14, n_show * 0.8))
-    }
   }
 
   # ---- KEGG enrichment ----
@@ -159,12 +153,13 @@ run_validated_go <- function(genes, set_label) {
     save_table(as.data.frame(ekegg), sprintf("flagip_KEGG_%s", set_label))
     n_show <- min(15, nrow(as.data.frame(ekegg)))
     p <- dotplot(ekegg, showCategory = n_show)
+    cnt_kegg <- p$data$Count
     p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
       ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(p$data$Count),
-                                     limits = c(0, NA)) +
+                                     breaks = make_size_breaks(cnt_kegg, n_breaks = 8),
+                                     limits = c(min(cnt_kegg), max(cnt_kegg))) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::guides(size = size_legend_guide()) +
       ggplot2::labs(title = sprintf("Flag IP %s — KEGG Pathways", gsub("_", " ", set_label)),
