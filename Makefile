@@ -53,6 +53,9 @@ TABLE_DIR  := output/tables
 # ---- Default target ----
 .DEFAULT_GOAL := help
 
+# FORCE flag: make <target> FORCE=--force to bypass step cache
+FORCE ?=
+
 .PHONY: help install all test volcano venn go string families overlap clean pull push status check setup \
         targeted-volcano flagip-volcano targeted-venn targeted-go go-network-volcano context list-data chx-crac-analysis venn-examples venn-label-examples \
         string-network crac-network venn-overflow-examples gsea pathway-network lydia-volcano chx-common \
@@ -62,7 +65,7 @@ TABLE_DIR  := output/tables
         open-string-network open-crac-network open-venn-overflow-examples open-gsea open-pathway-network \
         open-targeted-plots open-all \
         chx-kegg-crac dotplot-variants \
-        poster-review poster-review-only
+        poster-review poster-review-only poster-review-force
 
 # ---- Help ----
 help:
@@ -107,7 +110,9 @@ help:
 	@echo "  make shinygo-compare  Compare ShinyGO export with our STRING results"
 	@echo "  make chx-kegg-crac   KEGG on CHX + CRAC/TurboID overlap + labeled volcano"
 	@echo "  make dotplot-variants  GO dotplot font-size variants (full + short terms, 3 sizes)"
-	@echo "  make poster-review     Collect 6 poster figures + compile review poster (A3 landscape)"
+	@echo "  make poster-review     Collect 6 poster figures + compile (skips cached steps)"
+	@echo "  make poster-review-force  Regenerate ALL figures + compile (ignore cache)"
+	@echo "  make poster-review-only  Just collect + compile (fast, no R steps)"
 	@echo ""
 	@echo "Group targets:"
 	@echo "  make volcano-plots      All volcano plots (targeted + flagIP + Lydia)"
@@ -329,16 +334,28 @@ chx-kegg-crac: check clean-old ## KEGG on CHX data + CRAC/TurboID overlap + volc
 	$(RSCRIPT) R/run_step.R chx_kegg_crac_overlap
 
 # ---- Poster Review: collect 6 figures + compile to single PDF ----
-# Two targets:
-#   poster-review      - regenerate all 6 figures, then collect + compile
+# Three targets:
+#   poster-review      - run steps (cached) + collect + compile
+#   poster-review-force- regenerate ALL steps (ignore cache) + collect + compile
 #   poster-review-only - just collect existing figures + compile (fast iteration)
 #
-# The collect step searches output/figures/ RECURSIVELY (handles subdirs
-# with spaces like "update before lydia" and "Final volcano plots").
-# Prefers PDF (vector) over PNG (raster).
+# Caching: each step is skipped if its key output file already exists.
+# The collect step searches output/figures/ RECURSIVELY.
 
-poster-review: targeted-volcano flagip-volcano lydia-volcano \
-               flagip-validated-go network-go ra-common targeted-go
+poster-review: check
+	@bash poster/run_poster_steps.sh
+	@bash poster/collect_review_figures.sh
+	@echo ""
+	@echo "  Compiling poster_review.tex ..."
+	@cd poster && pdflatex -interaction=nonstopmode poster_review.tex && \
+	            pdflatex -interaction=nonstopmode poster_review.tex
+	@echo ""
+	@echo "========================================="
+	@echo " POSTER REVIEW: poster/poster_review.pdf"
+	@echo "========================================="
+
+poster-review-force: check
+	@bash poster/run_poster_steps.sh --force
 	@bash poster/collect_review_figures.sh
 	@echo ""
 	@echo "  Compiling poster_review.tex ..."

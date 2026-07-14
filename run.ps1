@@ -133,7 +133,7 @@ $singleTargets = @{
 
 # ---- Helper: run a single step ----
 function Invoke-Step {
-    param([string]$StepName)
+    param([string]$StepName, [switch]$Force)
 
     Write-Host ''
     Write-Host '=========================================' -ForegroundColor Cyan
@@ -141,20 +141,15 @@ function Invoke-Step {
     Write-Host '=========================================' -ForegroundColor Cyan
     Write-Host ''
 
+    $cmdArgs = @('R/run_step.R', $StepName)
+    if ($Force) { $cmdArgs += '--force' }
+
     # Capture both stdout and stderr so we can show the error
-    $output = & $RSCRIPT 'R/run_step.R' $StepName 2>&1
+    $output = & $RSCRIPT @cmdArgs 2>&1
     $output | Write-Host
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "FAILED: $StepName (exit code $LASTEXITCODE)" -ForegroundColor Red
-        # R's sink() can swallow errors — show the log file if it exists
-        $latestLog = Get-ChildItem -Path 'output\logs' -Filter "*_$StepName.log" -ErrorAction SilentlyContinue |
-                     Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($latestLog) {
-            Write-Host "`n--- Last 20 lines of log ($($latestLog.Name)) ---" -ForegroundColor Yellow
-            Get-Content $latestLog.FullName -Tail 20 | Write-Host
-            Write-Host "---" -ForegroundColor Yellow
-        }
         return $false
     }
     return $true
@@ -192,10 +187,11 @@ switch ($Target) {
     }
 
     { $groupTargets.ContainsKey($_) } {
+        $force = $RemainingArgs -contains '--force'
         $steps = $groupTargets[$_]
         $failed = @()
         foreach ($step in $steps) {
-            $ok = Invoke-Step -StepName $step
+            $ok = Invoke-Step -StepName $step -Force:$force
             if (-not $ok) { $failed += $step }
         }
         Write-Host ''
@@ -210,8 +206,9 @@ switch ($Target) {
     }
 
     { $singleTargets.ContainsKey($_) } {
+        $force = $RemainingArgs -contains '--force'
         $stepName = $singleTargets[$_]
-        $ok = Invoke-Step -StepName $stepName
+        $ok = Invoke-Step -StepName $stepName -Force:$force
         if ($ok) {
             Write-Host 'Step completed. Check output/figures/' -ForegroundColor Green
         }
@@ -244,7 +241,61 @@ switch ($Target) {
         Write-Host "Found $($dataFiles.Count) data file(s) in data\" -ForegroundColor Green
         Write-Host ''
 
-        # Step 1: Regenerate all 6 poster figures
+        # Step 1: Regenerate poster figures (with caching)
+        # Each step maps to a key output file — if it exists in output\figures\, skip
+        $posterSteps = @(
+            @{ name = 'targeted_volcanos';     check = 'targeted_volcano_BK504_RA_effect' },
+            @{ name = 'flagip_volcano';         check = 'flagip_overlap_volcano_BK467_TRIP4_vs_WT' },
+            @{ name = 'lydia_network_volcano';  check = 'lydia_network_volcano' },
+            @{ name = 'flagip_validated_go';    check = 'flagip_GO_validated_any_BP_dotplot' },
+            @{ name = 'network_go';             check = 'network_go_comparison_BP' },
+            @{ name = 'ra_common';              check = 'RA_common_enriched' },
+            @{ name = 'targeted_go';            check = 'targeted_GO_RA_shared_core_MF_dotplot' }
+        )
+        $failed = @()
+        $skipped = 0
+        foreach ($step in $posterSteps) {
+            $stepName = $step.name
+            $checkPattern = $step.check
+
+            # Check if output already exists (caching)
+            $existing = Get-ChildItem -Path 'output\figures' -Recurse -Filter "$($checkPattern)*.pdf" -ErrorAction SilentlyContinue |
+                        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $existing) {
+                $existing = Get-ChildItem -Path 'output\figures' -Recurse -Filter "$($checkPattern)*.png" -ErrorAction SilentlyContinue |
+                            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            }
+
+            if ($existing) {
+                Write-Host "  [CACHED] $stepName — output exists: $($existing.Name)" -ForegroundColor DarkGray
+                $skipped++
+                continue
+            }
+
+            $ok = Invoke-Step -StepName $stepName
+            if (-not $ok) { $failed += $stepName }
+        }
+        Write-Host ''
+        if ($skipped -gt 0) {
+            Write-Host "  $skipped step(s) skipped (cached). " -ForegroundColor DarkGreen
+        }
+        if ($failed.Count -gt 0) {
+            Write-Host "Some steps failed: $($failed -join ', ')" -ForegroundColor Yellow
+            Write-Host 'Continuing with available figures...' -ForegroundColor Yellow
+        }
+
+        # Step 2: Collect + compile falls through to shared block below
+    }
+
+    'poster-review-force' {
+        # Same as poster-review but ignores cache — regenerates everything
+        $dataFiles = Get-ChildItem -Path 'data' -Recurse -Filter '*diffEx_minProb*.csv' -ErrorAction SilentlyContinue
+        if (-not $dataFiles -or $dataFiles.Count -eq 0) {
+            Write-Host 'ERROR: No data files in data\' -ForegroundColor Red
+            break
+        }
+        Write-Host "Found $($dataFiles.Count) data file(s) — regenerating ALL figures..." -ForegroundColor Green
+
         $posterSteps = @(
             'targeted_volcanos',
             'flagip_volcano',
@@ -261,10 +312,8 @@ switch ($Target) {
         }
         if ($failed.Count -gt 0) {
             Write-Host "Some steps failed: $($failed -join ', ')" -ForegroundColor Yellow
-            Write-Host 'Continuing with available figures...' -ForegroundColor Yellow
         }
-
-        # Step 2: Collect + compile falls through to shared block below
+        # Falls through to collect+compile below
     }
 
     'poster-review-only' {
@@ -272,7 +321,7 @@ switch ($Target) {
         # Fall through to collect+compile below
     }
 
-    { $_ -eq 'poster-review' -or $_ -eq 'poster-review-only' } {
+    { $_ -eq 'poster-review' -or $_ -eq 'poster-review-only' -or $_ -eq 'poster-review-force' } {
         # ---- Collect figures from output/figures/ (RECURSIVE) ----
         # Searches ALL subdirectories (handles "update before lydia", "Final volcano plots")
         $figDir = 'output\figures'
@@ -366,10 +415,17 @@ switch ($Target) {
         Write-Host '  .\run.ps1 string-network     STRING PPI network'
         Write-Host '  .\run.ps1 flagip-validated-go  Flag-validated GO+KEGG'
         Write-Host '  .\run.ps1 poster-figures     Poster-styled figures'
-        Write-Host '  .\run.ps1 poster-review       All 6 poster figures + compile to single PDF'
+        Write-Host '  .\run.ps1 poster-review       All 6 poster figures + compile (cached)'
         Write-Host '  .\run.ps1 poster-review-only   Just collect + compile (fast, skip R)'
+        Write-Host '  .\run.ps1 poster-review-force  Regenerate ALL figures + compile (no cache)'
         Write-Host '  .\run.ps1 dotplot-variants   GO dotplot font-size variants'
         Write-Host '  .\run.ps1 diagnostics        Structural data summary'
+        Write-Host ''
+        Write-Host 'Caching:'
+        Write-Host '  Steps are skipped if code unchanged since last run.'
+        Write-Host '  Add --force to any target to bypass cache:'
+        Write-Host '    .\run.ps1 poster-review --force'
+        Write-Host '    .\run.ps1 targeted-go --force'
         Write-Host ''
         Write-Host 'Setup:'
         Write-Host '  .\run.ps1 setup              Full setup: Git + R + Rtools + packages + MiKTeX'
