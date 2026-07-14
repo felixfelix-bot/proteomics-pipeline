@@ -96,14 +96,17 @@ save_figure <- function(plot, filename, width = FIG_WIDTH, height = FIG_HEIGHT,
   versioned_name <- paste0(safe_name, "_", commit_hash)
   filepath_png <- file.path(FIGURE_DIR, paste0(versioned_name, ".png"))
   filepath_pdf <- file.path(FIGURE_DIR, paste0(versioned_name, ".pdf"))
+  filepath_svg <- file.path(FIGURE_DIR, paste0(versioned_name, ".svg"))
 
   # ggsave() writes the plot to a file. It auto-detects format from extension.
   # The :: syntax means "use ggsave from the ggplot2 package."
   ggplot2::ggsave(filepath_png, plot, width = width, height = height, dpi = dpi)
   ggplot2::ggsave(filepath_pdf, plot, width = width, height = height)
+  ggplot2::ggsave(filepath_svg, plot, width = width, height = height, bg = "white")
 
   # basename() strips the directory path, showing just the filename
-  cat(sprintf("  Saved: %s\n  Saved: %s\n", basename(filepath_png), basename(filepath_pdf)))
+  cat(sprintf("  Saved: %s\n  Saved: %s\n  Saved: %s\n", basename(filepath_png),
+              basename(filepath_pdf), basename(filepath_svg)))
 }
 
 # ---- Save a data frame to CSV ----

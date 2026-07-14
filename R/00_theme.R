@@ -153,7 +153,7 @@ theme_publication <- function(base_family = "sans") {
 # PNG = backup for software that can't handle PDF.
 #
 # Usage: save_poster_figure(my_plot, "volcano_main", width=8, height=6)
-# Creates: output/figures/volcano_main.pdf AND .png
+# Creates: output/figures/volcano_main.pdf + .png + .svg
 save_poster_figure <- function(plot, name, width = 8, height = 6, dpi = 300) {
   # PDF (vector — for LaTeX poster)
   pdf_path <- file.path(FIGURE_DIR, paste0(name, ".pdf"))
@@ -165,7 +165,12 @@ save_poster_figure <- function(plot, name, width = 8, height = 6, dpi = 300) {
   ggplot2::ggsave(png_path, plot = plot, width = width, height = height,
                   dpi = dpi, bg = "white")
 
-  cat(sprintf("  Saved: %s (.pdf + .png)\n", name))
+  # SVG (vector — editable in Illustrator/Inkscape)
+  svg_path <- file.path(FIGURE_DIR, paste0(name, ".svg"))
+  ggplot2::ggsave(svg_path, plot = plot, width = width, height = height,
+                  bg = "white")
+
+  cat(sprintf("  Saved: %s (.pdf + .png + .svg)\n", name))
 }
 
 # ---- Standardized figure dimensions ----

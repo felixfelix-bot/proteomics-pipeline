@@ -35,11 +35,13 @@ dir.create(POSTER_FIG_DIR, recursive = TRUE, showWarnings = FALSE)
 save_poster <- function(plot, name, width = 8, height = 6) {
   pdf_path <- file.path(POSTER_FIG_DIR, paste0(name, ".pdf"))
   png_path <- file.path(POSTER_FIG_DIR, paste0(name, ".png"))
+  svg_path <- file.path(POSTER_FIG_DIR, paste0(name, ".svg"))
   ggsave(pdf_path, plot = plot, width = width, height = height,
          device = grDevices::cairo_pdf)
   ggsave(png_path, plot = plot, width = width, height = height,
          dpi = 300, bg = "white")
-  cat(sprintf("  [POSTER] %s.pdf (%.0f x %.0f in)\n", name, width, height))
+  ggsave(svg_path, plot = plot, width = width, height = height, bg = "white")
+  cat(sprintf("  [POSTER] %s.pdf + .png + .svg (%.0f x %.0f in)\n", name, width, height))
 }
 
 # ---- capitalize_first() is defined in R/00_theme.R (sourced above) ----
