@@ -90,16 +90,12 @@ PUBLICATION_FONTS <- list(
 # Applies consistent font sizes to every ggplot element.
 # Usage: my_plot + theme_poster()              # default 20pt
 #        my_plot + theme_poster(font_size = 18) # smaller (volcanos)
-theme_poster <- function(base_family = "sans", font_size = 15) {
+theme_poster <- function(base_family = "sans", font_size = 18) {
   ggplot2::theme_minimal(base_family = base_family) +
     ggplot2::theme(
-      # Titles
-      plot.title    = ggplot2::element_text(face = "bold", size = font_size,
-                                             hjust = 0.5, margin = ggplot2::margin(b = 8),
-                                             color = "black"),
-      plot.subtitle = ggplot2::element_text(size = font_size,
-                                             hjust = 0.5, margin = ggplot2::margin(b = 6),
-                                             color = "black"),
+      # Titles — removed for poster (LaTeX provides panel labels)
+      plot.title    = ggplot2::element_blank(),
+      plot.subtitle = ggplot2::element_blank(),
       # Axes
       axis.title.x  = ggplot2::element_text(size = font_size,
                                              margin = ggplot2::margin(t = 6),
@@ -117,14 +113,14 @@ theme_poster <- function(base_family = "sans", font_size = 15) {
       legend.position  = "right",
       legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
       legend.key       = ggplot2::element_rect(fill = "white", color = NA),
-      # Facets
+      # Facets (column descriptions in dot plots)
       strip.text    = ggplot2::element_text(size = font_size, face = "bold",
                                             color = "black"),
       strip.background = ggplot2::element_rect(fill = "grey95", color = "grey80"),
-      # Panel
-      panel.grid.major = ggplot2::element_line(color = "grey92"),
+      # Panel — darker grid
+      panel.grid.major = ggplot2::element_line(color = "grey75", linewidth = 0.6),
       panel.grid.minor = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(fill = NA, color = "grey70", linewidth = 0.3),
+      panel.border     = ggplot2::element_rect(fill = NA, color = "grey50", linewidth = 0.5),
       # Margins (compact for poster density)
       plot.margin = ggplot2::margin(8, 8, 8, 8)
     )
