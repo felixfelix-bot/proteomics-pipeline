@@ -128,10 +128,12 @@ run_targeted_go <- function(genes, set_name, universe) {
     dot_title <- paste0(set_title, " — ", ONT_LABELS[ont])
 
     p_dot <- dotplot(result_simple, showCategory = n_show,
-                     title = dot_title) +
+                     title = dot_title)
+    p_dot <- p_dot +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+                                     breaks = make_size_breaks(p_dot$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster()
@@ -209,10 +211,12 @@ run_targeted_kegg <- function(genes, set_name, universe) {
     if (is.null(set_title)) set_title <- gsub("_", " ", set_name)
 
     p_kegg <- enrichplot::dotplot(ekegg, showCategory = n_show,
-                                  title = paste0(set_title, " — KEGG Pathways")) +
+                                  title = paste0(set_title, " — KEGG Pathways"))
+    p_kegg <- p_kegg +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+                                     breaks = make_size_breaks(p_kegg$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(x = "Gene Ratio") +
       theme_poster()

@@ -373,7 +373,8 @@ make_poster_dotplot <- function(table_path, title_text, max_terms = 15) {
     geom_point() +
     scale_color_gradient(low = "#D55E00", high = "#0072B2",
                          name = "p-adjusted") +
-    scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+    scale_size_continuous(name = "Gene Count", range = c(3, 12),
+                          breaks = make_size_breaks(df$Count)) +
     labs(
       x = "Gene Ratio",
       y = NULL,

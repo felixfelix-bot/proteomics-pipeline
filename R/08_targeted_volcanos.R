@@ -27,6 +27,8 @@ cat("\n=========================================\n")
 cat(" Targeted Volcano Plots\n")
 cat("=========================================\n\n")
 
+source("R/00_theme.R")
+
 experiments <- load_all_experiments()
 interactors_file <- file.path(DATA_DIR, "known_interactors.txt")
 known_interactors <- load_known_interactors(interactors_file)
@@ -119,16 +121,11 @@ make_ra_volcano <- function(df, title, n_top = 60) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    ggplot2::theme_bw() +
+    theme_poster() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-      axis.title.x = ggplot2::element_text(hjust = 0.5),
-      axis.text = ggplot2::element_text(colour = "black", size = 8),
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
-      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      panel.grid.minor = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+      legend.background = element_rect(fill = "white", color = "grey80", linewidth = 0.3)
     )
 
   return(p)
@@ -216,17 +213,11 @@ make_main_volcano <- function(df, title) {
       y = expression(-Log[10]~(adjusted~italic(p)~value)),
       title = title
     ) +
-    ggplot2::theme_bw() +
+    theme_poster() +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-      axis.title.x = ggplot2::element_text(hjust = 0.5),
-      axis.text = ggplot2::element_text(colour = "black", size = 8),
       legend.position = c(0.02, 0.98),
       legend.justification = c(0, 1),
-      legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-      legend.text = ggplot2::element_text(size = 9),
-      panel.grid.minor = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(10, 10, 10, 10, "pt")
+      legend.background = element_rect(fill = "white", color = "grey80", linewidth = 0.3)
     )
 
   return(p)

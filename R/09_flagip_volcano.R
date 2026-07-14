@@ -30,6 +30,8 @@ cat("\n=========================================\n")
 cat(" Flag IP Overlap Volcano (FIXED)\n")
 cat("=========================================\n\n")
 
+source("R/00_theme.R")
+
 experiments <- load_all_experiments()
 
 # ---- DIAGNOSTIC: Print ALL experiment names found in data ----
@@ -252,14 +254,11 @@ p <- ggplot2::ggplot(df, ggplot2::aes(x = log2FC, y = neglog10p, color = categor
     y = expression(-Log[10]~(adjusted~italic(p)~value)),
     title = "TRIP4 TurboID vs WT — Flag IP Validation"
   ) +
-  ggplot2::theme_bw() +
+  theme_poster() +
   ggplot2::theme(
-    plot.title = ggplot2::element_text(hjust = 0.5, face = "bold", size = 11),
-    axis.text = ggplot2::element_text(colour = "black", size = 8),
     legend.position = c(0.02, 0.98),
     legend.justification = c(0, 1),
-    legend.background = ggplot2::element_rect(fill = "white", color = "grey80", linewidth = 0.3),
-    panel.grid.minor = ggplot2::element_blank()
+    legend.background = element_rect(fill = "white", color = "grey80", linewidth = 0.3)
   )
 
 save_figure(p, "flagip_overlap_volcano_BK467_TRIP4_vs_WT",

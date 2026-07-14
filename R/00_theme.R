@@ -33,7 +33,14 @@ POSTER_FONTS <- list(
   annotate    = 20
 )
 
-# ---- Capitalize first letter of GO terms ----
+# Helper: create size breaks that cover the FULL data range (min to max).
+# Used with scale_size_continuous(breaks = ...) so the size legend
+# always shows the smallest and largest dot sizes.
+make_size_breaks <- function(counts) {
+  cmin <- min(counts, na.rm = TRUE)
+  cmax <- max(counts, na.rm = TRUE)
+  pretty(c(cmin, cmax), n = 3)
+}
 # clusterProfiler returns terms like "negative regulation of..."
 # This capitalizes the very first character.
 # Shared across all GO scripts (R/11, R/23, R/30, R/31).

@@ -111,10 +111,12 @@ run_validated_go <- function(genes, set_label) {
     save_table(res, sprintf("flagip_GO_%s_%s", set_label, ont))
 
     n_show <- min(15, nrow(res))
-    p <- dotplot(ego_s, showCategory = n_show) +
+    p <- dotplot(ego_s, showCategory = n_show)
+    p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+                                     breaks = make_size_breaks(p$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(
         title = sprintf("Flag IP %s — %s", gsub("_", " ", set_label), ONT_NAMES[ont]),
@@ -145,10 +147,12 @@ run_validated_go <- function(genes, set_label) {
     cat(sprintf("%d pathways\n", nrow(as.data.frame(ekegg))))
     save_table(as.data.frame(ekegg), sprintf("flagip_KEGG_%s", set_label))
     n_show <- min(15, nrow(as.data.frame(ekegg)))
-    p <- dotplot(ekegg, showCategory = n_show) +
+    p <- dotplot(ekegg, showCategory = n_show)
+    p <- p +
       ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
                                      name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12)) +
+      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 12),
+                                     breaks = make_size_breaks(p$data$Count)) +
       ggplot2::scale_y_discrete(labels = capitalize_first) +
       ggplot2::labs(title = sprintf("Flag IP %s — KEGG Pathways", gsub("_", " ", set_label)),
                     x = "Gene Ratio") +
