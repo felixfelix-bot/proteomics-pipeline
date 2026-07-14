@@ -45,8 +45,8 @@ make_ra_volcano <- function(df, title, n_top = 60) {
 
   # Use config thresholds: padj < P_VALUE_CUTOFF, |log2FC| > LOG2FC_CUTOFF
   # THREE categories per researcher feedback (Jul 12 voice message):
-  #   enriched_up (positive log2FC) = orange "Enriched with RA"
-  #   enriched_dn (negative log2FC) = blue "Enriched without RA"
+  #   enriched_up (positive log2FC) = orange "+RA"
+  #   enriched_dn (negative log2FC) = blue "−RA"
   #   nonsig = grey "Not significant"
   toPlot$category <- "nonsig"
   toPlot$category[toPlot$log2FC > LOG2FC_CUTOFF &
@@ -83,9 +83,9 @@ make_ra_volcano <- function(df, title, n_top = 60) {
   )
 
   RA_LABELS <- c(
-    "enriched_up" = "Enriched with RA",
-    "enriched_dn" = "Enriched without RA",
-    "nonsig"      = "Not significant"
+    "enriched_up" = "+RA",
+    "enriched_dn" = "\u2212RA",
+    "nonsig"      = "n.s."
   )
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,

@@ -212,12 +212,12 @@ FLAGIP_COLORS <- c(
 )
 
 FLAGIP_LABELS <- c(
-  "in_both"    = "Validated by C-Flag + N-Flag",
-  "in_cflag"   = "Validated by C-Flag only",
-  "in_nflag"   = "Validated by N-Flag only",
-  "trip4_only" = "TRIP4-enriched only",
-  "wt_enriched" = "Enriched in WT",
-  "nonsig"      = "Not significant"
+  "in_both"    = "C+N-Flag",
+  "in_cflag"   = "C-Flag only",
+  "in_nflag"   = "N-Flag only",
+  "trip4_only" = "TRIP4 only",
+  "wt_enriched" = "WT enriched",
+  "nonsig"      = "n.s."
 )
 
 cat("\nBuilding volcano plot...\n")

@@ -7,10 +7,10 @@
 #   - Only TRIP4-enriched proteins (log2FC >= 1) get categorized
 #   - Each category gets its own DISTINCT color:
 #       1. ASC complex (TRIP4, ASCC1-3)
-#       2. Verified interaction & in network
-#       3. Verified interaction & not in network
+#       2. Verified (in network)
+#       3. Verified (off network)
 #       4. Highly enriched (stringent seeds)
-#       5. In network of highly enriched proteins
+#       5. Network (highly enriched)
 #       6. Not assigned to interaction network
 #
 # Usage:
@@ -250,18 +250,18 @@ SIG_NET_LABELS <- c(
   "ascc_TRUE"    = "ASCC complex",
   "ascc_high"    = "ASCC complex",
 
-  "ia_FALSE"     = "Verified interaction & not in network",
-  "ia_TRUE"      = "Verified interaction & in network",
-  "ia_high"      = "Verified interaction & in network",
+  "ia_FALSE"     = "Verified (off network)",
+  "ia_TRUE"      = "Verified (in network)",
+  "ia_high"      = "Verified (in network)",
 
   "high_high"    = "Highly enriched",
   "high_TRUE"    = "Highly enriched",
   "high_FALSE"   = "Highly enriched",
 
-  "TRUE_TRUE"    = "In network of highly enriched proteins",
-  "TRUE_high"    = "In network of highly enriched proteins",
+  "TRUE_TRUE"    = "Network (highly enriched)",
+  "TRUE_high"    = "Network (highly enriched)",
 
-  "TRUE_FALSE"   = "Not assigned to interaction network",
+  "TRUE_FALSE"   = "Unassigned",
 
   "FALSE_FALSE"  = "Not enriched",
   "FALSE_TRUE"   = "Not enriched",
@@ -274,11 +274,11 @@ present_colors <- SIG_NET_COLORS[all_cats]
 
 # Build legend in Aruna's specified order:
 # 1. ASCC complex (blue)
-# 2. Verified interaction & in network (teal)
-# 3. Verified interaction & not in network (gold)
+# 2. Verified (in network) (teal)
+# 3. Verified (off network) (gold)
 # 4. Highly enriched (red)
-# 5. In network of highly enriched proteins (dark purple)
-# 6. Not assigned to interaction network (orange)
+# 5. Network (highly enriched) (dark purple)
+# 6. Unassigned (orange)
 # 7. Not enriched (grey)
 legend_order <- c(
   "ascc_FALSE", "ascc_TRUE", "ascc_high",          # 1. ASCC
