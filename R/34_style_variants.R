@@ -255,13 +255,20 @@ for (i in seq_along(variants)) {
 }
 
 # ---- Write all plots to single multi-page PDF ----
-# Use cairo_pdf for better font rendering, write each plot as a page
 cat("  Writing PDF...\n")
 pdf(output_pdf, width = 12, height = 8)
-for (p in all_plots) {
-  print(p)
-}
-dev.off()
+tryCatch({
+  for (p in all_plots) {
+    tryCatch(print(p),
+      error = function(e) {
+        cat(sprintf("    [WARN] render error: %s\n", conditionMessage(e)))
+        # Print a blank placeholder so the page isn't missing
+        print(ggplot() + theme_void())
+      })
+  }
+}, finally = {
+  dev.off()
+})
 
 cat(sprintf("\n  Saved: %s\n", output_pdf))
 cat(sprintf("  %d pages\n", length(all_plots)))
