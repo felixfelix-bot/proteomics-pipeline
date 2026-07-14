@@ -188,43 +188,42 @@ variants <- list(
 )
 
 # ============================================================
-# GENERATE PDF
+# GENERATE PDF — use ggsave per page to avoid sink() conflicts
 # ============================================================
 output_pdf <- file.path(FIGURE_DIR, "style_variants.pdf")
 
-pdf(output_pdf, width = 12, height = 8)
-on.exit(dev.off())
+# Build all plots into a list first, then write PDF
+all_plots <- list()
 
-# ---- Page 1: Description ----
-grid::grid.newpage()
-grid::grid.text(
-  paste0(
-    "PROTEOMICS POSTER — STYLE VARIANT COMPARISON\n\n",
-    "10 variants, each on 2 pages (GO dotplot + volcano).\n\n",
-    "V1:  Baseline (current defaults: 15pt, light grid, no wrap)\n",
-    "V2:  Uniform font enforcement\n",
-    "V3:  Darker/thicker grid (grey75, lw=0.8)\n",
-    "V4:  Bigger fonts (20pt)\n",
-    "V5:  Wrapped y-axis labels (40 chars)\n",
-    "V6:  Darker grid + uniform font\n",
-    "V7:  Bigger fonts + uniform (20pt)\n",
-    "V8:  Dark grid + wrapped labels\n",
-    "V9:  Everything combined (20pt + dark grid + wrapped)\n",
-    "V10: Maximum poster (24pt, darkest grid, tight wrap)\n\n",
-    "TELL ME: Which variant number for each element:\n",
-    "  Grid, Font size, Label wrapping, Gene label size\n",
-    "I will combine your choices into a final version."
-  ),
-  gp = grid::gpar(fontsize = 13, fontface = "bold")
+# Description page (use cowplot-free approach: blank ggplot with text)
+desc_text <- paste0(
+  "PROTEOMICS POSTER — STYLE VARIANT COMPARISON\n\n",
+  "10 variants, each on 2 pages (GO dotplot + volcano).\n\n",
+  "V1:  Baseline (current defaults: 15pt, light grid, no wrap)\n",
+  "V2:  Uniform font enforcement\n",
+  "V3:  Darker/thicker grid (grey75, lw=0.8)\n",
+  "V4:  Bigger fonts (20pt)\n",
+  "V5:  Wrapped y-axis labels (40 chars)\n",
+  "V6:  Darker grid + uniform font\n",
+  "V7:  Bigger fonts + uniform (20pt)\n",
+  "V8:  Dark grid + wrapped labels\n",
+  "V9:  Everything combined (20pt + dark grid + wrapped)\n",
+  "V10: Maximum poster (24pt, darkest grid, tight wrap)\n\n",
+  "TELL ME: Which variant number for each element:\n",
+  "  Grid, Font size, Label wrapping, Gene label size\n",
+  "I will combine your choices into a final version."
 )
+all_plots[[1]] <- ggplot() +
+  annotate("text", x = 0.5, y = 0.5, label = desc_text,
+           size = 4, hjust = 0.5, lineheight = 1.5) +
+  theme_void()
 
 # ---- Pages 2+: Each variant ----
 for (i in seq_along(variants)) {
   v <- variants[[i]]
-  cat(sprintf("  Building variant %d/%d: %s... (instant — precomputed)\n",
-              i, length(variants), v$short_desc))
+  cat(sprintf("  Building variant %d/%d: %s...\n", i, length(variants), v$short_desc))
 
-  # GO dotplot page
+  # GO dotplot
   go_plot <- tryCatch({
     p <- build_go_dotplot(v$theme, wrap_width = v$wrap)
     p + labs(
@@ -237,10 +236,9 @@ for (i in seq_along(variants)) {
       label = paste("GO plot error:", conditionMessage(e)), size = 4) +
       theme_void() + labs(title = sprintf("V%d — GO (error)", v$num))
   })
-  tryCatch(print(go_plot),
-    error = function(e) cat(sprintf("    [WARN] GO render V%d: %s\n", v$num, conditionMessage(e))))
+  all_plots[[length(all_plots) + 1]] <- go_plot
 
-  # Volcano page
+  # Volcano
   vol_plot <- tryCatch({
     p <- build_volcano(v$theme, label_size = v$label_size)
     p + labs(
@@ -253,13 +251,20 @@ for (i in seq_along(variants)) {
       label = paste("Volcano error:", conditionMessage(e)), size = 4) +
       theme_void() + labs(title = sprintf("V%d — Volcano (error)", v$num))
   })
-  tryCatch(print(vol_plot),
-    error = function(e) cat(sprintf("    [WARN] Volcano render V%d: %s\n", v$num, conditionMessage(e))))
+  all_plots[[length(all_plots) + 1]] <- vol_plot
 }
 
+# ---- Write all plots to single multi-page PDF ----
+# Use cairo_pdf for better font rendering, write each plot as a page
+cat("  Writing PDF...\n")
+pdf(output_pdf, width = 12, height = 8)
+for (p in all_plots) {
+  print(p)
+}
+dev.off()
+
 cat(sprintf("\n  Saved: %s\n", output_pdf))
-cat(sprintf("  %d pages (1 description + %d variants x 2 plots)\n",
-            1 + length(variants) * 2, length(variants)))
+cat(sprintf("  %d pages\n", length(all_plots)))
 cat("\n=========================================\n")
 cat(" Style variants complete!\n")
 cat("=========================================\n")
