@@ -388,10 +388,7 @@ make_poster_dotplot <- function(table_path, title_text, max_terms = 15) {
       color = guide_colorbar(title.position = "top",
                              barwidth = 1.5, barheight = 8)
     ) +
-    theme_poster(font_size = 24) +
-    theme(legend.position = c(0.98, 0.02),
-          legend.justification = c(1, 0),
-          legend.box = "vertical")
+    theme_poster_dotplot()
 }
 
 # ---- Helper: standardized barplot from a GO/KEGG result table ----
