@@ -34,12 +34,12 @@
     conda_dir: "{{ ansible_env.HOME }}/miniconda"
     conda_bin: "{{ ansible_env.HOME }}/miniconda/bin/conda"
     conda_env_name: "r-proteomics"
-    r_version: "4.5"
+    r_version: ""  # empty = let conda pick latest compatible
 
     # R packages available as prebuilt conda-forge binaries
     conda_r_packages:
       # Core R
-      - "r-base={{ r_version }}"
+      - "r-base"
       - "r-devtools"
       # CRAN (prebuilt)
       - "r-ggplot2"
@@ -65,9 +65,10 @@
       - "bioconductor-dose"
       - "bioconductor-gosemsim"
       - "bioconductor-stringdb"
-      - "bioconductor-complexheatmap"
       - "bioconductor-fgsea"
       - "bioconductor-ggtree"
+      # NOTE: bioconductor-complexheatmap NOT available on conda-forge for linux-64
+      # (only noarch, last linux-64 build was v1.18.1). Install via Rscript instead.
       # System libraries (conda versions, no apt needed)
       - "r-xml"
       - "r-curl"
@@ -97,6 +98,7 @@
       - "clusterProfiler"
       - "enrichplot"
       - "rrvgo"
+      - "ComplexHeatmap"
 
   tasks:
     - name: Check if miniconda is already installed
@@ -171,7 +173,7 @@
         }
         '
       args:
-        creates: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}/lib/R/library/clusterProfiler"
+        creates: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}/lib/R/library/ComplexHeatmap"
       environment:
         PATH: "{{ conda_dir }}/bin:{{ ansible_env.PATH }}"
         MAKEFLAGS: "-j{{ ansible_processor_vcpu | default(2) }}"

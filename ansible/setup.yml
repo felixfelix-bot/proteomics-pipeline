@@ -29,7 +29,7 @@
     # Conda config (used when install_method=conda)
     conda_bin: "/opt/miniconda/bin/conda"
     conda_env_name: "r-proteomics"
-    conda_r_version: "4.3.1"
+    conda_r_version: ""  # empty = let conda pick latest compatible
 
     # System packages (apt) — installed via sudo
     r_packages_apt:
@@ -74,7 +74,7 @@
     # CRAN packages use r-* prefix, Bioconductor uses bioconductor-* prefix
     conda_r_packages:
       # CRAN
-      - "r-base={{ conda_r_version }}"
+      - "r-base"
       - "r-devtools"
       - "r-ggplot2"
       - "r-ggrepel"
@@ -101,7 +101,8 @@
       - "bioconductor-dose"
       - "bioconductor-stringdb"
       - "bioconductor-rrvgo"
-      - "bioconductor-complexheatmap"
+      # NOTE: bioconductor-complexheatmap NOT available on conda-forge for linux-64
+      # (only noarch, last linux-64 build was v1.18.1). Install via Rscript instead.
       # System libraries (conda versions, no apt needed)
       - "r-xml"
       - "r-curl"
