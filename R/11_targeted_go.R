@@ -131,7 +131,7 @@ run_targeted_go <- function(genes, set_name, universe) {
     cnt_dot <- p_dot$data$Count
 
     # MF terms have long names — generate extra variants with wider wrapping
-    wrap_widths <- if (ont == "MF") c(30, 35, 40) else c(30)
+    wrap_widths <- if (ont == "MF") c(30, 35, 40, 45) else c(30)
     for (ww in wrap_widths) {
       label_fn <- function(x) wrap_go_labels(x, width = ww)
       p_var <- p_dot +
