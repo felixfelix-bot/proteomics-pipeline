@@ -33,9 +33,11 @@ Rscript.exe run_all.R
 
 For full instructions and troubleshooting see **[Windows Install Guide](docs/WINDOWS_INSTALL.md)**.
 
-### Linux — Fast Install (RECOMMENDED)
+### Linux — Fast Install
 
-**Prerequisites:** Ubuntu 22.04/24.04/26.04, sudo access, Ansible 2.10+
+**Prerequisites:** Ubuntu 22.04/24.04/26.04, Ansible 2.10+
+
+#### Option A: Conda — no sudo needed, all precompiled binaries (~5-10 min)
 
 ```bash
 # 1. Install Ansible (if not already installed)
@@ -45,17 +47,12 @@ sudo apt-get update && sudo apt-get install -y ansible
 git clone https://github.com/c03rad0r/proteomics-pipeline.git
 cd proteomics-pipeline
 
-# 3. Run the fast install playbook (~5-10 min, no conda needed)
-#    This uses apt prebuilt R packages for ~90% of dependencies.
-#    Only 4-5 small Bioconductor packages compile from source
-#    (clusterProfiler, enrichplot, rrvgo, EnhancedVolcano, config).
-#    Their heavy deps (GOSemSim, DOSE, fgsea, igraph, ggplot2) are
-#    already installed via apt, so compilation is fast.
-ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
+# 3. Run the conda playbook — auto-installs miniconda if not found
+#    ALL R packages installed as precompiled binaries, zero compilation
+ansible-playbook ansible/setup.yml
 
-# 4. Verify all 17 required packages are installed
-make check
-# Expected: "17/17 required packages installed — All packages ready!"
+# 4. Activate the conda env (run this in each new terminal)
+conda activate r-proteomics
 
 # 5. Copy your CSV data files into data/
 cp /path/to/your/data/*.csv data/
@@ -64,14 +61,34 @@ cp /path/to/your/data/*.csv data/
 make test          # test on synthetic data (generates fake data, runs all steps)
 make all           # run full pipeline on real data
 make targeted-go   # GO dotplots only
-# Individual steps: make volcano, make venn, make go, make targeted-volcano, etc.
 ```
 
-**Alternative install methods** (only if the above fails):
+#### Option B: apt prebuilt + minimal Bioconductor compile (~5-10 min, needs sudo)
 
-- `ansible/setup.yml -e install_method=sudo` — compiles ALL R packages from source (~30+ min, slow)
-- `ansible/setup-conda.yml` — conda-forge approach (NOTE: r-clusterprofiler may not be available on conda-forge; if it fails, use the prebuilt method above)
-- `ansible/setup-compile.yml` — same as sudo mode, full source compilation
+```bash
+# Same prerequisites as above (Ansible + git clone)
+# Uses apt prebuilt R packages for ~90% of deps.
+# Only 4-5 small Bioconductor packages compile from source
+# (clusterProfiler, enrichplot, rrvgo, EnhancedVolcano, config).
+ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
+
+# Verify
+make check
+# Expected: "17/17 required packages installed — All packages ready!"
+
+# Copy data and run
+cp /path/to/your/data/*.csv data/
+make test          # test on synthetic data
+make all           # run full pipeline on real data
+make targeted-go   # GO dotplots only
+```
+
+#### Option C: Full source compile (fallback only, ~30+ min)
+
+```bash
+# Slowest — compiles ALL R packages from source. Only use if A and B fail.
+ansible-playbook ansible/setup.yml -e install_method=sudo --ask-become-pass
+```
 
 **If `make check` fails** (packages missing), install them manually:
 

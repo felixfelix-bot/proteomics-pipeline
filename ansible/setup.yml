@@ -164,17 +164,40 @@
     # CONDA MODE (default) — all packages as precompiled binaries
     # ================================================================
 
-    - name: (conda) Verify conda exists
+    - name: (conda) Check if conda is already installed
       ansible.builtin.stat:
         path: "{{ conda_bin }}"
       register: conda_stat
       when: install_method == "conda"
 
-    - name: (conda) Fail if conda not found
-      ansible.builtin.assert:
-        that: conda_stat.stat.exists
-        fail_msg: "conda not found at {{ conda_bin }}. Install miniconda first or use -e install_method=sudo"
-      when: install_method == "conda"
+    - name: (conda) Check if miniconda is in HOME (common location)
+      ansible.builtin.stat:
+        path: "{{ ansible_env.HOME }}/miniconda/bin/conda"
+      register: conda_home_stat
+      when: install_method == "conda" and not conda_stat.stat.exists
+
+    - name: (conda) Auto-install miniconda if not found
+      ansible.builtin.shell: |
+        set -e
+        wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
+        bash /tmp/miniconda.sh -b -p {{ ansible_env.HOME }}/miniconda
+        rm /tmp/miniconda.sh
+        echo "Miniconda installed to {{ ansible_env.HOME }}/miniconda"
+      args:
+        creates: "{{ ansible_env.HOME }}/miniconda/bin/conda"
+      when: install_method == "conda" and not conda_stat.stat.exists and not conda_home_stat.stat.exists
+      register: miniconda_install
+
+    - name: (conda) Update conda_bin to HOME location if needed
+      ansible.builtin.set_fact:
+        conda_bin: "{{ ansible_env.HOME }}/miniconda/bin/conda"
+      when: install_method == "conda" and not conda_stat.stat.exists
+
+    - name: (conda) Initialize conda for current shell
+      ansible.builtin.shell: |
+        {{ conda_bin }} init bash 2>/dev/null || true
+      when: install_method == "conda" and miniconda_install is changed
+      changed_when: false
 
     - name: (conda) Create R environment with ALL packages (precompiled binaries)
       ansible.builtin.shell: |
