@@ -1,135 +1,150 @@
 ---
-# Ansible playbook: Install R + proteomics pipeline deps using prebuilt binaries
+# Ansible playbook: Install R + proteomics pipeline deps via conda (no sudo needed)
 #
-# Strategy: apt prebuilt R packages (no compilation) for ~90% of deps,
-#           then Rscript/Bioconductor for 3 packages not on apt (fast, small).
+# Strategy:
+#   1. Install miniconda (if not present)
+#   2. Create conda env with prebuilt R packages from conda-forge (~90% of deps)
+#   3. Install 3 remaining Bioconductor packages via Rscript (clusterProfiler,
+#      enrichplot, rrvgo — not on conda-forge, but small compile, deps already in env)
 #
-# This is the RECOMMENDED fast path — no conda needed, no source compilation
-# of large packages. Total install time: ~5 min vs 30+ min compiling from source.
+# No sudo required. Works on any Linux (Ubuntu, Debian, Fedora, etc).
+# Total install time: ~10-15 min (downloads prebuilt binaries, minimal compilation).
 #
 # Prerequisites:
-#   - Ubuntu 22.04 / 24.04 / 26.04
 #   - Ansible 2.10+
-#   - sudo access (for apt)
+#   - Internet connection
+#   - ~3 GB free disk space
 #
 # Usage:
 #   ansible-playbook ansible/setup-prebuilt.yml --connection=local
-#   ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
 #
 # After this completes:
-#   cd proteomics-pipeline
-#   make targeted-go   # generate GO dotplots
+#   conda activate r-proteomics
+#   make check        # verify all packages
+#   make test         # test on synthetic data
+#   make all          # run full pipeline on real data
 
-- name: Install R + proteomics packages via apt prebuilt + Bioconductor (minimal compile)
+- name: Install R + proteomics packages via conda (no sudo)
   hosts: localhost
   connection: local
 
   vars:
-    # apt prebuilt R packages (CRAN + Bioconductor — no compilation)
-    apt_packages:
-      # System R + build deps
-      - r-base
-      - r-base-dev
-      - libxml2-dev
-      - libcurl4-openssl-dev
-      - libssl-dev
-      - libfontconfig1-dev
-      - libharfbuzz-dev
-      - libfribidi-dev
-      - libfreetype6-dev
-      - libpng-dev
-      - libtiff5-dev
-      - libjpeg-dev
-      - libcairo2-dev
-      - libxt-dev
-      - libbz2-dev
-      - libzstd-dev
-      - liblzma-dev
-      - libgit2-dev
-      - libssh2-1-dev
-      - libgdal-dev
-      - libgeos-dev
-      - libproj-dev
-      - libudunits2-dev
-      - libglpk-dev
-      - libgmp-dev
-      - libmpfr-dev
-      - texlive-latex-base
-      - texlive-latex-extra
-      - texlive-fonts-recommended
-      - texinfo
-      - qpdf
-      - pandoc
-      - make
-      - git
-      - curl
-      - wget
-      # CRAN prebuilt
-      - r-cran-ggplot2
-      - r-cran-ggrepel
-      - r-cran-scales
-      - r-cran-rcolorbrewer
-      - r-cran-venndiagram
-      - r-cran-upsetr
-      - r-cran-dplyr
-      - r-cran-readr
-      - r-cran-tibble
-      - r-cran-tidyr
-      - r-cran-gprofiler2
-      - r-cran-here
-      - r-cran-stringr
-      - r-cran-patchwork
-      - r-cran-igraph
-      # Bioconductor prebuilt (apt)
-      - r-bioc-org.hs.eg.db
-      - r-bioc-stringdb
-      - r-bioc-complexheatmap
-      - r-bioc-gosemsim
-      - r-bioc-delayedarray
-      - r-bioc-sparsearray
+    # Miniconda install location (user home, no sudo needed)
+    miniconda_installer: "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+    conda_dir: "{{ ansible_env.HOME }}/miniconda"
+    conda_bin: "{{ ansible_env.HOME }}/miniconda/bin/conda"
+    conda_env_name: "r-proteomics"
+    r_version: "4.5"
 
-    # Bioconductor packages NOT available as apt prebuilt — install via Rscript
-    # These are small; their heavy deps (GOSemSim, DOSE, fgsea, ggtree) are
-    # already installed via apt above, so only these 3 compile from source.
-    bioc_packages_remaining:
-      - "EnhancedVolcano"
+    # R packages available as prebuilt conda-forge binaries
+    conda_r_packages:
+      # Core R
+      - "r-base={{ r_version }}"
+      - "r-devtools"
+      # CRAN (prebuilt)
+      - "r-ggplot2"
+      - "r-ggrepel"
+      - "r-scales"
+      - "r-rcolorbrewer"
+      - "r-ggvenndiagram"
+      - "r-venndiagram"
+      - "r-upsetr"
+      - "r-dplyr"
+      - "r-readr"
+      - "r-tibble"
+      - "r-tidyr"
+      - "r-gprofiler2"
+      - "r-config"
+      - "r-here"
+      - "r-stringr"
+      - "r-patchwork"
+      - "r-igraph"
+      # Bioconductor (prebuilt on conda-forge)
+      - "bioconductor-enhancedvolcano"
+      - "bioconductor-org.hs.eg.db"
+      - "bioconductor-dose"
+      - "bioconductor-gosemsim"
+      - "bioconductor-stringdb"
+      - "bioconductor-complexheatmap"
+      - "bioconductor-fgsea"
+      - "bioconductor-ggtree"
+      # System libraries (conda versions, no apt needed)
+      - "r-xml"
+      - "r-curl"
+      - "r-openssl"
+      - "r-cairo"
+      - "r-png"
+      - "r-jpeg"
+      - "r-tiff"
+      - "freetype"
+      - "harfbuzz"
+      - "fribidi"
+      - "libgdal"
+      - "libgeos"
+      - "libproj"
+      - "udunits2"
+      - "glpk"
+      - "gmp"
+      - "mpfr"
+      - "pandoc"
+      - "make"
+      - "git"
+
+    # Bioconductor packages NOT on conda-forge — install via Rscript
+    # These are small; their heavy deps (DOSE, GOSemSim, fgsea, ggtree)
+    # are already installed via conda above, so compilation is fast.
+    bioc_remaining:
       - "clusterProfiler"
       - "enrichplot"
       - "rrvgo"
-      - "config"
 
   tasks:
-    - name: Verify target is Ubuntu
-      ansible.builtin.assert:
-        that: ansible_distribution == "Ubuntu"
-        fail_msg: "This playbook targets Ubuntu only. Detected: {{ ansible_distribution }}"
+    - name: Check if miniconda is already installed
+      ansible.builtin.stat:
+        path: "{{ conda_bin }}"
+      register: conda_stat
 
-    - name: Update apt cache
-      ansible.builtin.apt:
-        update_cache: true
-        cache_valid_time: 3600
-      become: true
-
-    - name: Install all apt prebuilt packages (R + CRAN + Bioconductor)
-      ansible.builtin.apt:
-        name: "{{ apt_packages }}"
-        state: present
-      become: true
-
-    - name: Create user R library directory
-      ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/R/x86_64-pc-linux-gnu-library/4.5"
-        state: directory
+    - name: Download miniconda installer
+      ansible.builtin.get_url:
+        url: "{{ miniconda_installer }}"
+        dest: "/tmp/miniconda_installer.sh"
         mode: '0755'
+      when: not conda_stat.stat.exists
 
-    - name: Install remaining Bioconductor packages via Rscript (small compile)
+    - name: Install miniconda (silent, user home)
       ansible.builtin.shell: |
-        Rscript -e '
+        bash /tmp/miniconda_installer.sh -b -p {{ conda_dir }}
+      args:
+        creates: "{{ conda_bin }}"
+      when: not conda_stat.stat.exists
+
+    - name: Initialize conda for bash
+      ansible.builtin.shell: |
+        {{ conda_bin }} init bash
+      when: not conda_stat.stat.exists
+      changed_when: false
+
+    - name: Create conda environment with R + prebuilt packages
+      ansible.builtin.shell: |
+        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge -y \
+          {{ conda_r_packages | map('quote') | join(' ') }}
+      args:
+        creates: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}/bin/Rscript"
+      environment:
+        PATH: "{{ conda_dir }}/bin:{{ ansible_env.PATH }}"
+
+    - name: Get Rscript path in conda env
+      ansible.builtin.set_fact:
+        rscript_bin: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}/bin/Rscript"
+
+    - name: Install remaining Bioconductor packages (clusterProfiler, enrichplot, rrvgo)
+      ansible.builtin.shell: |
+        {{ rscript_bin }} -e '
         options(repos = c(CRAN = "https://cloud.r-project.org"))
         options(timeout = 600)
         if (!requireNamespace("BiocManager", quietly = TRUE))
           install.packages("BiocManager")
-        pkgs <- c({{ bioc_packages_remaining | map("quote") | join(", ") }})
+        pkgs <- c({{ bioc_remaining | map("quote") | join(", ") }})
         for (p in pkgs) {
           if (requireNamespace(p, quietly = TRUE)) {
             cat(sprintf("  [SKIP] %s already installed\n", p))
@@ -138,7 +153,6 @@
           cat(sprintf("  [INSTALL] %s\n", p))
           BiocManager::install(p, update = FALSE, ask = FALSE)
         }
-        # Verify
         failed <- c()
         for (p in pkgs) {
           if (!requireNamespace(p, quietly = TRUE)) failed <- c(failed, p)
@@ -147,25 +161,18 @@
           cat("\n  [FAILED]:", paste(failed, collapse = ", "), "\n")
           quit(status = 1)
         } else {
-          cat("\n  [SUCCESS] All", length(pkgs), "packages installed\n")
+          cat("\n  [SUCCESS] All", length(pkgs), "remaining packages installed\n")
         }
         '
       args:
-        creates: "{{ ansible_env.HOME }}/.proteomics_prebuilt_installed"
+        creates: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}/lib/R/library/clusterProfiler"
       environment:
+        PATH: "{{ conda_dir }}/bin:{{ ansible_env.PATH }}"
         MAKEFLAGS: "-j{{ ansible_processor_vcpu | default(2) }}"
-        R_LIBS_USER: "{{ ansible_env.HOME }}/R/x86_64-pc-linux-gnu-library/4.5"
-      register: bioc_install
-
-    - name: Mark install complete (sentinel file)
-      ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/.proteomics_prebuilt_installed"
-        state: touch
-      when: bioc_install.rc == 0
 
     - name: Verify all R packages load
       ansible.builtin.shell: |
-        Rscript -e '
+        {{ rscript_bin }} -e '
         pkgs <- c("ggplot2","ggrepel","scales","RColorBrewer","ggVennDiagram",
                   "VennDiagram","UpSetR","dplyr","readr","tibble","tidyr",
                   "gprofiler2","config","here","stringr","patchwork","igraph",
@@ -189,6 +196,8 @@
         '
       register: r_verify
       changed_when: false
+      environment:
+        PATH: "{{ conda_dir }}/bin:{{ ansible_env.PATH }}"
 
     - name: Show verification results
       ansible.builtin.debug:
@@ -199,13 +208,17 @@
       ansible.builtin.debug:
         msg:
           - "================================================"
-          - " Setup complete! (apt prebuilt + Bioconductor)"
+          - " Setup complete! (conda prebuilt + Bioconductor)"
           - "================================================"
           - ""
-          - "R: system R (apt)"
-          - "Rscript: /usr/bin/Rscript"
+          - "Conda env: {{ conda_env_name }}"
+          - "Rscript:  {{ rscript_bin }}"
           - ""
           - "Next steps:"
-          - "  1. cd proteomics-pipeline"
-          - "  2. Copy data files into data/ (CSV files)"
-          - "  3. make targeted-go   (or 'make all' for everything)"
+          - "  1. source ~/.bashrc   (or restart terminal — activates conda)"
+          - "  2. conda activate {{ conda_env_name }}"
+          - "  3. cd proteomics-pipeline"
+          - "  4. Copy CSV data files into data/ (CSV files)"
+          - "  5. make check        (verify all packages)"
+          - "  6. make test         (test on synthetic data)"
+          - "  7. make all          (run full pipeline on real data)"

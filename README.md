@@ -33,11 +33,9 @@ Rscript.exe run_all.R
 
 For full instructions and troubleshooting see **[Windows Install Guide](docs/WINDOWS_INSTALL.md)**.
 
-### Linux — Fast Install
+### Linux — Fast Install (RECOMMENDED)
 
-**Prerequisites:** Ubuntu 22.04/24.04/26.04, Ansible 2.10+
-
-#### Option A: Conda — no sudo needed, all precompiled binaries (~5-10 min)
+**Prerequisites:** Any Linux, Ansible 2.10+. No sudo required — uses conda.
 
 ```bash
 # 1. Install Ansible (if not already installed)
@@ -47,65 +45,47 @@ sudo apt-get update && sudo apt-get install -y ansible
 git clone https://github.com/c03rad0r/proteomics-pipeline.git
 cd proteomics-pipeline
 
-# 3. Run the conda playbook — auto-installs miniconda if not found
-#    ALL R packages installed as precompiled binaries, zero compilation
-ansible-playbook ansible/setup.yml
+# 3. Run the install playbook (~10-15 min, NO sudo needed)
+#    This installs miniconda, creates a conda env with prebuilt R packages
+#    from conda-forge, then compiles 3 small Bioconductor packages
+#    (clusterProfiler, enrichplot, rrvgo — not on conda-forge).
+#    Their heavy deps (DOSE, GOSemSim, fgsea, ggtree) are already
+#    installed via conda, so compilation is fast.
+ansible-playbook ansible/setup-prebuilt.yml --connection=local
 
-# 4. Activate the conda env (run this in each new terminal)
+# 4. Activate the conda environment
+source ~/.bashrc        # pick up conda init
 conda activate r-proteomics
 
-# 5. Copy your CSV data files into data/
-cp /path/to/your/data/*.csv data/
-
-# 6. Run the pipeline
-make test          # test on synthetic data (generates fake data, runs all steps)
-make all           # run full pipeline on real data
-make targeted-go   # GO dotplots only
-```
-
-#### Option B: apt prebuilt + minimal Bioconductor compile (~5-10 min, needs sudo)
-
-```bash
-# Same prerequisites as above (Ansible + git clone)
-# Uses apt prebuilt R packages for ~90% of deps.
-# Only 4-5 small Bioconductor packages compile from source
-# (clusterProfiler, enrichplot, rrvgo, EnhancedVolcano, config).
-ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
-
-# Verify
+# 5. Verify all 17 required packages are installed
 make check
 # Expected: "17/17 required packages installed — All packages ready!"
 
-# Copy data and run
+# 6. Copy your CSV data files into data/
 cp /path/to/your/data/*.csv data/
-make test          # test on synthetic data
+
+# 7. Run the pipeline
+make test          # test on synthetic data (generates fake data, runs all steps)
 make all           # run full pipeline on real data
 make targeted-go   # GO dotplots only
+# Individual steps: make volcano, make venn, make go, make targeted-volcano, etc.
 ```
 
-#### Option C: Full source compile (fallback only, ~30+ min)
+**Important:** Always run `conda activate r-proteomics` before running any
+`make` commands — the pipeline needs the conda R, not system R.
 
-```bash
-# Slowest — compiles ALL R packages from source. Only use if A and B fail.
-ansible-playbook ansible/setup.yml -e install_method=sudo --ask-become-pass
-```
+**Troubleshooting:**
 
-**If `make check` fails** (packages missing), install them manually:
+- `conda: command not found` — run `source ~/.bashrc` or restart terminal, then `conda activate r-proteomics`
+- `make check` fails (packages missing) — run the playbook again, it skips already-installed packages
+- 00LOCK errors during Bioconductor install — run `find ~/miniconda/envs/r-proteomics/lib/R/library/ -name '00LOCK*' -exec rm -rf {} +` then retry
+- If conda env Rscript not found — check `~/miniconda/envs/r-proteomics/bin/Rscript` exists
 
-```bash
-# Check which packages are missing
-Rscript R/check_packages.R
+**Alternative install methods** (only if the above fails):
 
-# Install missing CRAN packages
-Rscript -e 'install.packages("PACKAGE_NAME", repos="https://cloud.r-project.org")'
-
-# Install missing Bioconductor packages
-Rscript -e 'BiocManager::install("PACKAGE_NAME", update=FALSE, ask=FALSE)'
-
-# If you get 00LOCK errors, clean them up:
-find ~/R/x86_64-pc-linux-gnu-library/ -name '00LOCK*' -exec rm -rf {} + 2>/dev/null
-# Then retry the install
-```
+- `ansible/setup.yml -e install_method=sudo --ask-become-pass` — apt prebuilt + compile ALL R packages from source (~30+ min, slow, needs sudo)
+- `ansible/setup-compile.yml` — same as sudo mode, full source compilation
+- `ansible/setup-conda.yml` — older conda-only version (may lack some packages)
 
 ## Analysis Modules
 
