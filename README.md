@@ -35,61 +35,59 @@ For full instructions and troubleshooting see **[Windows Install Guide](docs/WIN
 
 ### Linux — Fast Install (RECOMMENDED)
 
-Three options, fastest first:
-
-#### Option A: Conda — precompiled binaries, no sudo, no compilation (~5 min)
+**Prerequisites:** Ubuntu 22.04/24.04/26.04, sudo access, Ansible 2.10+
 
 ```bash
-# Prerequisite: miniconda installed (https://docs.conda.io/en/latest/miniconda.html)
-# One command — installs R + ALL packages as precompiled binaries
-ansible-playbook ansible/setup.yml -e install_method=conda
+# 1. Install Ansible (if not already installed)
+sudo apt-get update && sudo apt-get install -y ansible
 
-# Activate the conda env
-conda activate r-proteomics
+# 2. Clone the repo
+git clone https://github.com/c03rad0r/proteomics-pipeline.git
+cd proteomics-pipeline
 
-# Copy CSV data files into data/, then run:
-make test          # test pipeline on synthetic data
-make all           # run full pipeline on real data
-make targeted-go   # generate GO dotplots only
-```
-
-#### Option B: apt prebuilt + minimal Bioconductor (~5-10 min, needs sudo)
-
-```bash
-# Uses Ubuntu's prebuilt R packages for ~90% of deps.
-# Only 4-5 small Bioconductor packages compile from source.
+# 3. Run the fast install playbook (~5-10 min, no conda needed)
+#    This uses apt prebuilt R packages for ~90% of dependencies.
+#    Only 4-5 small Bioconductor packages compile from source
+#    (clusterProfiler, enrichplot, rrvgo, EnhancedVolcano, config).
+#    Their heavy deps (GOSemSim, DOSE, fgsea, igraph, ggplot2) are
+#    already installed via apt, so compilation is fast.
 ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
 
-# Copy CSV data files into data/, then run:
-make test          # test pipeline on synthetic data
+# 4. Verify all 17 required packages are installed
+make check
+# Expected: "17/17 required packages installed — All packages ready!"
+
+# 5. Copy your CSV data files into data/
+cp /path/to/your/data/*.csv data/
+
+# 6. Run the pipeline
+make test          # test on synthetic data (generates fake data, runs all steps)
 make all           # run full pipeline on real data
-make targeted-go   # generate GO dotplots only
+make targeted-go   # GO dotplots only
+# Individual steps: make volcano, make venn, make go, make targeted-volcano, etc.
 ```
 
-#### Option C: apt + compile everything from source (~30+ min, needs sudo)
+**Alternative install methods** (only if the above fails):
+
+- `ansible/setup.yml -e install_method=sudo` — compiles ALL R packages from source (~30+ min, slow)
+- `ansible/setup-conda.yml` — conda-forge approach (NOTE: r-clusterprofiler may not be available on conda-forge; if it fails, use the prebuilt method above)
+- `ansible/setup-compile.yml` — same as sudo mode, full source compilation
+
+**If `make check` fails** (packages missing), install them manually:
 
 ```bash
-# Slowest — compiles ALL R packages from source. Only use if A and B fail.
-ansible-playbook ansible/setup.yml -e install_method=sudo --ask-become-pass
+# Check which packages are missing
+Rscript R/check_packages.R
 
-# Copy CSV data files into data/, then run:
-make test          # test pipeline on synthetic data
-make all           # run full pipeline on real data
-make targeted-go   # generate GO dotplots only
-```
+# Install missing CRAN packages
+Rscript -e 'install.packages("PACKAGE_NAME", repos="https://cloud.r-project.org")'
 
-### Verifying the install
+# Install missing Bioconductor packages
+Rscript -e 'BiocManager::install("PACKAGE_NAME", update=FALSE, ask=FALSE)'
 
-After any install method, verify all packages load:
-
-```bash
-Rscript -e 'pkgs <- c("ggplot2","clusterProfiler","enrichplot","STRINGdb","ComplexHeatmap","EnhancedVolcano","rrvgo","DOSE","org.Hs.eg.db","igraph","ggVennDiagram"); for (p in pkgs) cat(sprintf("  %s  %s %s\n", ifelse(requireNamespace(p,quietly=TRUE),"[OK]","[FAIL]"), p, ifelse(requireNamespace(p,quietly=TRUE),as.character(packageVersion(p)),"MISSING")))'
-```
-
-All should show [OK]. Then test on synthetic data:
-
-```bash
-make test    # generates synthetic data, runs full pipeline, outputs to output/figures/
+# If you get 00LOCK errors, clean them up:
+find ~/R/x86_64-pc-linux-gnu-library/ -name '00LOCK*' -exec rm -rf {} + 2>/dev/null
+# Then retry the install
 ```
 
 ## Analysis Modules
