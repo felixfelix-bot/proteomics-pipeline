@@ -31,7 +31,7 @@ install_if_missing <- function(pkg, type = "cran") {
   cat(sprintf("  [INSTALL] %s (%s)...\n", pkg, type))
   tryCatch({
     if (type == "bioc") {
-      BiocManager::install(pkg, update = FALSE, ask = FALSE)
+      BiocManager::install(pkg, version = "3.22", update = FALSE, ask = FALSE)
     } else {
       install.packages(pkg, dependencies = TRUE)
     }

@@ -47,7 +47,7 @@ make_ra_volcano <- function(df, title, n_top = 60) {
   # THREE categories per researcher feedback (Jul 12 voice message):
   #   enriched_up (positive log2FC) = orange "+RA"
   #   enriched_dn (negative log2FC) = blue "−RA"
-  #   nonsig = grey "Not significant"
+  #   nonsig = grey "n.s."
   toPlot$category <- "nonsig"
   toPlot$category[toPlot$log2FC > LOG2FC_CUTOFF &
                   toPlot$padj < P_VALUE_CUTOFF] <- "enriched_up"
@@ -83,9 +83,9 @@ make_ra_volcano <- function(df, title, n_top = 60) {
   )
 
   RA_LABELS <- c(
-    "enriched_up" = "Enriched with RA",
-    "enriched_dn" = "Enriched without RA",
-    "nonsig"      = "Not significant"
+    "enriched_up" = "+RA",
+    "enriched_dn" = "\u2212RA",
+    "nonsig"      = "n.s."
   )
 
   p <- ggplot2::ggplot(toPlot, ggplot2::aes(x = log2FC, y = neglog10p,
@@ -175,7 +175,7 @@ make_main_volcano <- function(df, title) {
     "known_ia"    = "Known interactors",
     "enriched_up" = "Enriched in TRIP4",
     "enriched_dn" = "Enriched in WT",
-    "nonsig"      = "Not significant"
+    "nonsig"      = "n.s."
   )
 
   # Label only ASCC complex and known interactors
