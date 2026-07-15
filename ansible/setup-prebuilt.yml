@@ -124,6 +124,12 @@
       when: not conda_stat.stat.exists
       changed_when: false
 
+    - name: Accept conda Terms of Service (required by newer conda)
+      ansible.builtin.shell: |
+        {{ conda_bin }} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+        {{ conda_bin }} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+      changed_when: false
+
     - name: Create conda environment with R + prebuilt packages
       ansible.builtin.shell: |
         {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge -y \
