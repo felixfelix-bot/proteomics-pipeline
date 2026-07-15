@@ -129,17 +129,24 @@ run_targeted_go <- function(genes, set_name, universe) {
 
     p_dot <- dotplot(result_simple, showCategory = n_show)
     cnt_dot <- p_dot$data$Count
-    p_dot <- p_dot +
-      ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
-                                     name = "p-adjusted value") +
-      ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
-                                     breaks = make_size_breaks(cnt_dot, n_breaks = 8),
-                                     limits = c(min(cnt_dot), max(cnt_dot))) +
-      ggplot2::scale_y_discrete(labels = wrap_go_labels) +
-      ggplot2::guides(size = size_legend_guide()) +
-      ggplot2::labs(x = "Gene Ratio") +
-      theme_poster_dotplot()
-    save_figure(p_dot, paste0(prefix, "_dotplot"), width = 18, height = max(14, n_show * 0.8))
+
+    # MF terms have long names — generate extra variants with wider wrapping
+    wrap_widths <- if (ont == "MF") c(30, 35, 40) else c(30)
+    for (ww in wrap_widths) {
+      label_fn <- function(x) wrap_go_labels(x, width = ww)
+      p_var <- p_dot +
+        ggplot2::scale_color_gradient(low = "#D55E00", high = "#0072B2",
+                                       name = "p-adjusted value") +
+        ggplot2::scale_size_continuous(name = "Gene Count", range = c(3, 10),
+                                       breaks = make_size_breaks(cnt_dot, n_breaks = 8),
+                                       limits = c(min(cnt_dot), max(cnt_dot))) +
+        ggplot2::scale_y_discrete(labels = label_fn) +
+        ggplot2::guides(size = size_legend_guide()) +
+        ggplot2::labs(x = "Gene Ratio") +
+        theme_poster_dotplot()
+      suffix <- if (ww != 30) sprintf("_w%d", ww) else ""
+      save_figure(p_var, paste0(prefix, "_dotplot", suffix), width = 18, height = max(14, n_show * 0.8))
+    }
 
     # ---- Barplot ----
     # Sorted by Count (highest at top, lowest at bottom).
