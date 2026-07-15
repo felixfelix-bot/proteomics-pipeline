@@ -1,0 +1,211 @@
+---
+# Ansible playbook: Install R + proteomics pipeline deps using prebuilt binaries
+#
+# Strategy: apt prebuilt R packages (no compilation) for ~90% of deps,
+#           then Rscript/Bioconductor for 3 packages not on apt (fast, small).
+#
+# This is the RECOMMENDED fast path — no conda needed, no source compilation
+# of large packages. Total install time: ~5 min vs 30+ min compiling from source.
+#
+# Prerequisites:
+#   - Ubuntu 22.04 / 24.04 / 26.04
+#   - Ansible 2.10+
+#   - sudo access (for apt)
+#
+# Usage:
+#   ansible-playbook ansible/setup-prebuilt.yml --connection=local
+#   ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
+#
+# After this completes:
+#   cd proteomics-pipeline
+#   make targeted-go   # generate GO dotplots
+
+- name: Install R + proteomics packages via apt prebuilt + Bioconductor (minimal compile)
+  hosts: localhost
+  connection: local
+
+  vars:
+    # apt prebuilt R packages (CRAN + Bioconductor — no compilation)
+    apt_packages:
+      # System R + build deps
+      - r-base
+      - r-base-dev
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libfontconfig1-dev
+      - libharfbuzz-dev
+      - libfribidi-dev
+      - libfreetype6-dev
+      - libpng-dev
+      - libtiff5-dev
+      - libjpeg-dev
+      - libcairo2-dev
+      - libxt-dev
+      - libbz2-dev
+      - libzstd-dev
+      - liblzma-dev
+      - libgit2-dev
+      - libssh2-1-dev
+      - libgdal-dev
+      - libgeos-dev
+      - libproj-dev
+      - libudunits2-dev
+      - libglpk-dev
+      - libgmp-dev
+      - libmpfr-dev
+      - texlive-latex-base
+      - texlive-latex-extra
+      - texlive-fonts-recommended
+      - texinfo
+      - qpdf
+      - pandoc
+      - make
+      - git
+      - curl
+      - wget
+      # CRAN prebuilt
+      - r-cran-ggplot2
+      - r-cran-ggrepel
+      - r-cran-scales
+      - r-cran-rcolorbrewer
+      - r-cran-venndiagram
+      - r-cran-upsetr
+      - r-cran-dplyr
+      - r-cran-readr
+      - r-cran-tibble
+      - r-cran-tidyr
+      - r-cran-gprofiler2
+      - r-cran-here
+      - r-cran-stringr
+      - r-cran-patchwork
+      - r-cran-igraph
+      # Bioconductor prebuilt (apt)
+      - r-bioc-org.hs.eg.db
+      - r-bioc-stringdb
+      - r-bioc-complexheatmap
+      - r-bioc-gosemsim
+      - r-bioc-delayedarray
+      - r-bioc-sparsearray
+
+    # Bioconductor packages NOT available as apt prebuilt — install via Rscript
+    # These are small; their heavy deps (GOSemSim, DOSE, fgsea, ggtree) are
+    # already installed via apt above, so only these 3 compile from source.
+    bioc_packages_remaining:
+      - "EnhancedVolcano"
+      - "clusterProfiler"
+      - "enrichplot"
+      - "rrvgo"
+      - "config"
+
+  tasks:
+    - name: Verify target is Ubuntu
+      ansible.builtin.assert:
+        that: ansible_distribution == "Ubuntu"
+        fail_msg: "This playbook targets Ubuntu only. Detected: {{ ansible_distribution }}"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      become: true
+
+    - name: Install all apt prebuilt packages (R + CRAN + Bioconductor)
+      ansible.builtin.apt:
+        name: "{{ apt_packages }}"
+        state: present
+      become: true
+
+    - name: Create user R library directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/R/x86_64-pc-linux-gnu-library/4.5"
+        state: directory
+        mode: '0755'
+
+    - name: Install remaining Bioconductor packages via Rscript (small compile)
+      ansible.builtin.shell: |
+        Rscript -e '
+        options(repos = c(CRAN = "https://cloud.r-project.org"))
+        options(timeout = 600)
+        if (!requireNamespace("BiocManager", quietly = TRUE))
+          install.packages("BiocManager")
+        pkgs <- c({{ bioc_packages_remaining | map("quote") | join(", ") }})
+        for (p in pkgs) {
+          if (requireNamespace(p, quietly = TRUE)) {
+            cat(sprintf("  [SKIP] %s already installed\n", p))
+            next
+          }
+          cat(sprintf("  [INSTALL] %s\n", p))
+          BiocManager::install(p, update = FALSE, ask = FALSE)
+        }
+        # Verify
+        failed <- c()
+        for (p in pkgs) {
+          if (!requireNamespace(p, quietly = TRUE)) failed <- c(failed, p)
+        }
+        if (length(failed) > 0) {
+          cat("\n  [FAILED]:", paste(failed, collapse = ", "), "\n")
+          quit(status = 1)
+        } else {
+          cat("\n  [SUCCESS] All", length(pkgs), "packages installed\n")
+        }
+        '
+      args:
+        creates: "{{ ansible_env.HOME }}/.proteomics_prebuilt_installed"
+      environment:
+        MAKEFLAGS: "-j{{ ansible_processor_vcpu | default(2) }}"
+        R_LIBS_USER: "{{ ansible_env.HOME }}/R/x86_64-pc-linux-gnu-library/4.5"
+      register: bioc_install
+
+    - name: Mark install complete (sentinel file)
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.proteomics_prebuilt_installed"
+        state: touch
+      when: bioc_install.rc == 0
+
+    - name: Verify all R packages load
+      ansible.builtin.shell: |
+        Rscript -e '
+        pkgs <- c("ggplot2","ggrepel","scales","RColorBrewer","ggVennDiagram",
+                  "VennDiagram","UpSetR","dplyr","readr","tibble","tidyr",
+                  "gprofiler2","config","here","stringr","patchwork","igraph",
+                  "clusterProfiler","enrichplot","DOSE","org.Hs.eg.db",
+                  "STRINGdb","rrvgo","ComplexHeatmap","EnhancedVolcano")
+        failed <- c()
+        for (p in pkgs) {
+          if (!requireNamespace(p, quietly = TRUE)) {
+            cat(sprintf("  [FAIL] %s\n", p))
+            failed <- c(failed, p)
+          } else {
+            cat(sprintf("  [OK]   %s %s\n", p, as.character(packageVersion(p))))
+          }
+        }
+        if (length(failed) > 0) {
+          cat("\n[FAILED]:", paste(failed, collapse = ", "), "\n")
+          quit(status = 1)
+        } else {
+          cat("\n[SUCCESS] All", length(pkgs), "packages verified\n")
+        }
+        '
+      register: r_verify
+      changed_when: false
+
+    - name: Show verification results
+      ansible.builtin.debug:
+        msg: "{{ r_verify.stdout_lines }}"
+
+  post_tasks:
+    - name: Print next steps
+      ansible.builtin.debug:
+        msg:
+          - "================================================"
+          - " Setup complete! (apt prebuilt + Bioconductor)"
+          - "================================================"
+          - ""
+          - "R: system R (apt)"
+          - "Rscript: /usr/bin/Rscript"
+          - ""
+          - "Next steps:"
+          - "  1. cd proteomics-pipeline"
+          - "  2. Copy data files into data/ (CSV files)"
+          - "  3. make targeted-go   (or 'make all' for everything)"

@@ -1,0 +1,353 @@
+---
+# Ansible playbook: Install R + all proteomics pipeline dependencies on Ubuntu.
+#
+# Usage:
+#   ansible-playbook setup.yml                         # conda mode (default, no sudo)
+#   ansible-playbook setup.yml -e install_method=sudo  # sudo mode (apt, prompts for password)
+#   ansible-playbook setup.yml --ask-become-pass       # sudo mode (explicit password prompt)
+#
+# After this completes:
+#   git clone <repo-url>
+#   cd proteomics-pipeline
+#   conda activate r-proteomics   # if using conda mode
+#   make targeted-go             # generate GO dotplots
+#
+# Requirements:
+#   - Ansible 2.10+ on the control machine
+#   - Target: Ubuntu 22.04 / 24.04 / 26.04 (any modern Ubuntu)
+#   - For conda mode (default): conda/miniconda installed on target
+#   - For sudo mode: passwordless sudo OR use --ask-become-pass
+
+- name: Install R and proteomics pipeline dependencies on Ubuntu
+  hosts: localhost
+  connection: local
+
+  vars:
+    # Installation method: "conda" (default, no sudo) or "sudo" (apt)
+    install_method: "conda"
+
+    # Conda config (used when install_method=conda)
+    conda_bin: "/opt/miniconda/bin/conda"
+    conda_env_name: "r-proteomics"
+    conda_r_version: "4.3.1"
+
+    # System packages (apt) — installed via sudo
+    r_packages_apt:
+      - r-base
+      - r-base-dev
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libfontconfig1-dev
+      - libharfbuzz-dev
+      - libfribidi-dev
+      - libfreetype6-dev
+      - libpng-dev
+      - libtiff5-dev
+      - libjpeg-dev
+      - libcairo2-dev
+      - libxt-dev
+      - libbz2-dev
+      - libzstd-dev
+      - liblzma-dev
+      - libgit2-dev
+      - libssh2-1-dev
+      - libgdal-dev
+      - libgeos-dev
+      - libproj-dev
+      - libudunits2-dev
+      - libglpk-dev
+      - libgmp-dev
+      - libmpfr-dev
+      - texlive-latex-base
+      - texlive-latex-extra
+      - texlive-fonts-recommended
+      - texinfo
+      - qpdf
+      - pandoc
+      - make
+      - git
+      - curl
+      - wget
+
+    # Conda R packages (precompiled binaries from conda-forge)
+    # CRAN packages use r-* prefix, Bioconductor uses bioconductor-* prefix
+    conda_r_packages:
+      # CRAN
+      - "r-base={{ conda_r_version }}"
+      - "r-devtools"
+      - "r-ggplot2"
+      - "r-ggrepel"
+      - "r-scales"
+      - "r-rcolorbrewer"
+      - "r-ggvenndiagram"
+      - "r-venndiagram"
+      - "r-upsetr"
+      - "r-dplyr"
+      - "r-readr"
+      - "r-tibble"
+      - "r-tidyr"
+      - "r-gprofiler2"
+      - "r-config"
+      - "r-here"
+      - "r-stringr"
+      - "r-patchwork"
+      - "r-igraph"
+      # Bioconductor (precompiled on conda-forge)
+      - "bioconductor-enhancedvolcano"
+      - "bioconductor-clusterprofiler"
+      - "bioconductor-org.hs.eg.db"
+      - "bioconductor-enrichplot"
+      - "bioconductor-dose"
+      - "bioconductor-stringdb"
+      - "bioconductor-rrvgo"
+      - "bioconductor-complexheatmap"
+      # System libraries (conda versions, no apt needed)
+      - "r-xml"
+      - "r-curl"
+      - "r-openssl"
+      - "r-cairo"
+      - "r-png"
+      - "r-jpeg"
+      - "r-tiff"
+      - "freetype"
+      - "harfbuzz"
+      - "fribidi"
+      - "libgdal"
+      - "libgeos"
+      - "libproj"
+      - "udunits2"
+      - "glpk"
+      - "gmp"
+      - "mpfr"
+      - "pandoc"
+      - "make"
+      - "git"
+
+    # R packages to install via Rscript (sudo mode only — compiled from source)
+    cran_packages:
+      - "ggplot2"
+      - "ggrepel"
+      - "scales"
+      - "RColorBrewer"
+      - "ggVennDiagram"
+      - "VennDiagram"
+      - "UpSetR"
+      - "dplyr"
+      - "readr"
+      - "tibble"
+      - "tidyr"
+      - "gprofiler2"
+      - "config"
+      - "here"
+      - "stringr"
+      - "patchwork"
+      - "igraph"
+
+    bioc_packages:
+      - "EnhancedVolcano"
+      - "clusterProfiler"
+      - "org.Hs.eg.db"
+      - "enrichplot"
+      - "DOSE"
+      - "STRINGdb"
+      - "rrvgo"
+      - "ComplexHeatmap"
+
+  tasks:
+    - name: Verify target is Ubuntu
+      ansible.builtin.assert:
+        that: ansible_distribution == "Ubuntu"
+        fail_msg: "This playbook targets Ubuntu only. Detected: {{ ansible_distribution }}"
+
+    # ================================================================
+    # CONDA MODE (default) — all packages as precompiled binaries
+    # ================================================================
+
+    - name: (conda) Verify conda exists
+      ansible.builtin.stat:
+        path: "{{ conda_bin }}"
+      register: conda_stat
+      when: install_method == "conda"
+
+    - name: (conda) Fail if conda not found
+      ansible.builtin.assert:
+        that: conda_stat.stat.exists
+        fail_msg: "conda not found at {{ conda_bin }}. Install miniconda first or use -e install_method=sudo"
+      when: install_method == "conda"
+
+    - name: (conda) Create R environment with ALL packages (precompiled binaries)
+      ansible.builtin.shell: |
+        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge \
+          {{ conda_r_packages | map('quote') | join(' ') }} \
+          -y
+      args:
+        creates: "{{ ansible_env.HOME }}/.conda/envs/{{ conda_env_name }}/bin/Rscript"
+      when: install_method == "conda"
+
+    - name: (conda) Set Rscript path
+      ansible.builtin.set_fact:
+        rscript_bin: "{{ ansible_env.HOME }}/.conda/envs/{{ conda_env_name }}/bin/Rscript"
+      when: install_method == "conda"
+
+    # ================================================================
+    # SUDO MODE — apt for system libs, Rscript for R packages (source)
+    # ================================================================
+
+    - name: (sudo) Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      become: true
+      when: install_method == "sudo"
+
+    - name: (sudo) Install system packages
+      ansible.builtin.apt:
+        name: "{{ r_packages_apt }}"
+        state: present
+      become: true
+      when: install_method == "sudo"
+
+    - name: (sudo) Set Rscript path
+      ansible.builtin.set_fact:
+        rscript_bin: "Rscript"
+      when: install_method == "sudo"
+
+    - name: (sudo) Create user R library directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/R/x86_64-pc-linux-gnu-library/4.5"
+        state: directory
+        mode: '0755'
+      when: install_method == "sudo"
+
+    - name: (sudo) Write R package install script
+      ansible.builtin.copy:
+        dest: "/tmp/install_r_packages.R"
+        mode: '0755'
+        content: |
+          options(repos = c(CRAN = "https://cloud.r-project.org"))
+          options(BioC_mirror = "https://bioconductor.org")
+          options(timeout = 600)
+
+          user_lib <- file.path(Sys.getenv("HOME"), "R", "x86_64-pc-linux-gnu-library", paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = "."))
+          dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
+          .libPaths(c(user_lib, .libPaths()))
+          cat("Using library paths:", paste(.libPaths(), collapse = ", "), "\n")
+
+          is_installed <- function(pkg) requireNamespace(pkg, quietly = TRUE)
+
+          if (!is_installed("BiocManager")) install.packages("BiocManager", lib = user_lib)
+
+          cran_pkgs <- c({{ cran_packages | map('regex_replace', '^(.*)$', '"\\1"') | join(', ') }})
+          bioc_pkgs <- c({{ bioc_packages | map('regex_replace', '^(.*)$', '"\\1"') | join(', ') }})
+
+          for (p in cran_pkgs) {
+            if (!is_installed(p)) {
+              cat(sprintf("  [INSTALL] %s (CRAN)\n", p))
+              install.packages(p, dependencies = TRUE, lib = user_lib)
+            } else {
+              cat(sprintf("  [OK]      %s\n", p))
+            }
+          }
+
+          # Detect Bioconductor version matching this R
+          bioc_ver <- as.character(BiocManager::version())
+          for (p in bioc_pkgs) {
+            if (!is_installed(p)) {
+              cat(sprintf("  [INSTALL] %s (Bioc %s)\n", p, bioc_ver))
+              BiocManager::install(p, version = bioc_ver, update = FALSE, ask = FALSE)
+            } else {
+              cat(sprintf("  [OK]      %s\n", p))
+            }
+          }
+
+          all_pkgs <- c(cran_pkgs, bioc_pkgs)
+          failed <- c()
+          for (p in all_pkgs) {
+            if (!is_installed(p)) failed <- c(failed, p)
+          }
+          if (length(failed) > 0) {
+            cat("\n  [FAILED]:", paste(failed, collapse = ", "), "\n")
+            quit(status = 1)
+          } else {
+            cat("\n  [SUCCESS] All", length(all_pkgs), "packages installed\n")
+          }
+      when: install_method == "sudo"
+
+    - name: (sudo) Install R packages from source
+      ansible.builtin.command: "Rscript /tmp/install_r_packages.R"
+      args:
+        creates: "{{ ansible_env.HOME }}/.proteomics_r_packages_installed"
+      register: r_package_install
+      environment:
+        MAKEFLAGS: "-j{{ ansible_processor_vcpu | default(2) }}"
+        R_LIBS_USER: "{{ ansible_env.HOME }}/R/x86_64-pc-linux-gnu-library/4.5"
+      when: install_method == "sudo"
+
+    - name: (sudo) Mark packages as installed (sentinel file)
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.proteomics_r_packages_installed"
+        state: touch
+      when: install_method == "sudo" and r_package_install.rc == 0
+
+    # ================================================================
+    # COMMON: Verify R + all packages
+    # ================================================================
+
+    - name: Verify R is installed
+      ansible.builtin.command: "{{ rscript_bin }} --version"
+      register: r_version_output
+      changed_when: false
+
+    - name: Show R version
+      ansible.builtin.debug:
+        msg: "{{ r_version_output.stderr_lines[0] | default(r_version_output.stdout_lines[0]) }}"
+
+    - name: Verify all R packages load
+      ansible.builtin.shell: |
+        {{ rscript_bin }} -e '
+          pkgs <- c("ggplot2", "ggrepel", "clusterProfiler", "enrichplot",
+                    "org.Hs.eg.db", "STRINGdb", "ggVennDiagram", "stringr",
+                    "patchwork", "dplyr", "rrvgo", "ComplexHeatmap",
+                    "EnhancedVolcano", "DOSE", "UpSetR", "igraph")
+          failed <- c()
+          for (p in pkgs) {
+            if (!requireNamespace(p, quietly = TRUE)) {
+              cat(sprintf("  [FAIL] %s\n", p))
+              failed <- c(failed, p)
+            } else {
+              cat(sprintf("  [OK]   %s %s\n", p, as.character(packageVersion(p))))
+            }
+          }
+          if (length(failed) > 0) {
+            cat("\n  [FAILED]:", paste(failed, collapse = ", "), "\n")
+            quit(status = 1)
+          } else {
+            cat("\n  All", length(pkgs), "packages verified.\n")
+          }
+        '
+      register: r_verify
+      changed_when: false
+
+    - name: Show verification results
+      ansible.builtin.debug:
+        msg: "{{ r_verify.stdout_lines }}"
+
+  post_tasks:
+    - name: Print next steps
+      ansible.builtin.debug:
+        msg:
+          - "================================================"
+          - " Setup complete!"
+          - "================================================"
+          - ""
+          - "R version: {{ r_version_output.stderr_lines[0] | default(r_version_output.stdout_lines[0]) }}"
+          - "Rscript:   {{ rscript_bin }}"
+          - ""
+          - "Next steps:"
+          - "  1. Clone the repo:  git clone <repo-url>"
+          - "  2. cd proteomics-pipeline"
+          - "  3. Copy data files into data/ (CSV files from Aruna)"
+          - "  4. make targeted-go   (or 'make all' for everything)"
+          - ""
+          - "{% if install_method == 'conda' %}  Activate conda env first: conda activate {{ conda_env_name }}{% endif %}"

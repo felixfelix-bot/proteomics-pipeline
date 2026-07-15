@@ -1,0 +1,156 @@
+---
+# Ansible playbook: Install R + proteomics pipeline dependencies via conda-forge
+#
+# Uses conda-forge prebuilt binaries — NO compilation from source.
+# Much faster than setup-compile.yml (which builds R packages from source).
+#
+# Prerequisites:
+#   - Miniconda/Anaconda installed on target machine
+#   - Ansible 2.10+
+#
+# Usage:
+#   ansible-playbook ansible/setup-conda.yml --connection=local
+#   ansible-playbook ansible/setup-conda.yml -i ansible/inventory.yml
+#
+# After this completes:
+#   cd proteomics-pipeline
+#   conda activate r-proteomics
+#   make targeted-go   # generate GO dotplots
+
+- name: Install R + proteomics packages via conda-forge (prebuilt binaries)
+  hosts: localhost
+  connection: local
+
+  vars:
+    conda_bin: "/opt/miniconda/bin/conda"
+    conda_env_name: "r-proteomics"
+    r_version: "4.5"
+
+    # All R packages to install via conda-forge (prebuilt, no compilation)
+    conda_r_packages:
+      # Core plotting
+      - "r-ggplot2"
+      - "r-ggrepel"
+      - "r-scales"
+      - "r-rcolorbrewer"
+      # Venn diagrams
+      - "r-ggvenndiagram"
+      - "r-venndiagram"
+      - "r-upsetr"
+      # Data wrangling
+      - "r-dplyr"
+      - "r-readr"
+      - "r-tibble"
+      - "r-tidyr"
+      - "r-stringr"
+      - "r-patchwork"
+      # Networks
+      - "r-igraph"
+      # GO enrichment
+      - "r-clusterprofiler"
+      - "r-enrichplot"
+      - "r-dose"
+      - "r-org.hs.eg.db"
+      - "r-stringdb"
+      - "r-rrvgo"
+      - "r-complexheatmap"
+      - "r-enhancedvolcano"
+      # Utilities
+      - "r-here"
+      - "r-config"
+      - "r-gprofiler2"
+      # System
+      - "r-base={{ r_version }}"
+      # TeX Live for PDF output
+      - "texlive-core"
+
+  tasks:
+    - name: Verify conda is installed
+      ansible.builtin.stat:
+        path: "{{ conda_bin }}"
+      register: conda_stat
+
+    - name: Fail if conda not found
+      ansible.builtin.fail:
+        msg: "conda not found at {{ conda_bin }}. Install Miniconda first: https://docs.conda.io/en/latest/miniconda.html"
+      when: not conda_stat.stat.exists
+
+    - name: Create conda environment with R
+      ansible.builtin.command: >
+        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge -y
+        r-base={{ r_version }}
+      args:
+        creates: "{{ ansible_env.HOME }}/.conda/envs/{{ conda_env_name }}"
+      register: conda_create
+      environment:
+        PATH: "/opt/miniconda/bin:{{ ansible_env.PATH }}"
+
+    - name: Install all R packages via conda-forge (prebuilt binaries)
+      ansible.builtin.command: >
+        {{ conda_bin }} install -n {{ conda_env_name }} -c conda-forge -y
+        {{ conda_r_packages }}
+      args:
+        creates: "{{ ansible_env.HOME }}/.conda/envs/{{ conda_env_name }}/lib/R/library/clusterProfiler"
+      register: conda_install
+      environment:
+        PATH: "/opt/miniconda/bin:{{ ansible_env.PATH }}"
+
+    - name: Verify R installation
+      ansible.builtin.command: "{{ conda_bin }} run -n {{ conda_env_name }} R --version"
+      register: r_version_output
+      changed_when: false
+      environment:
+        PATH: "/opt/miniconda/bin:{{ ansible_env.PATH }}"
+
+    - name: Show R version
+      ansible.builtin.debug:
+        msg: "{{ r_version_output.stdout_lines[0] }}"
+
+    - name: Verify all R packages load
+      ansible.builtin.shell: |
+        {{ conda_bin }} run -n {{ conda_env_name }} Rscript -e '
+          pkgs <- c("ggplot2","ggrepel","scales","RColorBrewer","ggVennDiagram",
+                    "VennDiagram","UpSetR","dplyr","readr","tibble","tidyr",
+                    "gprofiler2","config","here","stringr","patchwork","igraph",
+                    "clusterProfiler","enrichplot","DOSE","org.Hs.eg.db",
+                    "STRINGdb","rrvgo","ComplexHeatmap","EnhancedVolcano")
+          failed <- c()
+          for (p in pkgs) {
+            if (!requireNamespace(p, quietly = TRUE)) {
+              cat(sprintf("  [FAIL] %s\n", p))
+              failed <- c(failed, p)
+            } else {
+              cat(sprintf("  [OK]   %s %s\n", p, as.character(packageVersion(p))))
+            }
+          }
+          if (length(failed) > 0) {
+            cat("\n[FAILED]:", paste(failed, collapse = ", "), "\n")
+            quit(status = 1)
+          } else {
+            cat("\n[SUCCESS] All", length(pkgs), "packages verified\n")
+          }
+        '
+      register: r_verify
+      changed_when: false
+      environment:
+        PATH: "/opt/miniconda/bin:{{ ansible_env.PATH }}"
+
+    - name: Show verification results
+      ansible.builtin.debug:
+        msg: "{{ r_verify.stdout_lines }}"
+
+    - name: Print next steps
+      ansible.builtin.debug:
+        msg:
+          - "================================================"
+          - " Setup complete!"
+          - "================================================"
+          - ""
+          - "Next steps:"
+          - "  1. conda activate {{ conda_env_name }}"
+          - "  2. cd proteomics-pipeline"
+          - "  3. Copy data files into data/ (CSV files from Aruna)"
+          - "  4. make targeted-go   (or 'make all' for everything)"
+          - ""
+          - "R version: {{ r_version_output.stdout_lines[0] }}"
+          - "Conda env: {{ conda_env_name }}"
