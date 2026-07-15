@@ -3,8 +3,9 @@
 # NO conda, NO source compilation of large packages, NO ansible.
 #
 # ~90% of packages are apt prebuilt (zero compilation).
-# 3 small Bioconductor packages (clusterProfiler, enrichplot, rrvgo) 
-# compile from source — their heavy deps are already via apt, so it's fast.
+# 4 small Bioconductor packages (clusterProfiler, enrichplot, rrvgo,
+# EnhancedVolcano) compile from source — their heavy deps are already
+# via apt, so it's fast.
 #
 # Usage:
 #   chmod +x bootstrap.sh && ./bootstrap.sh
@@ -12,7 +13,8 @@
 # Tested on: Ubuntu 22.04 / 24.04 / 26.04
 # Time: ~5-10 min (downloads prebuilt .deb files)
 
-set -e
+# NOTE: No 'set -e' — we want to continue even if one package fails,
+# and report all failures at the end.
 
 echo "=========================================="
 echo " Proteomics Pipeline — Fast Install"
@@ -49,6 +51,10 @@ sudo apt-get install -y \
   r-bioc-org.hs.eg.db r-bioc-stringdb r-bioc-complexheatmap \
   r-bioc-gosemsim r-bioc-delayedarray r-bioc-sparsearray
 
+# Remove apt BiocVersion pin (it pins to 3.20, but R 4.5 needs Bioc 3.22)
+# This lets BiocManager auto-detect the correct version.
+sudo apt-get remove -y r-bioc-biocversion 2>/dev/null || true
+
 echo ""
 echo "[1/3] apt prebuilt packages done."
 echo ""
@@ -60,7 +66,6 @@ R_LIBDIR="$HOME/R/x86_64-pc-linux-gnu-library/4.5"
 mkdir -p "$R_LIBDIR"
 export R_LIBS_USER="$R_LIBDIR"
 
-# Also handle R 4.4 if that's what's installed
 R_VERSION=$(Rscript -e 'cat(paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = "."))' 2>/dev/null)
 echo "      Detected R version: $R_VERSION"
 
@@ -68,21 +73,16 @@ echo ""
 
 # ---- Step 3: Install remaining packages via Rscript ----
 echo "[3/3] Installing remaining packages via Rscript..."
-echo "      (EnhancedVolcano, ggVennDiagram, config from CRAN)"
-echo "      (clusterProfiler, enrichplot, rrvgo from Bioconductor)"
-echo "      Their heavy deps are already installed via apt above."
+echo "      (ggVennDiagram, config from CRAN)"
+echo "      (EnhancedVolcano, clusterProfiler, enrichplot, rrvgo from Bioconductor)"
 echo ""
 
 Rscript -e '
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 options(timeout = 600)
 
+# ---- CRAN packages ----
 cran_pkgs <- c("ggVennDiagram", "config")
-
-# EnhancedVolcano is a Bioconductor package, NOT CRAN
-bioc_pkgs <- c("EnhancedVolcano", "clusterProfiler", "enrichplot", "rrvgo")
-
-# CRAN packages
 for (p in cran_pkgs) {
   if (requireNamespace(p, quietly = TRUE)) {
     cat(sprintf("  [SKIP] %s\n", p))
@@ -92,19 +92,34 @@ for (p in cran_pkgs) {
   }
 }
 
-# BiocManager + Bioconductor packages
-# IMPORTANT: Pin Bioconductor version to match R version.
-# R 4.5 -> Bioc 3.22, R 4.4 -> Bioc 3.20
+# ---- Bioconductor packages ----
+# ALL of these are Bioconductor, NOT CRAN.
+# EnhancedVolcano was incorrectly tried from CRAN before — that fails.
+bioc_pkgs <- c("EnhancedVolcano", "clusterProfiler", "enrichplot", "rrvgo")
+
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
-bioc_ver <- switch(paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = "."),
+# Determine correct Bioconductor version for this R
+# R 4.5 -> Bioc 3.22, R 4.4 -> Bioc 3.20
+r_short <- paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = ".")
+bioc_ver <- switch(r_short,
   "4.5" = "3.22",
   "4.4" = "3.20",
-  "3.20" = as.character(BiocManager::version())
+  "4.3" = "3.18",
+  as.character(BiocManager::version())  # fallback: auto-detect
 )
-cat(sprintf("  R %s -> Bioconductor %s\n",
-  paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = "."), bioc_ver))
+cat(sprintf("  R %s -> Bioconductor %s\n", r_short, bioc_ver))
+
+# Clean stale 00LOCK dirs before installing
+lib_dir <- file.path(Sys.getenv("HOME"), "R", "x86_64-pc-linux-gnu-library", r_short)
+if (dir.exists(lib_dir)) {
+  locks <- list.files(lib_dir, pattern = "^00LOCK", full.names = TRUE)
+  if (length(locks) > 0) {
+    cat("  Cleaning stale 00LOCK directories...\n")
+    unlink(locks, recursive = TRUE)
+  }
+}
 
 for (p in bioc_pkgs) {
   if (requireNamespace(p, quietly = TRUE)) {
@@ -115,7 +130,7 @@ for (p in bioc_pkgs) {
   }
 }
 
-# Verify all
+# ---- Verify all packages ----
 all_pkgs <- c(cran_pkgs, bioc_pkgs,
   "ggplot2", "ggrepel", "scales", "RColorBrewer", "VennDiagram", "UpSetR",
   "dplyr", "readr", "tibble", "tidyr", "gprofiler2", "here", "stringr",
@@ -134,7 +149,7 @@ for (p in all_pkgs) {
 
 if (length(failed) > 0) {
   cat("\n  [FAILED]:", paste(failed, collapse = ", "), "\n")
-  quit(status = 1)
+  cat("  Try running this script again — it skips already-installed packages.\n")
 } else {
   cat("\n  [SUCCESS] All", length(all_pkgs), "packages installed\n")
 }
@@ -146,9 +161,8 @@ echo " Install complete!"
 echo "=========================================="
 echo ""
 echo "Next steps:"
-echo "  1. cd proteomics-pipeline"
-echo "  2. Copy CSV data files into data/"
-echo "  3. make check        (verify all packages)"
-echo "  4. make test         (test on synthetic data)"
-echo "  5. make all          (run full pipeline on real data)"
+echo "  1. Copy CSV data files into data/"
+echo "  2. make check        (verify all packages)"
+echo "  3. make test         (test on synthetic data)"
+echo "  4. make all          (run full pipeline on real data)"
 echo ""
