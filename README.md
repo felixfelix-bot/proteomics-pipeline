@@ -33,12 +33,63 @@ Rscript.exe run_all.R
 
 For full instructions and troubleshooting see **[Windows Install Guide](docs/WINDOWS_INSTALL.md)**.
 
-### Linux (with micromamba)
+### Linux — Fast Install (RECOMMENDED)
+
+Three options, fastest first:
+
+#### Option A: Conda — precompiled binaries, no sudo, no compilation (~5 min)
 
 ```bash
-micromamba create -y -n r-env -c conda-forge r-base r-essentials
-micromamba run -n r-env Rscript R/00_install_packages.R
-micromamba run -n r-env Rscript run_all.R
+# Prerequisite: miniconda installed (https://docs.conda.io/en/latest/miniconda.html)
+# One command — installs R + ALL packages as precompiled binaries
+ansible-playbook ansible/setup.yml -e install_method=conda
+
+# Activate the conda env
+conda activate r-proteomics
+
+# Copy CSV data files into data/, then run:
+make test          # test pipeline on synthetic data
+make all           # run full pipeline on real data
+make targeted-go   # generate GO dotplots only
+```
+
+#### Option B: apt prebuilt + minimal Bioconductor (~5-10 min, needs sudo)
+
+```bash
+# Uses Ubuntu's prebuilt R packages for ~90% of deps.
+# Only 4-5 small Bioconductor packages compile from source.
+ansible-playbook ansible/setup-prebuilt.yml --connection=local --ask-become-pass
+
+# Copy CSV data files into data/, then run:
+make test          # test pipeline on synthetic data
+make all           # run full pipeline on real data
+make targeted-go   # generate GO dotplots only
+```
+
+#### Option C: apt + compile everything from source (~30+ min, needs sudo)
+
+```bash
+# Slowest — compiles ALL R packages from source. Only use if A and B fail.
+ansible-playbook ansible/setup.yml -e install_method=sudo --ask-become-pass
+
+# Copy CSV data files into data/, then run:
+make test          # test pipeline on synthetic data
+make all           # run full pipeline on real data
+make targeted-go   # generate GO dotplots only
+```
+
+### Verifying the install
+
+After any install method, verify all packages load:
+
+```bash
+Rscript -e 'pkgs <- c("ggplot2","clusterProfiler","enrichplot","STRINGdb","ComplexHeatmap","EnhancedVolcano","rrvgo","DOSE","org.Hs.eg.db","igraph","ggVennDiagram"); for (p in pkgs) cat(sprintf("  %s  %s %s\n", ifelse(requireNamespace(p,quietly=TRUE),"[OK]","[FAIL]"), p, ifelse(requireNamespace(p,quietly=TRUE),as.character(packageVersion(p)),"MISSING")))'
+```
+
+All should show [OK]. Then test on synthetic data:
+
+```bash
+make test    # generates synthetic data, runs full pipeline, outputs to output/figures/
 ```
 
 ## Analysis Modules
