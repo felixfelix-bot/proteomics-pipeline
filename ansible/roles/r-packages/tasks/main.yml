@@ -1,40 +1,26 @@
 ---
-# r-packages role: installs all required R packages
-# Runs the same R/00_install_packages.R script on both platforms
+# r-packages role: installs all R packages from R/00_install_packages.R
+# Runs the install script directly from the cloned repo (no copying needed)
+#
+# Prerequisites: r-base role must have completed (R installed)
 
-- name: Copy R package install script to target
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../R/00_install_packages.R"
-    dest: "{{ r_scripts_dir }}/00_install_packages.R"
-    mode: '0755'
-  when: ansible_os_family == "Debian"
+- name: Check if R/00_install_packages.R exists in repo
+  stat:
+    path: "{{ playbook_dir }}/../R/00_install_packages.R"
+  register: install_script
 
-- name: Copy R package install script to target (Windows)
-  ansible.windows.win_copy:
-    src: "{{ playbook_dir }}/../R/00_install_packages.R"
-    dest: "C:\\proteomics-pipeline\\R\\00_install_packages.R"
-  when: ansible_os_family == "Windows"
+- name: Fail if install script not found
+  fail:
+    msg: "R/00_install_packages.R not found. Clone the repo first: git clone <repo-url>"
+  when: not install_script.stat.exists
 
-- name: Install R packages (Linux)
-  command: "Rscript {{ r_scripts_dir | default('/usr/local/lib/R/site-scripts') }}/00_install_packages.R"
-  environment:
-    R_LIBS_USER: "{{ r_lib_path | default(omit) }}"
+- name: Install R packages via Rscript
+  command: "Rscript {{ playbook_dir }}/../R/00_install_packages.R"
   register: r_package_install
   changed_when: "'INSTALLING' in r_package_install.stdout or 'New packages' in r_package_install.stdout"
-  when: ansible_os_family == "Debian"
+  environment:
+    R_DOWNLOAD_METHOD: curl
 
-- name: Install R packages (Windows)
-  ansible.windows.win_command: "Rscript.exe C:\\proteomics-pipeline\\R\\00_install_packages.R"
-  register: r_package_install_win
-  changed_when: "'INSTALLING' in r_package_install_win.stdout or 'New packages' in r_package_install_win.stdout"
-  when: ansible_os_family == "Windows"
-
-- name: Report install result (Linux)
+- name: Show install result (last 10 lines)
   debug:
-    msg: "{{ r_package_install.stdout_lines[-5:] }}"
-  when: ansible_os_family == "Debian" and r_package_install is defined
-
-- name: Report install result (Windows)
-  debug:
-    msg: "{{ r_package_install_win.stdout_lines[-5:] }}"
-  when: ansible_os_family == "Windows" and r_package_install_win is defined
+    msg: "{{ r_package_install.stdout_lines[-10:] }}"

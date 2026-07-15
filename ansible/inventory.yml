@@ -1,31 +1,25 @@
 ---
 # Ansible inventory for proteomics pipeline
-# Edit the ansible_host and ansible_user for your Windows machine
+#
+# Local machine (default):
+#   ansible-playbook -i ansible/inventory.yml ansible/setup.yml --ask-become-pass
+#
+# Remote Ubuntu machine via SSH:
+#   1. Edit ai-laptop ansible_host/ansible_user below
+#   2. ansible-playbook -i ansible/inventory.yml ansible/setup.yml --ask-become-pass
 
 all:
   children:
-    # Windows research workstation (target machine)
-    windows_targets:
-      hosts:
-        research-laptop:
-          ansible_host: 192.168.1.XXX      # <-- Replace with Windows IP
-          ansible_user: researcher           # <-- Replace with Windows username
-          ansible_password: CHANGE_ME         # <-- Replace or use vault
-          ansible_connection: winrm
-          ansible_winrm_transport: ntlm
-          ansible_winrm_server_cert_validation: ignore
-          ansible_port: 5986
-
-    # Linux machines (AI laptop, CI, etc.)
     linux_targets:
       hosts:
         ai-laptop:
           ansible_host: localhost
           ansible_connection: local
           ansible_python_interpreter: "{{ ansible_playbook_python }}"
+          # For remote SSH, change to:
+          # ansible_host: 192.168.1.XXX
+          # ansible_user: your-username
+          # ansible_connection: ssh
+          # ansible_python_interpreter: /usr/bin/python3
 
-    # Group both for concurrent provisioning
-    all_targets:
-      children:
-        windows_targets: {}
-        linux_targets: {}
+    # Windows targets removed — use bootstrap-windows-all.ps1 on Windows

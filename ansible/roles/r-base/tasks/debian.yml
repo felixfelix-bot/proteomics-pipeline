@@ -1,5 +1,14 @@
 ---
-# R installation on Debian/Ubuntu
+# r-base role: installs R 4.x from CRAN on Ubuntu/Debian
+
+- name: Install required apt packages for CRAN repo
+  apt:
+    name:
+      - ca-certificates
+      - gnupg
+    state: present
+    update_cache: yes
+  become: yes
 
 - name: Ensure CRAN signing key is present
   apt_key:
@@ -14,11 +23,13 @@
     update_cache: yes
   become: yes
 
-- name: Install R and build dependencies
+- name: Install R and all build dependencies
   apt:
     name:
+      # R itself
       - r-base
       - r-base-dev
+      # Build deps for R packages
       - libcurl4-openssl-dev
       - libssl-dev
       - libxml2-dev
@@ -27,12 +38,17 @@
       - libfribidi-dev
       - libfreetype6-dev
       - libpng-dev
-      - libtiff5-dev
+      - libtiff-dev
       - libjpeg-dev
+      # System libs for STRINGdb/igraph
+      - libgmp-dev
+      - libmpfr-dev
+      # Build tools
+      - build-essential
       - make
       - gcc
       - g++
-      - build-essential
+      - pkg-config
     state: present
     update_cache: yes
   become: yes

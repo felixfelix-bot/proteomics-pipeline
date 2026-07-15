@@ -1,9 +1,7 @@
 ---
-# r-base role: installs R on both Windows and Linux
+# r-base role: installs R 4.x from CRAN on Ubuntu/Debian
+# Entry point — delegates to debian.yml (Ubuntu only, Windows was removed)
+
 - name: Install R on Debian/Ubuntu
   include_tasks: debian.yml
   when: ansible_os_family == "Debian"
-
-- name: Install R on Windows
-  include_tasks: windows.yml
-  when: ansible_os_family == "Windows"

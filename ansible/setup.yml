@@ -1,18 +1,198 @@
 ---
-# Main Ansible playbook: provisions R environment for proteomics analysis
-# Works on both Windows (via WinRM) and Linux (local/SSH)
+# Ansible playbook: Install R + all proteomics pipeline dependencies on Ubuntu.
+#
+# Usage:
+#   ansible-playbook setup.yml                    # install on this machine (localhost)
+#   ansible-playbook setup.yml -i inventory.ini   # install on remote machines
+#
+# After this completes:
+#   git clone <repo-url>
+#   cd proteomics-pipeline
+#   make install     # installs R packages (BiocManager, clusterProfiler, etc.)
+#   make targeted-go # generate GO dotplots
+#
+# Requirements:
+#   - Ansible 2.10+ on the control machine
+#   - Target: Ubuntu 22.04 / 24.04 / 26.04 (any modern Ubuntu)
+#   - Internet access on target (for apt + CRAN + Bioconductor)
 
-- name: Install R base language
-  hosts: all_targets
-  roles:
-    - r-base
+- name: Install R and proteomics pipeline dependencies on Ubuntu
+  hosts: localhost
+  become: true
+  connection: local
 
-- name: Install R packages (Bioconductor + CRAN)
-  hosts: all_targets
-  roles:
-    - r-packages
+  vars:
+    # R version to install. Ubuntu's r-base tracks the distro default.
+    # On Ubuntu 24.04+ this is R 4.3+; on 26.04 it's R 4.5+.
+    # No need to pin — apt gets the right version for the distro.
+    r_packages_apt:
+      - r-base
+      - r-base-dev
+      - libxml2-dev
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - libfontconfig1-dev
+      - libharfbuzz-dev
+      - libfribidi-dev
+      - libfreetype6-dev
+      - libpng-dev
+      - libtiff5-dev
+      - libjpeg-dev
+      - libcairo2-dev
+      - libxt-dev
+      - libbz2-dev
+      - libzstd-dev
+      - liblzma-dev
+      - libgit2-dev
+      - libssh2-1-dev
+      - libgdal-dev
+      - libgeos-dev
+      - libproj-dev
+      - libudunits2-dev
+      - libglpk-dev
+      - libgmp-dev
+      - libmpfr-dev
+      - texlive-latex-base
+      - texlive-latex-extra
+      - texlive-fonts-recommended
+      - texlive-fonts-extra
+      - texinfo
+      - qpdf
+      - pandoc
+      - make
+      - git
+      - curl
+      - wget
 
-- name: Install VS Code with R extensions
-  hosts: all_targets
-  roles:
-    - vscode
+  tasks:
+    - name: Verify target is Ubuntu
+      ansible.builtin.assert:
+        that: ansible_distribution == "Ubuntu"
+        fail_msg: "This playbook targets Ubuntu only. Detected: {{ ansible_distribution }}"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install system packages (R + native libs + LaTeX)
+      ansible.builtin.apt:
+        name: "{{ r_packages_apt }}"
+        state: present
+
+    - name: Verify R is installed
+      ansible.builtin.command: R --version
+      register: r_version_output
+      changed_when: false
+
+    - name: Show R version
+      ansible.builtin.debug:
+        msg: "{{ r_version_output.stdout_lines[0] }}"
+
+    - name: Install BiocManager + all R packages
+      ansible.builtin.shell: |
+        Rscript -e '
+          options(repos = c(CRAN = "https://cloud.r-project.org"))
+          options(BioC_mirror = "https://bioconductor.org")
+          options(timeout = 600)
+
+          is_installed <- function(pkg) requireNamespace(pkg, quietly = TRUE)
+
+          # BiocManager first
+          if (!is_installed("BiocManager")) install.packages("BiocManager")
+
+          # CRAN packages
+          cran_pkgs <- c(
+            "ggplot2", "ggrepel", "scales", "RColorBrewer",
+            "ggVennDiagram", "VennDiagram", "UpSetR",
+            "dplyr", "readr", "tibble", "tidyr",
+            "gprofiler2", "config", "here",
+            "stringr", "patchwork", "igraph"
+          )
+          for (p in cran_pkgs) {
+            if (!is_installed(p)) {
+              cat(sprintf("  [INSTALL] %s (CRAN)\\n", p))
+              install.packages(p, dependencies = TRUE)
+            } else {
+              cat(sprintf("  [OK]      %s\\n", p))
+            }
+          }
+
+          # Bioconductor packages
+          bioc_pkgs <- c(
+            "EnhancedVolcano", "clusterProfiler", "org.Hs.eg.db",
+            "enrichplot", "DOSE", "STRINGdb", "rrvgo", "ComplexHeatmap"
+          )
+          for (p in bioc_pkgs) {
+            if (!is_installed(p)) {
+              cat(sprintf("  [INSTALL] %s (Bioc)\\n", p))
+              BiocManager::install(p, update = FALSE, ask = FALSE)
+            } else {
+              cat(sprintf("  [OK]      %s\\n", p))
+            }
+          }
+
+          # Final verification
+          all_pkgs <- c(cran_pkgs, bioc_pkgs)
+          failed <- c()
+          for (p in all_pkgs) {
+            if (!is_installed(p)) failed <- c(failed, p)
+          }
+          if (length(failed) > 0) {
+            cat("\\n  [FAILED]:", paste(failed, collapse = ", "), "\\n")
+            quit(status = 1)
+          } else {
+            cat("\\n  [SUCCESS] All", length(all_pkgs), "packages installed\\n")
+          }
+        '
+      args:
+        creates: /usr/local/lib/R/site-library/.proteomics_pipeline_installed
+      register: r_package_install
+      environment:
+        MAKEFLAGS: "-j{{ ansible_processor_vcpu | default(2) }}"
+
+    - name: Mark packages as installed (sentinel file)
+      ansible.builtin.file:
+        path: /usr/local/lib/R/site-library/.proteomics_pipeline_installed
+        state: touch
+      when: r_package_install.rc == 0
+
+    - name: Verify all R packages load
+      ansible.builtin.shell: |
+        Rscript -e '
+          pkgs <- c("ggplot2", "ggrepel", "clusterProfiler", "enrichplot",
+                    "org.Hs.eg.db", "STRINGdb", "ggVennDiagram", "stringr",
+                    "patchwork", "dplyr", "rrvgo")
+          for (p in pkgs) {
+            if (!requireNamespace(p, quietly = TRUE)) {
+              cat(sprintf("  [FAIL] %s\\n", p))
+              quit(status = 1)
+            } else {
+              cat(sprintf("  [OK]   %s %s\\n", p, as.character(packageVersion(p))))
+            }
+          }
+          cat("\\nAll packages verified.\\n")
+        '
+      register: r_verify
+      changed_when: false
+
+    - name: Show verification results
+      ansible.builtin.debug:
+        msg: "{{ r_verify.stdout_lines }}"
+
+  post_tasks:
+    - name: Print next steps
+      ansible.builtin.debug:
+        msg:
+          - "================================================"
+          - " Setup complete!"
+          - "================================================"
+          - ""
+          - "Next steps:"
+          - "  1. Clone the repo:  git clone <repo-url>"
+          - "  2. cd proteomics-pipeline"
+          - "  3. Copy data files into data/ (CSV files from Aruna)"
+          - "  4. make targeted-go   (or 'make all' for everything)"
+          - ""
+          - "R version: {{ r_version_output.stdout_lines[0] }}"
+          - "Packages installed in: /usr/local/lib/R/site-library/"

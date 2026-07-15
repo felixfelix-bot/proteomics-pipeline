@@ -1,0 +1,24 @@
+# Example Ansible inventory for proteomics pipeline setup
+#
+# Copy this to inventory.ini and edit for your machines.
+#
+# Usage:
+#   ansible-playbook ansible/setup.yml -i ansible/inventory.ini
+
+# ---- Localhost (default) ----
+[local]
+localhost
+
+[local:vars]
+ansible_connection=local
+ansible_python_interpreter=/usr/bin/python3
+
+# ---- Remote Ubuntu machine ----
+# Uncomment and edit:
+#
+# [ubuntu]
+# 192.168.1.100
+#
+# [ubuntu:vars]
+# ansible_user=youruser
+# ansible_python_interpreter=/usr/bin/python3

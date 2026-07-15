@@ -1,0 +1,27 @@
+---
+# texlive role: installs TeX Live for PDF output (pdflatex)
+# Only the packages needed by the pipeline — not full texlive (saves ~4GB)
+
+- name: Install TeX Live packages for PDF output
+  apt:
+    name:
+      - texlive-latex-base
+      - texlive-latex-extra
+      - texlive-latex-recommended
+      - texlive-fonts-recommended
+      - texlive-fonts-extra
+      - texlive-science
+      - texlive-plain-generic
+      - latexmk
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Verify pdflatex
+  command: pdflatex --version
+  register: pdflatex_version
+  changed_when: false
+
+- name: Show pdflatex version
+  debug:
+    var: pdflatex_version.stdout_lines[0]
