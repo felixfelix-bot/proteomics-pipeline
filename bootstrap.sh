@@ -77,8 +77,10 @@ Rscript -e '
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 options(timeout = 600)
 
-cran_pkgs <- c("EnhancedVolcano", "ggVennDiagram", "config")
-bioc_pkgs <- c("clusterProfiler", "enrichplot", "rrvgo")
+cran_pkgs <- c("ggVennDiagram", "config")
+
+# EnhancedVolcano is a Bioconductor package, NOT CRAN
+bioc_pkgs <- c("EnhancedVolcano", "clusterProfiler", "enrichplot", "rrvgo")
 
 # CRAN packages
 for (p in cran_pkgs) {
@@ -91,15 +93,25 @@ for (p in cran_pkgs) {
 }
 
 # BiocManager + Bioconductor packages
+# IMPORTANT: Pin Bioconductor version to match R version.
+# R 4.5 -> Bioc 3.22, R 4.4 -> Bioc 3.20
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
+
+bioc_ver <- switch(paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = "."),
+  "4.5" = "3.22",
+  "4.4" = "3.20",
+  "3.20" = as.character(BiocManager::version())
+)
+cat(sprintf("  R %s -> Bioconductor %s\n",
+  paste(R.version$major, strsplit(R.version$minor, "\\.")[[1]][1], sep = "."), bioc_ver))
 
 for (p in bioc_pkgs) {
   if (requireNamespace(p, quietly = TRUE)) {
     cat(sprintf("  [SKIP] %s\n", p))
   } else {
-    cat(sprintf("  [INSTALL] %s (Bioconductor)\n", p))
-    BiocManager::install(p, update = FALSE, ask = FALSE)
+    cat(sprintf("  [INSTALL] %s (Bioc %s)\n", p, bioc_ver))
+    BiocManager::install(p, version = bioc_ver, update = FALSE, ask = FALSE, force = TRUE)
   }
 }
 
