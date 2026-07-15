@@ -193,15 +193,16 @@
         conda_bin: "{{ ansible_env.HOME }}/miniconda/bin/conda"
       when: install_method == "conda" and not conda_stat.stat.exists
 
-    - name: (conda) Initialize conda for current shell
+    - name: (conda) Accept conda Terms of Service (required by newer conda)
       ansible.builtin.shell: |
-        {{ conda_bin }} init bash 2>/dev/null || true
-      when: install_method == "conda" and miniconda_install is changed
+        {{ conda_bin }} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main 2>/dev/null || true
+        {{ conda_bin }} tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r 2>/dev/null || true
       changed_when: false
+      when: install_method == "conda"
 
     - name: (conda) Create R environment with ALL packages (precompiled binaries)
       ansible.builtin.shell: |
-        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge \
+        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge --override-channels \
           {{ conda_r_packages | map('quote') | join(' ') }} \
           -y
       args:

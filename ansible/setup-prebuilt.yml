@@ -132,7 +132,7 @@
 
     - name: Create conda environment with R + prebuilt packages
       ansible.builtin.shell: |
-        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge -y \
+        {{ conda_bin }} create -n {{ conda_env_name }} -c conda-forge --override-channels -y \
           {{ conda_r_packages | map('quote') | join(' ') }}
       args:
         creates: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}/bin/Rscript"
