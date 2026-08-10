@@ -1,2 +1,2 @@
-molecular_diagrams/*.aux
-molecular_diagrams/*.log
+*.aux
+*.log
