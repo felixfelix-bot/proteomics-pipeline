@@ -11,13 +11,13 @@
 \tikzset{
   bond/.style={line width=1.2pt},
   doublebond/.style={line width=1.2pt, double, double distance=2.5pt},
-  wedge/.style={line width=4pt, line cap=round},
-  dashbond/.style={line width=1.2pt, dashed, dash pattern=on 2pt off 1.5pt},
+  wedge/.style={fill=black, draw=black, line width=0.3pt},
+  dashbond/.style={line width=0.8pt, dashed, dash pattern=on 2pt off 1.5pt},
   atom/.style={font=\small, anchor=center, inner sep=1.5pt},
-  Natom/.style={atom},
-  Satom/.style={atom},
-  Oatom/.style={atom},
-  Patom/.style={atom},
+  Natom/.style={atom, text=blue},
+  Satom/.style={atom, text=yellow!60!orange},
+  Oatom/.style={atom, text=red},
+  Patom/.style={atom, text=orange},
 }
 
 \begin{document}
@@ -55,13 +55,13 @@
   \draw[doublebond] (C8) -- (N7);
   \draw[bond] (N7) -- (C5);
 
-  % N atom labels
+  % N atom labels (CPK: blue)
   \node[Natom, fill=white, inner sep=1.5pt] at (N1) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N3) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N9) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N7) {N};
 
-  % S at C6 (thiolate, bottom-right of 6-ring)
+  % S at C6 (thiolate, bottom-right of 6-ring) — CPK: yellow
   \draw[bond] (C6) -- ++(0.5, -0.3) node[Satom, fill=white, inner sep=1pt, below right] {S};
 
   % NH2 at C2 (left side)
@@ -72,15 +72,13 @@
   \node[atom, fill=white, inner sep=1pt] at ($(N7) + (0.85, -0.25)$) {CH$_3$};
 
   % --- Ribose at N9 (extends UPWARD, center ABOVE N9) ---
-  % Pentagon center at (0.669, 3.3), radius 0.55
-  % O at top, C1' at right (connects to N9 below)
-  \coordinate (rO)  at (0.669, 3.85);    % top (90°)
-  \coordinate (rC4) at (0.146, 3.492);   % top-left (162°)
-  \coordinate (rC3) at (0.328, 2.855);   % bottom-left (234°)
-  \coordinate (rC2) at (1.010, 2.855);   % bottom-right (306°)
-  \coordinate (rC1) at (1.192, 3.492);   % right (18°)
+  \coordinate (rO)  at (0.669, 3.85);
+  \coordinate (rC4) at (0.146, 3.492);
+  \coordinate (rC3) at (0.328, 2.855);
+  \coordinate (rC2) at (1.010, 2.855);
+  \coordinate (rC1) at (1.192, 3.492);
 
-  % N9-C1' glycosidic bond (connects base to sugar)
+  % N9-C1' glycosidic bond
   \draw[bond] (N9) -- (rC1);
   \draw[bond] (rC1) -- (rC2);
   \draw[bond] (rC2) -- (rC3);
@@ -91,40 +89,41 @@
   \node[Oatom, fill=white, inner sep=1.5pt] at (rO) {O};
 
   % OH at C2' (wedge — toward viewer, bottom-right)
-  \draw[wedge] (rC2) -- ++(0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below right] {OH};
+  \filldraw[wedge] (rC2) -- ($(rC2) + (0.4, -0.3) + (0.05, 0.06)$) -- ($(rC2) + (0.4, -0.3) - (0.05, 0.06)$) -- cycle;
+  \node[Oatom, fill=white, inner sep=1pt, below right] at ($(rC2) + (0.4, -0.3)$) {OH};
 
   % OH at C3' (dash — away, bottom-left)
   \draw[dashbond] (rC4) -- ++(-0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below left] {OH};
 
-  % CH2OH at C4' (top-left, going up)
-  \draw[bond] (rC4) -- ++(-0.4, 0.3) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
+  % CH2OH at C4' (top-left, going up — extra offset to avoid ring O)
+  \draw[bond] (rC4) -- ++(-0.55, 0.4) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
 
-  % --- "MESG + Pi" label (to the RIGHT, below Pi) ---
-  \node[font=\small\bfseries, anchor=center] at (3.6, 0.3) {MESG + $P_i$};
+  % --- "MESG + Pi" label (to the RIGHT) ---
+  \node[font=\small\bfseries, anchor=center] at (3.0, 0.3) {MESG + $P_i$};
 \end{scope}
 
 % ============================================================
-% MIDDLE: Arrow with PNP label to the RIGHT
-% Arrow at x=3.5 (clear of all structures)
+% MIDDLE: Arrow with PNP label to the LEFT (extra clearance)
 % ============================================================
 \draw[line width=1.2pt, ->, >=Stealth] (3.5, -0.5) -- (3.5, -3.0);
-\node[font=\small\bfseries, anchor=west] at (3.8, -1.75) {PNP};
+\node[font=\small\bfseries, anchor=east] at (3.3, -1.75) {PNP};
 
 % ============================================================
 % BOTTOM SECTION: Products
 % ============================================================
 \begin{scope}[shift={(0, -3.5)}]
   % --- 7-Methyl-6-thioguanine (free base, thione form) ---
-  \coordinate (C6) at (0, 0);
-  \coordinate (N1) at (-1, 0);
-  \coordinate (C2) at (-1.5, 0.866);
-  \coordinate (N3) at (-1, 1.732);
-  \coordinate (C4) at (0, 1.732);
-  \coordinate (C5) at (0.5, 0.866);
+  % 180° ROTATION: S at TOP, 5-ring on LEFT (mirrors reactant completely)
+  \coordinate (C6) at (-1, 1.732);
+  \coordinate (N1) at (0, 1.732);
+  \coordinate (C2) at (0.5, 0.866);
+  \coordinate (N3) at (0, 0);
+  \coordinate (C4) at (-1, 0);
+  \coordinate (C5) at (-1.5, 0.866);
 
-  \coordinate (N7) at (1.478, 1.074);
-  \coordinate (C8) at (1.583, 2.069);
-  \coordinate (N9) at (0.669, 2.476);
+  \coordinate (N7) at (-2.478, 0.658);
+  \coordinate (C8) at (-2.583, -0.337);
+  \coordinate (N9) at (-1.669, -0.744);
 
   % 6-ring bonds (thione: C5-C6 single)
   \draw[bond] (C6) -- (N1);
@@ -140,37 +139,38 @@
   \draw[doublebond] (C8) -- (N7);
   \draw[bond] (N7) -- (C5);
 
+  % N atom labels (CPK: blue)
   \node[Natom, fill=white, inner sep=1.5pt] at (N1) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N3) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N9) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N7) {N};
 
-  % C=S (thione) at C6
-  \draw[doublebond] (C6) -- ++(0.5, -0.3) node[Satom, fill=white, inner sep=1pt, below right] {S};
+  % C=S (thione) at C6 — at TOP, going upper-left
+  \draw[doublebond] (C6) -- ++(-0.5, 0.3) node[Satom, fill=white, inner sep=1pt, above left] {S};
 
-  % NH2 at C2
-  \draw[bond] (C2) -- ++(-0.5, 0.3) node[atom, fill=white, inner sep=1pt, above left] {NH$_2$};
+  % NH2 at C2 — at bottom-right
+  \draw[bond] (C2) -- ++(0.5, -0.3) node[atom, fill=white, inner sep=1pt, below right] {NH$_2$};
 
-  % CH3 at N7
-  \draw[bond] (N7) -- ++(0.6, -0.2) node[atom, fill=white, inner sep=1pt, right] {CH$_3$};
+  % CH3 at N7 — at far left
+  \draw[bond] (N7) -- ++(-0.7, 0.2);
+  \node[atom, fill=white, inner sep=1pt] at ($(N7) + (-0.85, 0.25)$) {CH$_3$};
 
-  % N9-H
-  \draw[bond] (N9) -- ++(0.3, 0.4) node[atom, fill=white, inner sep=1pt, above right] {H};
+  % N9-H — points DOWNWARD
+  \draw[bond] (N9) -- ++(-0.3, -0.4) node[atom, fill=white, inner sep=1pt, below left] {H};
 
-  % N1-H
-  \draw[bond] (N1) -- ++(-0.3, -0.3) node[atom, fill=white, inner sep=1pt, below left] {H};
+  % N1-H — points UPWARD
+  \draw[bond] (N1) -- ++(0.3, 0.3) node[atom, fill=white, inner sep=1pt, above right] {H};
 
   % --- "+" between base and ribose-1-phosphate ---
-  \node[font=\Large] at (3.2, 1.2) {$+$};
+  \node[font=\Large] at (2.8, 1.2) {$+$};
 
   % --- Ribose-1-phosphate ---
-  % Pentagon: center at (4.8, 1.2), radius 0.55
-  % O at top, C1' at left (connects to phosphate on left)
-  \coordinate (pO)  at (4.8, 1.75);    % top
-  \coordinate (pC4) at (4.277, 1.392);  % top-left
-  \coordinate (pC3) at (4.459, 0.755); % bottom-left
-  \coordinate (pC2) at (5.141, 0.755); % bottom-right
-  \coordinate (pC1) at (5.323, 1.392); % right
+  % Pentagon: center at (4.5, 1.2), radius 0.55
+  \coordinate (pO)  at (4.5, 1.75);
+  \coordinate (pC4) at (3.977, 1.392);
+  \coordinate (pC3) at (4.159, 0.755);
+  \coordinate (pC2) at (4.841, 0.755);
+  \coordinate (pC1) at (5.023, 1.392);
 
   \draw[bond] (pC1) -- (pC2);
   \draw[bond] (pC2) -- (pC3);
@@ -181,17 +181,18 @@
   \node[Oatom, fill=white, inner sep=1.5pt] at (pO) {O};
 
   % OH at C2' (wedge, bottom-right)
-  \draw[wedge] (pC2) -- ++(0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below right] {OH};
+  \filldraw[wedge] (pC2) -- ($(pC2) + (0.4, -0.3) + (0.05, 0.06)$) -- ($(pC2) + (0.4, -0.3) - (0.05, 0.06)$) -- cycle;
+  \node[Oatom, fill=white, inner sep=1pt, below right] at ($(pC2) + (0.4, -0.3)$) {OH};
 
   % OH at C3' (dash, bottom-left)
   \draw[dashbond] (pC3) -- ++(-0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below left] {OH};
 
-  % CH2OH at C4' (top-left)
-  \draw[bond] (pC4) -- ++(-0.4, 0.3) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
+  % CH2OH at C4' (top-left — extra offset to avoid ring O)
+  \draw[bond] (pC4) -- ++(-0.55, 0.4) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
 
   % --- Phosphate group: C1'-O-P, extends RIGHT ---
-  \coordinate (bridgeO) at (5.9, 1.392);
-  \coordinate (Phos)    at (6.6, 1.392);
+  \coordinate (bridgeO) at (5.6, 1.392);
+  \coordinate (Phos)    at (6.4, 1.392);
 
   \draw[bond] (pC1) -- (bridgeO);
   \node[Oatom, fill=white, inner sep=1.5pt] at (bridgeO) {O};
@@ -199,13 +200,13 @@
   \draw[bond] (bridgeO) -- (Phos);
 
   % P=O (double bond, up)
-  \draw[doublebond] (Phos) -- ++(0, 0.55) node[Oatom, fill=white, inner sep=1pt, above] {O};
+  \draw[doublebond] (Phos) -- ++(0, 0.6) node[Oatom, fill=white, inner sep=1pt, above] {O};
 
   % P-O⁻ (right)
-  \draw[bond] (Phos) -- ++(0.55, -0.15) node[Oatom, fill=white, inner sep=1pt, below right] {O$^-$};
+  \draw[bond] (Phos) -- ++(0.6, -0.2) node[Oatom, fill=white, inner sep=1pt, below right] {O$^-$};
 
   % P-OH (down)
-  \draw[bond] (Phos) -- ++(0, -0.55) node[Oatom, fill=white, inner sep=1pt, below] {OH};
+  \draw[bond] (Phos) -- ++(0, -0.6) node[Oatom, fill=white, inner sep=1pt, below] {OH};
 
   \node[Patom, fill=white, inner sep=1.5pt] at (Phos) {P};
 
