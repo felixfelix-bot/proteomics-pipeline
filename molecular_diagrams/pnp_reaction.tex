@@ -1,162 +1,217 @@
-% PNP (Purine Nucleoside Phosphorylase) Reaction Diagram
-% MESG + Pi -> 7-Methyl-6-thioguanine + alpha-D-ribose-1-phosphate
-% Matches original diagram layout: vertical flow, molecular structures
-% with colored atoms, PNP arrow in center, Absorbance 360nm at bottom
-%
-% Color coding:
-%   blue   = nitrogen (N)
-%   red    = oxygen (O)
-%   yellow = sulfur (S)
-%   orange = phosphorus (P)
-%
-% Compile:  pdflatex -output-directory=molecular_diagrams molecular_diagrams/pnp_reaction.tex
+% PNP Reaction Diagram — TikZ molecular structures
+% MESG + Pi -> 7-Methyl-6-thioguanine + Ribose-1-phosphate
+% Absorbance at 360nm
 
-\documentclass[border=10pt]{standalone}
-\usepackage[utf8]{inputenc}
-\usepackage{chemfig}
+\documentclass[border=5pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{calc, arrows.meta}
 \usepackage{xcolor}
 \usepackage{amsmath}
-\usepackage{array}
-\usepackage{tikz}
 
-% ---- Colour definitions ---------------------------------------------------
-\definecolor{Ncolor}{HTML}{0066CC}
-\definecolor{Ocolor}{HTML}{CC0000}
-\definecolor{Scolor}{HTML}{D4A017}
-\definecolor{Pcolor}{HTML}{E07000}
-
-% ---- Helper macros for coloured atoms in chemfig --------------------------
-\newcommand{\Natom}{\textcolor{Ncolor}{N}}
-\newcommand{\Oatom}{\textcolor{Ocolor}{O}}
-\newcommand{\Satom}{\textcolor{Scolor}{S}}
-\newcommand{\Patom}{\textcolor{Pcolor}{P}}
+\tikzset{
+  bond/.style={line width=1.2pt},
+  doublebond/.style={line width=1.2pt, double, double distance=2.5pt},
+  wedge/.style={line width=4pt, line cap=round},
+  dashbond/.style={line width=1.2pt, dashed, dash pattern=on 2pt off 1.5pt},
+  atom/.style={font=\small, anchor=center, inner sep=1.5pt},
+  Natom/.style={atom},
+  Satom/.style={atom},
+  Oatom/.style={atom},
+  Patom/.style={atom},
+}
 
 \begin{document}
-
-\begin{tabular}{c}
-
-% ============================================================
-% TOP: Reactants — MESG + Pi (side by side)
-% ============================================================
-
-\begin{tabular}{cc}
-
-% --- MESG (7-Methyl-6-thioguanosine) ---
-% Purine base: pyrimidine ring fused to imidazole
-% NH2 at C2, S at C6, CH3 at N7, ribose at N9
-\begin{tabular}{c}
-\chemfig{
-  % Pyrimidine ring (6-membered)
-  *6(
-    -=-(-NH_2)-
-    % N3
-    \Natom=
-    % C4 - fusion point to imidazole
-    (-[6]*5(
-      -\Natom(-CH_3)=
-      \Natom-
-      % C8
-      =-
-    ))
-    % C5 back to pyrimidine
-    =
-    % C6 with S (thione/thiol)
-    (-\Satom)=
-  )
-  % N9 with ribose
-  (-\Natom(-[1]
-    % Ribose furanose ring
-    [:-30]\Oatom-[7](-[1]OH)(-[7]OH)-[6](-[6]OH)-[5]
-  ))
-}
-
-\\[4pt]
-{\small\textbf{MESG}} \\
-{\scriptsize 7-Methyl-6-thioguanosine}
-\end{tabular}
-
-&
-
-% --- Pi (Inorganic phosphate) ---
-\begin{tabular}{c}
-\chemfig{\Patom(=[:90]\Oatom)(-[:-30]\Oatom^{-})(-[:150]\Oatom^{-})(-[:-90]OH)}
-
-\\[4pt]
-{\small\textbf{$P_i$}} \\
-{\scriptsize Inorganic phosphate}
-\end{tabular}
-
-\end{tabular}
-
-\\[1.5em]
+\begin{tikzpicture}[scale=0.85]
 
 % ============================================================
-% MIDDLE: PNP enzyme arrow (vertical, downward)
+% TOP SECTION: MESG + Pi
 % ============================================================
+\begin{scope}[shift={(0, 0)}]
+  % --- Purine base (MESG) ---
+  % 6-ring: regular hexagon, side=1
+  \coordinate (C6) at (0, 0);
+  \coordinate (N1) at (-1, 0);
+  \coordinate (C2) at (-1.5, 0.866);
+  \coordinate (N3) at (-1, 1.732);
+  \coordinate (C4) at (0, 1.732);
+  \coordinate (C5) at (0.5, 0.866);
 
-\begin{tikzpicture}
-\draw[-{Stealth[length=5mm,width=3mm]},line width=2pt] (0,0) -- (0,-1.5);
-\node[anchor=west] at (0.3,-0.75) {\large\bfseries PNP};
+  % 5-ring: sharing C4-C5 edge, extending RIGHT
+  \coordinate (N7) at (1.478, 1.074);
+  \coordinate (C8) at (1.583, 2.069);
+  \coordinate (N9) at (0.669, 2.476);
+
+  % 6-ring bonds
+  \draw[bond] (C6) -- (N1);
+  \draw[doublebond] (N1) -- (C2);
+  \draw[bond] (C2) -- (N3);
+  \draw[doublebond] (N3) -- (C4);
+  \draw[bond] (C4) -- (C5);
+  \draw[doublebond] (C5) -- (C6);
+
+  % 5-ring bonds
+  \draw[bond] (C4) -- (N9);
+  \draw[bond] (N9) -- (C8);
+  \draw[doublebond] (C8) -- (N7);
+  \draw[bond] (N7) -- (C5);
+
+  % N atom labels
+  \node[Natom, fill=white, inner sep=1.5pt] at (N1) {N};
+  \node[Natom, fill=white, inner sep=1.5pt] at (N3) {N};
+  \node[Natom, fill=white, inner sep=1.5pt] at (N9) {N};
+  \node[Natom, fill=white, inner sep=1.5pt] at (N7) {N};
+
+  % S at C6 (thiolate, bottom-right of 6-ring)
+  \draw[bond] (C6) -- ++(0.5, -0.3) node[Satom, fill=white, inner sep=1pt, below right] {S};
+
+  % NH2 at C2 (left side)
+  \draw[bond] (C2) -- ++(-0.5, 0.3) node[atom, fill=white, inner sep=1pt, above left] {NH$_2$};
+
+  % CH3 at N7 (drawn as line/methyl, not text label)
+  \draw[bond] (N7) -- ++(0.7, -0.2);
+  \node[atom, fill=white, inner sep=1pt] at ($(N7) + (0.85, -0.25)$) {CH$_3$};
+
+  % --- Ribose at N9 (extends UPWARD, center ABOVE N9) ---
+  % Pentagon center at (0.669, 3.3), radius 0.55
+  % O at top, C1' at right (connects to N9 below)
+  \coordinate (rO)  at (0.669, 3.85);    % top (90°)
+  \coordinate (rC4) at (0.146, 3.492);   % top-left (162°)
+  \coordinate (rC3) at (0.328, 2.855);   % bottom-left (234°)
+  \coordinate (rC2) at (1.010, 2.855);   % bottom-right (306°)
+  \coordinate (rC1) at (1.192, 3.492);   % right (18°)
+
+  % N9-C1' glycosidic bond (connects base to sugar)
+  \draw[bond] (N9) -- (rC1);
+  \draw[bond] (rC1) -- (rC2);
+  \draw[bond] (rC2) -- (rC3);
+  \draw[bond] (rC3) -- (rC4);
+  \draw[bond] (rC4) -- (rO);
+  \draw[bond] (rO) -- (rC1);
+
+  \node[Oatom, fill=white, inner sep=1.5pt] at (rO) {O};
+
+  % OH at C2' (wedge — toward viewer, bottom-right)
+  \draw[wedge] (rC2) -- ++(0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below right] {OH};
+
+  % OH at C3' (dash — away, bottom-left)
+  \draw[dashbond] (rC4) -- ++(-0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below left] {OH};
+
+  % CH2OH at C4' (top-left, going up)
+  \draw[bond] (rC4) -- ++(-0.4, 0.3) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
+
+  % --- "MESG + Pi" label (to the RIGHT, below Pi) ---
+  \node[font=\small\bfseries, anchor=center] at (3.6, 0.3) {MESG + $P_i$};
+\end{scope}
+
+% ============================================================
+% MIDDLE: Arrow with PNP label to the RIGHT
+% Arrow at x=3.5 (clear of all structures)
+% ============================================================
+\draw[line width=1.2pt, ->, >=Stealth] (3.5, -0.5) -- (3.5, -3.0);
+\node[font=\small\bfseries, anchor=west] at (3.8, -1.75) {PNP};
+
+% ============================================================
+% BOTTOM SECTION: Products
+% ============================================================
+\begin{scope}[shift={(0, -3.5)}]
+  % --- 7-Methyl-6-thioguanine (free base, thione form) ---
+  \coordinate (C6) at (0, 0);
+  \coordinate (N1) at (-1, 0);
+  \coordinate (C2) at (-1.5, 0.866);
+  \coordinate (N3) at (-1, 1.732);
+  \coordinate (C4) at (0, 1.732);
+  \coordinate (C5) at (0.5, 0.866);
+
+  \coordinate (N7) at (1.478, 1.074);
+  \coordinate (C8) at (1.583, 2.069);
+  \coordinate (N9) at (0.669, 2.476);
+
+  % 6-ring bonds (thione: C5-C6 single)
+  \draw[bond] (C6) -- (N1);
+  \draw[doublebond] (N1) -- (C2);
+  \draw[bond] (C2) -- (N3);
+  \draw[doublebond] (N3) -- (C4);
+  \draw[bond] (C4) -- (C5);
+  \draw[bond] (C5) -- (C6);
+
+  % 5-ring bonds
+  \draw[bond] (C4) -- (N9);
+  \draw[bond] (N9) -- (C8);
+  \draw[doublebond] (C8) -- (N7);
+  \draw[bond] (N7) -- (C5);
+
+  \node[Natom, fill=white, inner sep=1.5pt] at (N1) {N};
+  \node[Natom, fill=white, inner sep=1.5pt] at (N3) {N};
+  \node[Natom, fill=white, inner sep=1.5pt] at (N9) {N};
+  \node[Natom, fill=white, inner sep=1.5pt] at (N7) {N};
+
+  % C=S (thione) at C6
+  \draw[doublebond] (C6) -- ++(0.5, -0.3) node[Satom, fill=white, inner sep=1pt, below right] {S};
+
+  % NH2 at C2
+  \draw[bond] (C2) -- ++(-0.5, 0.3) node[atom, fill=white, inner sep=1pt, above left] {NH$_2$};
+
+  % CH3 at N7
+  \draw[bond] (N7) -- ++(0.6, -0.2) node[atom, fill=white, inner sep=1pt, right] {CH$_3$};
+
+  % N9-H
+  \draw[bond] (N9) -- ++(0.3, 0.4) node[atom, fill=white, inner sep=1pt, above right] {H};
+
+  % N1-H
+  \draw[bond] (N1) -- ++(-0.3, -0.3) node[atom, fill=white, inner sep=1pt, below left] {H};
+
+  % --- "+" between base and ribose-1-phosphate ---
+  \node[font=\Large] at (3.2, 1.2) {$+$};
+
+  % --- Ribose-1-phosphate ---
+  % Pentagon: center at (4.8, 1.2), radius 0.55
+  % O at top, C1' at left (connects to phosphate on left)
+  \coordinate (pO)  at (4.8, 1.75);    % top
+  \coordinate (pC4) at (4.277, 1.392);  % top-left
+  \coordinate (pC3) at (4.459, 0.755); % bottom-left
+  \coordinate (pC2) at (5.141, 0.755); % bottom-right
+  \coordinate (pC1) at (5.323, 1.392); % right
+
+  \draw[bond] (pC1) -- (pC2);
+  \draw[bond] (pC2) -- (pC3);
+  \draw[bond] (pC3) -- (pC4);
+  \draw[bond] (pC4) -- (pO);
+  \draw[bond] (pO) -- (pC1);
+
+  \node[Oatom, fill=white, inner sep=1.5pt] at (pO) {O};
+
+  % OH at C2' (wedge, bottom-right)
+  \draw[wedge] (pC2) -- ++(0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below right] {OH};
+
+  % OH at C3' (dash, bottom-left)
+  \draw[dashbond] (pC3) -- ++(-0.4, -0.3) node[Oatom, fill=white, inner sep=1pt, below left] {OH};
+
+  % CH2OH at C4' (top-left)
+  \draw[bond] (pC4) -- ++(-0.4, 0.3) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
+
+  % --- Phosphate group: C1'-O-P, extends RIGHT ---
+  \coordinate (bridgeO) at (5.9, 1.392);
+  \coordinate (Phos)    at (6.6, 1.392);
+
+  \draw[bond] (pC1) -- (bridgeO);
+  \node[Oatom, fill=white, inner sep=1.5pt] at (bridgeO) {O};
+
+  \draw[bond] (bridgeO) -- (Phos);
+
+  % P=O (double bond, up)
+  \draw[doublebond] (Phos) -- ++(0, 0.55) node[Oatom, fill=white, inner sep=1pt, above] {O};
+
+  % P-O⁻ (right)
+  \draw[bond] (Phos) -- ++(0.55, -0.15) node[Oatom, fill=white, inner sep=1pt, below right] {O$^-$};
+
+  % P-OH (down)
+  \draw[bond] (Phos) -- ++(0, -0.55) node[Oatom, fill=white, inner sep=1pt, below] {OH};
+
+  \node[Patom, fill=white, inner sep=1.5pt] at (Phos) {P};
+
+  % --- Absorbance label (very bottom, centered, italic) ---
+  \node[font=\small\itshape, anchor=center] at (3.0, -0.7) {Absorbance at 360nm};
+\end{scope}
+
 \end{tikzpicture}
-
-\\[0.5em]
-
-% ============================================================
-% BOTTOM: Products — 7-Methyl-6-thioguanine + Ribose-1-phosphate
-% ============================================================
-
-\begin{tabular}{cc}
-
-% --- 7-Methyl-6-thioguanine (free base, no ribose) ---
-\begin{tabular}{c}
-\chemfig{
-  *6(
-    -=-(-NH_2)-
-    \Natom=
-    (-[6]*5(
-      -\Natom(-CH_3)=
-      \Natom-
-      =-
-    ))
-    =
-    (-\Satom)=
-  )
-  % N9 with H instead of ribose
-  (-\Natom(-[1]H))
-}
-
-\\[4pt]
-{\small\textbf{7-Methyl-6-thioguanine}} \\
-{\scriptsize 2-amino-6-mercapto-7-methylpurine}
-\end{tabular}
-
-&
-
-% --- Ribose-1-phosphate ---
-\begin{tabular}{c}
-\chemfig{
-  % Phosphate at C1
-  \Oatom-[:30]\Patom(=[:90]\Oatom)(-[:-30]\Oatom^{-})(-[:150]OH)
-  -[:-30]
-  % Ribose furanose ring
-  [:-30]\Oatom-[7](-[1]OH)(-[7]OH)-[6](-[6]OH)-[5]
-}
-
-\\[4pt]
-{\small\textbf{Ribose-1-phosphate}} \\
-{\scriptsize $\alpha$-D-ribofuranose-1-phosphate}
-\end{tabular}
-
-\end{tabular}
-
-\\[1.5em]
-
-% ============================================================
-% BOTTOM LABEL: Detection method
-% ============================================================
-
-{\large\textit{Absorbance at 360\,nm}}
-
-\end{tabular}
-
 \end{document}
