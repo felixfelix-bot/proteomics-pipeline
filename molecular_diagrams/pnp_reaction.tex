@@ -1,6 +1,7 @@
 % PNP (Purine Nucleoside Phosphorylase) Reaction Diagram
-% MESG + Pi -> 2-amino-6-thio-7-methylpurine + alpha-D-ribose-1-phosphate
-% Uses chemfig for molecular structures and reaction schemes.
+% MESG + Pi -> 7-Methyl-6-thioguanine + alpha-D-ribose-1-phosphate
+% Matches original diagram layout: vertical flow, molecular structures
+% with colored atoms, PNP arrow in center, Absorbance 360nm at bottom
 %
 % Color coding:
 %   blue   = nitrogen (N)
@@ -9,12 +10,13 @@
 %   orange = phosphorus (P)
 %
 % Compile:  pdflatex -output-directory=molecular_diagrams molecular_diagrams/pnp_reaction.tex
-% Run twice for cross-references / scheme layout to stabilise.
 
-\documentclass[border=15pt]{standalone}
+\documentclass[border=10pt]{standalone}
 \usepackage[utf8]{inputenc}
 \usepackage{chemfig}
 \usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{array}
 \usepackage{tikz}
 
 % ---- Colour definitions ---------------------------------------------------
@@ -31,19 +33,130 @@
 
 \begin{document}
 
-% Reaction scheme — no blank lines inside schemestart
-% Layout: MESG + Pi -> PNP -> Free Base + Ribose-1-Phosphate
-% Absorbance at 360nm
+\begin{tabular}{c}
 
-\schemestart
-\chemfig{*6(=C(-NH_2)-\Natom=C(-[6]*5(-\Natom-C=\Natom(-CH_3)-))-C(=\Satom^{-})=)}
-\arrow{->[$\mathrm{PNP}$]}
-\chemfig{*6(=C(-NH_2)-\Natom=C(-[6]*5(-\Natom-C=\Natom(-CH_3)-))-C(=\Satom)=)}
-\+
-\chemfig{\Oatom*5(-C(>:[::-30]O-\Patom(=[::60]\Oatom)(-[::-60]\Oatom^{-})(-[6]O H))-C(>[::30]OH)-C(>[::30]OH)-C(>[::30]CH_2OH)-)}
-\schemestop
+% ============================================================
+% TOP: Reactants — MESG + Pi (side by side)
+% ============================================================
 
-\par\vspace{1em}\par
-\centering\textit{Absorbance at 360\,nm}
+\begin{tabular}{cc}
+
+% --- MESG (7-Methyl-6-thioguanosine) ---
+% Purine base: pyrimidine ring fused to imidazole
+% NH2 at C2, S at C6, CH3 at N7, ribose at N9
+\begin{tabular}{c}
+\chemfig{
+  % Pyrimidine ring (6-membered)
+  *6(
+    -=-(-NH_2)-
+    % N3
+    \Natom=
+    % C4 - fusion point to imidazole
+    (-[6]*5(
+      -\Natom(-CH_3)=
+      \Natom-
+      % C8
+      =-
+    ))
+    % C5 back to pyrimidine
+    =
+    % C6 with S (thione/thiol)
+    (-\Satom)=
+  )
+  % N9 with ribose
+  (-\Natom(-[1]
+    % Ribose furanose ring
+    [:-30]\Oatom-[7](-[1]OH)(-[7]OH)-[6](-[6]OH)-[5]
+  ))
+}
+
+\\[4pt]
+{\small\textbf{MESG}} \\
+{\scriptsize 7-Methyl-6-thioguanosine}
+\end{tabular}
+
+&
+
+% --- Pi (Inorganic phosphate) ---
+\begin{tabular}{c}
+\chemfig{\Patom(=[:90]\Oatom)(-[:-30]\Oatom^{-})(-[:150]\Oatom^{-})(-[:-90]OH)}
+
+\\[4pt]
+{\small\textbf{$P_i$}} \\
+{\scriptsize Inorganic phosphate}
+\end{tabular}
+
+\end{tabular}
+
+\\[1.5em]
+
+% ============================================================
+% MIDDLE: PNP enzyme arrow (vertical, downward)
+% ============================================================
+
+\begin{tikzpicture}
+\draw[-{Stealth[length=5mm,width=3mm]},line width=2pt] (0,0) -- (0,-1.5);
+\node[anchor=west] at (0.3,-0.75) {\large\bfseries PNP};
+\end{tikzpicture}
+
+\\[0.5em]
+
+% ============================================================
+% BOTTOM: Products — 7-Methyl-6-thioguanine + Ribose-1-phosphate
+% ============================================================
+
+\begin{tabular}{cc}
+
+% --- 7-Methyl-6-thioguanine (free base, no ribose) ---
+\begin{tabular}{c}
+\chemfig{
+  *6(
+    -=-(-NH_2)-
+    \Natom=
+    (-[6]*5(
+      -\Natom(-CH_3)=
+      \Natom-
+      =-
+    ))
+    =
+    (-\Satom)=
+  )
+  % N9 with H instead of ribose
+  (-\Natom(-[1]H))
+}
+
+\\[4pt]
+{\small\textbf{7-Methyl-6-thioguanine}} \\
+{\scriptsize 2-amino-6-mercapto-7-methylpurine}
+\end{tabular}
+
+&
+
+% --- Ribose-1-phosphate ---
+\begin{tabular}{c}
+\chemfig{
+  % Phosphate at C1
+  \Oatom-[:30]\Patom(=[:90]\Oatom)(-[:-30]\Oatom^{-})(-[:150]OH)
+  -[:-30]
+  % Ribose furanose ring
+  [:-30]\Oatom-[7](-[1]OH)(-[7]OH)-[6](-[6]OH)-[5]
+}
+
+\\[4pt]
+{\small\textbf{Ribose-1-phosphate}} \\
+{\scriptsize $\alpha$-D-ribofuranose-1-phosphate}
+\end{tabular}
+
+\end{tabular}
+
+\\[1.5em]
+
+% ============================================================
+% BOTTOM LABEL: Detection method
+% ============================================================
+
+{\large\textit{Absorbance at 360\,nm}}
+
+\end{tabular}
 
 \end{document}
