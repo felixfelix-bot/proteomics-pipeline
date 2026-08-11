@@ -62,7 +62,7 @@
   \node[Natom, fill=white, inner sep=1.5pt] at (N7) {N};
 
   % S at C6 (thiolate, bottom-right of 6-ring) — CPK: yellow
-  \draw[bond] (C6) -- ++(0.5, -0.3) node[Satom, fill=white, inner sep=1pt, below right] {S};
+  \draw[bond] (C6) -- ++(0.5, -0.3) node[Satom, fill=white, inner sep=1pt, below right] {S$^-$};
 
   % NH2 at C2 (left side)
   \draw[bond] (C2) -- ++(-0.5, 0.3) node[atom, fill=white, inner sep=1pt, above left] {NH$_2$};
@@ -79,7 +79,7 @@
   \coordinate (rC1) at (1.192, 3.492);
 
   % N9-C1' glycosidic bond
-  \draw[bond] (N9) -- (rC1);
+  \draw[dashbond] (N9) -- (rC1);
   \draw[bond] (rC1) -- (rC2);
   \draw[bond] (rC2) -- (rC3);
   \draw[bond] (rC3) -- (rC4);
@@ -106,7 +106,7 @@
 % MIDDLE: Arrow with PNP label to the LEFT (extra clearance)
 % ============================================================
 \draw[line width=1.2pt, ->, >=Stealth] (3.5, -0.5) -- (3.5, -3.0);
-\node[font=\small\bfseries, anchor=east] at (3.3, -1.75) {PNP};
+\node[font=\small\bfseries, anchor=west] at (3.4, -1.75) {PNP};
 
 % ============================================================
 % BOTTOM SECTION: Products
@@ -211,7 +211,7 @@
   \node[Patom, fill=white, inner sep=1.5pt] at (Phos) {P};
 
   % --- Absorbance label (very bottom, centered, italic) ---
-  \node[font=\small\itshape, anchor=center] at (3.0, -0.7) {Absorbance at 360nm};
+  \node[font=\small\itshape, anchor=center] at (2.75, -0.7) {Absorbance at 360nm};
 \end{scope}
 
 \end{tikzpicture}
