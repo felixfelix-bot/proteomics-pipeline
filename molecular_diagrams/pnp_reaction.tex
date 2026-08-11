@@ -98,32 +98,40 @@
   % CH2OH at C4' (top-left, going up — extra offset to avoid ring O)
   \draw[bond] (rC4) -- ++(-0.55, 0.4) node[atom, fill=white, inner sep=1pt, above left] {CH$_2$OH};
 
-  % --- "MESG + Pi" label (to the RIGHT) ---
-  \node[font=\small\bfseries, anchor=center] at (3.0, 0.3) {MESG + $P_i$};
+  % --- "MESG + Pi" label (to the RIGHT, at base height) ---
+  \node[font=\small\bfseries, anchor=west] at (2.5, 1.0) {MESG + $P_i$};
 \end{scope}
 
 % ============================================================
-% MIDDLE: Arrow with PNP label to the LEFT (extra clearance)
+% MIDDLE: Arrow with PNP label (moved further right for clearance)
 % ============================================================
-\draw[line width=1.2pt, ->, >=Stealth] (3.5, -0.5) -- (3.5, -3.0);
-\node[font=\small\bfseries, anchor=west] at (3.4, -1.75) {PNP};
+\draw[line width=1.2pt, ->, >=Stealth] (4.0, -0.5) -- (4.0, -3.0);
+\node[font=\small\bfseries, anchor=west] at (4.2, -1.75) {PNP};
 
 % ============================================================
 % BOTTOM SECTION: Products
 % ============================================================
 \begin{scope}[shift={(0, -3.5)}]
   % --- 7-Methyl-6-thioguanine (free base, thione form) ---
-  % 180° ROTATION: S at TOP, 5-ring on LEFT (mirrors reactant completely)
-  \coordinate (C6) at (-1, 1.732);
-  \coordinate (N1) at (0, 1.732);
-  \coordinate (C2) at (0.5, 0.866);
-  \coordinate (N3) at (0, 0);
-  \coordinate (C4) at (-1, 0);
-  \coordinate (C5) at (-1.5, 0.866);
+  % VERTICAL FLIP: 5-ring stays RIGHT, S moves to TOP, NH2 to bottom-left
+  % Reactant: C6 at (0,0) → Product: C6 at (0, 1.732) [flipped Y]
+  %   N1 at (-1,0) → N1 at (-1, 1.732)
+  %   C2 at (-1.5, 0.866) → C2 at (-1.5, 0.866) [stays LEFT, middle]
+  %   N3 at (-1, 1.732) → N3 at (-1, 0)
+  %   C4 at (0, 1.732) → C4 at (0, 0)
+  %   C5 at (0.5, 0.866) → C5 at (0.5, 0.866) [stays RIGHT, middle]
+  % 5-ring stays on RIGHT side, flipped vertically
+  \coordinate (C6) at (0, 1.732);
+  \coordinate (N1) at (-1, 1.732);
+  \coordinate (C2) at (-1.5, 0.866);
+  \coordinate (N3) at (-1, 0);
+  \coordinate (C4) at (0, 0);
+  \coordinate (C5) at (0.5, 0.866);
 
-  \coordinate (N7) at (-2.478, 0.658);
-  \coordinate (C8) at (-2.583, -0.337);
-  \coordinate (N9) at (-1.669, -0.744);
+  % 5-ring: sharing C4-C5 edge, extending RIGHT (same as reactant, flipped Y)
+  \coordinate (N7) at (1.478, 0.658);
+  \coordinate (C8) at (1.583, -0.337);
+  \coordinate (N9) at (0.669, -0.744);
 
   % 6-ring bonds (thione: C5-C6 single)
   \draw[bond] (C6) -- (N1);
@@ -145,21 +153,21 @@
   \node[Natom, fill=white, inner sep=1.5pt] at (N9) {N};
   \node[Natom, fill=white, inner sep=1.5pt] at (N7) {N};
 
-  % C=S (thione) at C6 — at TOP, going upper-left
-  \draw[doublebond] (C6) -- ++(-0.5, 0.3) node[Satom, fill=white, inner sep=1pt, above left] {S};
+  % C=S (thione) at C6 — at TOP-right (mirror of reactant's bottom-right S)
+  \draw[doublebond] (C6) -- ++(0.5, 0.3) node[Satom, fill=white, inner sep=1pt, above right] {S};
 
-  % NH2 at C2 — at bottom-right
-  \draw[bond] (C2) -- ++(0.5, -0.3) node[atom, fill=white, inner sep=1pt, below right] {NH$_2$};
+  % NH2 at C2 — stays LEFT, now goes lower-left (mirror of reactant's upper-left)
+  \draw[bond] (C2) -- ++(-0.5, -0.3) node[atom, fill=white, inner sep=1pt, below left] {NH$_2$};
 
-  % CH3 at N7 — at far left
-  \draw[bond] (N7) -- ++(-0.7, 0.2);
-  \node[atom, fill=white, inner sep=1pt] at ($(N7) + (-0.85, 0.25)$) {CH$_3$};
+  % CH3 at N7 — stays RIGHT, now goes lower-right (mirror of reactant's lower-right)
+  \draw[bond] (N7) -- ++(0.7, 0.2);
+  \node[atom, fill=white, inner sep=1pt] at ($(N7) + (0.85, 0.25)$) {CH$_3$};
 
-  % N9-H — points DOWNWARD
-  \draw[bond] (N9) -- ++(-0.3, -0.4) node[atom, fill=white, inner sep=1pt, below left] {H};
+  % N9-H — points DOWNWARD (mirror of reactant's upward)
+  \draw[bond] (N9) -- ++(0.3, -0.4) node[atom, fill=white, inner sep=1pt, below right] {H};
 
-  % N1-H — points UPWARD
-  \draw[bond] (N1) -- ++(0.3, 0.3) node[atom, fill=white, inner sep=1pt, above right] {H};
+  % N1-H — points UPWARD (mirror of reactant's downward)
+  \draw[bond] (N1) -- ++(-0.3, 0.3) node[atom, fill=white, inner sep=1pt, above left] {H};
 
   % --- "+" between base and ribose-1-phosphate ---
   \node[font=\Large] at (2.8, 1.2) {$+$};
@@ -202,16 +210,16 @@
   % P=O (double bond, up)
   \draw[doublebond] (Phos) -- ++(0, 0.6) node[Oatom, fill=white, inner sep=1pt, above] {O};
 
-  % P-O⁻ (right)
-  \draw[bond] (Phos) -- ++(0.6, -0.2) node[Oatom, fill=white, inner sep=1pt, below right] {O$^-$};
+  % P-OH (right)
+  \draw[bond] (Phos) -- ++(0.6, -0.2) node[Oatom, fill=white, inner sep=1pt, below right] {OH};
 
   % P-OH (down)
   \draw[bond] (Phos) -- ++(0, -0.6) node[Oatom, fill=white, inner sep=1pt, below] {OH};
 
   \node[Patom, fill=white, inner sep=1.5pt] at (Phos) {P};
 
-  % --- Absorbance label (very bottom, centered, italic) ---
-  \node[font=\small\itshape, anchor=center] at (2.75, -0.7) {Absorbance at 360nm};
+  % --- Absorbance label (very bottom, centered) ---
+  \node[font=\small\itshape, anchor=center] at (2.0, -0.7) {Absorbance at 360nm};
 \end{scope}
 
 \end{tikzpicture}
